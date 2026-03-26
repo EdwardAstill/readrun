@@ -1,9 +1,9 @@
 import { join, resolve, normalize } from "path";
 import { readFile, stat, mkdir, readdir, writeFile } from "fs/promises";
 import { renderMarkdown } from "./markdown";
-import { buildNavTree, renderNav, type NavNode } from "./nav";
+import { buildNavTree, renderNav } from "./nav";
 import { htmlPage } from "./template";
-import { extractTitle } from "./utils";
+import { extractTitle, findFirstFile } from "./utils";
 
 async function resolveMarkdownPath(contentDir: string, urlPath: string): Promise<string | null> {
   const candidates = [
@@ -30,17 +30,6 @@ async function exists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-export function findFirstFile(nodes: NavNode[]): string | null {
-  for (const node of nodes) {
-    if (!node.isDir) return node.path;
-    if (node.children) {
-      const found = findFirstFile(node.children);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]);
@@ -80,10 +69,7 @@ export async function startServer(contentDir: string, port: number, liveMode = f
             const body = await req.json() as { code: string };
             const code = body.code;
             if (typeof code !== "string") {
-              return new Response(JSON.stringify({ error: "Missing code" }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-              });
+              return Response.json({ error: "Missing code" }, { status: 400 });
             }
 
             // Snapshot files before execution
@@ -118,14 +104,9 @@ export async function startServer(contentDir: string, port: number, liveMode = f
               });
             }
 
-            return new Response(JSON.stringify({ stdout, stderr, images }), {
-              headers: { "Content-Type": "application/json" },
-            });
+            return Response.json({ stdout, stderr, images });
           } catch (err) {
-            return new Response(JSON.stringify({ error: String(err) }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
+            return Response.json({ error: String(err) }, { status: 500 });
           }
         }
 
@@ -135,32 +116,21 @@ export async function startServer(contentDir: string, port: number, liveMode = f
             const formData = await req.formData();
             const file = formData.get("file");
             if (!file || !(file instanceof File)) {
-              return new Response(JSON.stringify({ error: "No file provided" }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-              });
+              return Response.json({ error: "No file provided" }, { status: 400 });
             }
 
             const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
             const targetPath = normalize(resolve(filesDir, sanitizedName));
             if (!targetPath.startsWith(filesDir)) {
-              return new Response(JSON.stringify({ error: "Invalid filename" }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-              });
+              return Response.json({ error: "Invalid filename" }, { status: 400 });
             }
 
             const arrayBuffer = await file.arrayBuffer();
             await writeFile(targetPath, Buffer.from(arrayBuffer));
 
-            return new Response(JSON.stringify({ ok: true, name: sanitizedName }), {
-              headers: { "Content-Type": "application/json" },
-            });
+            return Response.json({ ok: true, name: sanitizedName });
           } catch (err) {
-            return new Response(JSON.stringify({ error: String(err) }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
+            return Response.json({ error: String(err) }, { status: 500 });
           }
         }
 

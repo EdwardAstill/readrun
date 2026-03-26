@@ -2,7 +2,7 @@
 
 Turn folders of Markdown into interactive websites with executable Python code blocks.
 
-Like [Marimo](https://marimo.io/) but for Markdown-first workflows -- write your content in `.md` files, organize them in folders, and explainr renders them as a navigable, interactive site where readers can run Python code inline.
+Write your content in `.md` files, organize them in folders, and explainr renders them as a navigable site where readers can run Python code inline. No config files, no frontmatter, no special setup -- just Markdown.
 
 ## Quick start
 
@@ -10,58 +10,67 @@ Like [Marimo](https://marimo.io/) but for Markdown-first workflows -- write your
 bun install -g explainr    # install globally
 cd your-markdown-folder
 explainr                    # start dev server on localhost:3001
-explainr build              # build static site to ./dist
-explainr build github       # build for GitHub Pages
-explainr build vercel       # build for Vercel
-explainr build netlify      # build for Netlify
 explainr -t                 # try the built-in demo
-explainr --live             # start live server (native Python, file uploads)
 ```
 
 ## Features
 
 - **Markdown-first** -- your existing notes work as-is, no special syntax needed
-- **Executable Python** -- optional `:::python` code blocks run in the browser via Pyodide
-- **Link navigation** -- markdown links between `.md` files are automatically rewritten to work in the rendered site
-- **Settings panel** -- readers can adjust font size, content width, and toggle the sidebar
+- **Executable Python** -- optional `:::python` code blocks run in the browser via Pyodide, or natively with `--live`
 - **Live server mode** -- `--live` flag for native Python execution, file uploads, and inline image rendering
-- **Platform builds** -- `explainr build github|vercel|netlify` generates platform-specific config
+- **Link navigation** -- markdown links between `.md` files are automatically rewritten for site navigation
+- **Settings panel** -- readers can adjust font size, content width, and toggle the sidebar
+- **Platform builds** -- `explainr build github|vercel|netlify` generates deployment configs
+
+## Usage
+
+```bash
+explainr                              # start dev server
+explainr dev [port]                   # dev server on custom port (default: 3001)
+explainr --live                       # live server (native Python, file uploads)
+explainr build [out]                  # build static site (default: ./dist)
+explainr build github [out]           # build for GitHub Pages
+explainr build vercel [out]           # build for Vercel
+explainr build netlify [out]          # build for Netlify
+explainr build github --base /repo/   # GitHub Pages project site with base path
+explainr -t                           # use built-in demo content
+```
+
+## How it works
+
+Point explainr at a folder like this:
+
+```
+my-notes/
+  getting-started.md
+  guides/
+    setup.md
+    advanced.md
+  reference/
+    api.md
+```
+
+It renders a website with a sidebar nav built from your folder structure. Standard Markdown renders as clean HTML. Code blocks wrapped in `:::python` / `:::` get a "Run" button -- readers click it and see output inline.
+
+In **static mode** (default), Python runs in the browser via Pyodide. In **live mode** (`--live`), Python runs natively on your machine with full package access, file uploads, and inline image rendering for things like matplotlib plots.
 
 ## Philosophy
 
-**Your existing Markdown notes should just work.** Point explainr at any folder of `.md` files and it renders a navigable website. No special syntax, no config files, no frontmatter required.
-
-Executable Python (`:::python`) and file uploads are optional enhancements, not requirements. A site built entirely from standard Markdown is a first-class use case.
+**Your existing Markdown notes should just work.** Executable code and file uploads are optional layers -- a site built entirely from standard Markdown is a first-class use case. Notes written for explainr remain readable in any Markdown viewer.
 
 See [docs/philosophy.md](docs/philosophy.md) for more.
 
-## Vision
+## Deployment
 
-### Phase 1: Markdown Rendering
-Render a folder of Markdown files as a static website with navigation, syntax highlighting, and clean typography. Deployable to Vercel or GitHub Pages.
+Build a static site and deploy anywhere:
 
-### Phase 2: Executable Code Blocks
-Python code blocks become runnable in the browser (via Pyodide/WASM). Readers click "Run" and see output inline -- tables, plots, printed results.
+```bash
+explainr build github    # GitHub Pages (.nojekyll + Actions workflow)
+explainr build vercel    # Vercel (vercel.json)
+explainr build netlify   # Netlify (netlify.toml)
+```
 
-### Phase 3: File Uploads
-Users can upload their own data files (CSV, JSON, etc.) that the code blocks can read and process. Turns a static document into a personal analysis tool.
-
-### Phase 4: `index.yml` Layout Configuration
-An `index.yml` at the root describes how Markdown files and folders are structured -- ordering, grouping, titles, and navigation hierarchy. Lets authors control the site layout without renaming files.
-
-## Motivation
-
-For my thesis project ([FanMin](https://github.com/eastill/FanMin)), I used Marimo to build an interactive notebook for a numerical method. Marimo is great for notebooks, but what I actually wanted was to write Markdown documents with embedded runnable code -- more like a textbook or tutorial than a notebook. explainr fills that gap.
-
-## Hosting
-
-Designed to deploy as a static site to:
-- Vercel
-- GitHub Pages
-- Netlify
-- Any static file host
-
-Python code execution happens client-side via Pyodide (WASM), so no server is needed. See [docs/deployment.md](docs/deployment.md) for details.
+Python execution happens client-side via Pyodide (WASM), so static hosts work without a server. See [docs/deployment.md](docs/deployment.md) for details.
 
 ## Documentation
 

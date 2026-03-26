@@ -1,4 +1,5 @@
 import { resolve, normalize } from "path";
+import type { NavNode } from "./nav";
 
 export function extractTitle(source: string, fallback: string): string {
   const match = source.match(/^#\s+(.+)$/m);
@@ -17,4 +18,15 @@ export function isPathWithin(child: string, parent: string): boolean {
   const resolved = normalize(resolve(parent, child));
   const normalizedParent = normalize(resolve(parent));
   return resolved.startsWith(normalizedParent + "/") || resolved === normalizedParent;
+}
+
+export function findFirstFile(nodes: NavNode[]): string | null {
+  for (const node of nodes) {
+    if (!node.isDir) return node.path;
+    if (node.children) {
+      const found = findFirstFile(node.children);
+      if (found) return found;
+    }
+  }
+  return null;
 }

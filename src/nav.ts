@@ -1,5 +1,6 @@
 import { readdir, stat } from "fs/promises";
 import { join, relative, basename, extname } from "path";
+import { escapeHtml } from "./utils";
 
 export interface NavNode {
   name: string;
@@ -75,8 +76,4 @@ function renderNodes(nodes: NavNode[], currentPath: string): string {
   }
   html += "</ul>";
   return html;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

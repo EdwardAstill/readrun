@@ -3,8 +3,7 @@ import { readFile, mkdir, writeFile } from "fs/promises";
 import { renderMarkdown } from "./markdown";
 import { buildNavTree, renderNav, type NavNode } from "./nav";
 import { htmlPage } from "./template";
-import { findFirstFile } from "./server";
-import { extractTitle } from "./utils";
+import { extractTitle, findFirstFile } from "./utils";
 
 export type Platform = "github" | "vercel" | "netlify" | null;
 
