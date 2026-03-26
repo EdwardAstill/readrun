@@ -4,6 +4,7 @@ import { renderMarkdown } from "./markdown";
 import { buildNavTree, renderNav, type NavNode } from "./nav";
 import { htmlPage } from "./template";
 import { extractTitle, findFirstFile } from "./utils";
+import { loadConfig } from "./config";
 
 export type Platform = "github" | "vercel" | "netlify" | null;
 
@@ -23,6 +24,7 @@ export async function build(options: BuildOptions) {
   if (platform) console.log(`  Platform: ${platform}`);
   if (basePath) console.log(`  Base path: ${basePath}`);
 
+  const config = await loadConfig(contentDir);
   const tree = await buildNavTree(contentDir);
   const pages = collectPages(tree);
 
@@ -42,7 +44,7 @@ export async function build(options: BuildOptions) {
       const nav = renderNav(tree, page.path);
       const title = extractTitle(source, page.name);
 
-      const html = htmlPage(nav, rendered, title, basePath);
+      const html = htmlPage(nav, rendered, title, basePath, false, config);
 
       const outPath = join(outDir, page.path, "index.html");
       await mkdir(dirname(outPath), { recursive: true });

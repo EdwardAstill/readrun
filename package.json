@@ -17,8 +17,11 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@vscode/markdown-it-katex": "^1.1.2",
     "github-markdown-css": "^5.9.0",
     "highlight.js": "^11.11.1",
-    "markdown-it": "^14.1.1"
+    "katex": "^0.16.43",
+    "markdown-it": "^14.1.1",
+    "markdown-it-texmath": "^1.0.0"
   }
 }

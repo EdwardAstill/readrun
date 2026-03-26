@@ -4,6 +4,7 @@ import { renderMarkdown } from "./markdown";
 import { buildNavTree, renderNav } from "./nav";
 import { htmlPage } from "./template";
 import { extractTitle, findFirstFile } from "./utils";
+import { loadConfig } from "./config";
 
 async function resolveMarkdownPath(contentDir: string, urlPath: string): Promise<string | null> {
   const candidates = [
@@ -119,6 +120,7 @@ function detectImports(code: string): string[] {
 export async function startServer(contentDir: string, port: number, liveMode = false) {
   const normalizedContentDir = normalize(resolve(contentDir));
   const filesDir = join(normalizedContentDir, ".explainr", "files");
+  const config = await loadConfig(normalizedContentDir);
 
   if (liveMode) {
     await mkdir(filesDir, { recursive: true });
@@ -284,7 +286,7 @@ export async function startServer(contentDir: string, port: number, liveMode = f
         const nav = renderNav(tree, pathname);
         const title = extractTitle(source, pathname.split("/").pop() || "explainr");
 
-        const html = htmlPage(nav, rendered, title, undefined, liveMode);
+        const html = htmlPage(nav, rendered, title, undefined, liveMode, config);
         return new Response(html, {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });

@@ -1,5 +1,6 @@
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
+import markdownItKatex from "@vscode/markdown-it-katex";
 
 const md = new MarkdownIt({
   html: true,
@@ -12,6 +13,8 @@ const md = new MarkdownIt({
     return `<pre class="hljs"><code>${md.utils.escapeHtml(str)}</code></pre>`;
   },
 });
+
+md.use(markdownItKatex, { throwOnError: false });
 
 // Custom rule: treat :::lang ... ::: as executable code blocks with a Run button
 md.block.ruler.before("fence", "exec_fence", (state, startLine, endLine, silent) => {
