@@ -13,9 +13,7 @@ const md = new MarkdownIt({
   },
 });
 
-// Custom rule: treat :::lang ... ::: as executable code blocks (for now, render like normal code with a marker)
-const defaultFence = md.renderer.rules.fence!;
-
+// Custom rule: treat :::lang ... ::: as executable code blocks with a Run button
 md.block.ruler.before("fence", "exec_fence", (state, startLine, endLine, silent) => {
   const pos = state.bMarks[startLine] + state.tShift[startLine];
   const max = state.eMarks[startLine];
@@ -71,6 +69,21 @@ md.renderer.rules.exec_fence = (tokens, idx) => {
     <script type="text/plain" data-source="${id}">${encoded}</script>
     <div class="exec-output" data-output="${id}"></div>
   </div>`;
+};
+
+// Rewrite .md links to rendered paths (e.g., ./intro.md -> ./intro, ../notes/lecture-1.md -> ../notes/lecture-1)
+const defaultLinkOpen = md.renderer.rules.link_open || ((tokens: any, idx: any, options: any, _env: any, self: any) => self.renderToken(tokens, idx, options));
+
+md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+  const hrefIndex = tokens[idx].attrIndex("href");
+  if (hrefIndex >= 0) {
+    const href = tokens[idx].attrs![hrefIndex][1];
+    // Only rewrite relative .md links, not external URLs
+    if (href.endsWith(".md") && !href.startsWith("http://") && !href.startsWith("https://")) {
+      tokens[idx].attrs![hrefIndex][1] = href.replace(/\.md$/, "");
+    }
+  }
+  return defaultLinkOpen(tokens, idx, options, env, self);
 };
 
 export function renderMarkdown(source: string): string {

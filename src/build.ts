@@ -1,14 +1,28 @@
-import { join, relative, dirname } from "path";
+import { join, dirname } from "path";
 import { readFile, mkdir, writeFile } from "fs/promises";
 import { renderMarkdown } from "./markdown";
 import { buildNavTree, renderNav, type NavNode } from "./nav";
 import { htmlPage } from "./template";
 import { findFirstFile } from "./server";
+import { extractTitle } from "./utils";
 
-export async function build(contentDir: string, outDir: string) {
+export type Platform = "github" | "vercel" | "netlify" | null;
+
+export interface BuildOptions {
+  contentDir: string;
+  outDir: string;
+  platform: Platform;
+  basePath?: string;
+}
+
+export async function build(options: BuildOptions) {
+  const { contentDir, outDir, platform, basePath } = options;
+
   console.log(`Building static site...`);
-  console.log(`  Content: ${contentDir}`);
-  console.log(`  Output:  ${outDir}`);
+  console.log(`  Content:  ${contentDir}`);
+  console.log(`  Output:   ${outDir}`);
+  if (platform) console.log(`  Platform: ${platform}`);
+  if (basePath) console.log(`  Base path: ${basePath}`);
 
   const tree = await buildNavTree(contentDir);
   const pages = collectPages(tree);
@@ -22,29 +36,115 @@ export async function build(contentDir: string, outDir: string) {
 
   for (const page of pages) {
     const mdPath = join(contentDir, page.path + ".md");
-    const source = await readFile(mdPath, "utf-8");
-    const rendered = renderMarkdown(source);
-    const nav = renderNav(tree, page.path);
 
-    const titleMatch = source.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1] : page.name;
+    try {
+      const source = await readFile(mdPath, "utf-8");
+      const rendered = renderMarkdown(source);
+      const nav = renderNav(tree, page.path);
+      const title = extractTitle(source, page.name);
 
-    const html = htmlPage(nav, rendered, title);
+      const html = htmlPage(nav, rendered, title, basePath);
 
-    const outPath = join(outDir, page.path, "index.html");
-    await mkdir(dirname(outPath), { recursive: true });
-    await writeFile(outPath, html);
-    console.log(`  ${page.path}/index.html`);
+      const outPath = join(outDir, page.path, "index.html");
+      await mkdir(dirname(outPath), { recursive: true });
+      await writeFile(outPath, html);
+      console.log(`  ${page.path}/index.html`);
+    } catch (err) {
+      console.error(`  Error building ${page.path}:`, err);
+    }
   }
 
   // Index redirect
   if (firstPage) {
-    const indexHtml = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${firstPage}"></head></html>`;
+    const base = basePath?.replace(/\/$/, "") ?? "";
+    const redirectUrl = base + firstPage;
+    const indexHtml = `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=${redirectUrl}"></head></html>`;
     await writeFile(join(outDir, "index.html"), indexHtml);
     console.log(`  index.html -> ${firstPage}`);
   }
 
+  // Platform-specific files
+  if (platform) {
+    await writePlatformFiles(outDir, platform, basePath);
+  }
+
   console.log(`\nBuilt ${pages.length} pages.`);
+}
+
+async function writePlatformFiles(outDir: string, platform: Platform, basePath?: string) {
+  switch (platform) {
+    case "github": {
+      // .nojekyll prevents GitHub Pages from processing with Jekyll
+      await writeFile(join(outDir, ".nojekyll"), "");
+      console.log(`  .nojekyll`);
+
+      // Generate GitHub Actions workflow
+      const workflowDir = join(outDir, ".github", "workflows");
+      await mkdir(workflowDir, { recursive: true });
+      await writeFile(join(workflowDir, "deploy.yml"), githubActionsWorkflow());
+      console.log(`  .github/workflows/deploy.yml`);
+      break;
+    }
+    case "vercel": {
+      const config = {
+        buildCommand: "bunx explainr build vercel",
+        outputDirectory: "dist",
+      };
+      await writeFile(join(outDir, "vercel.json"), JSON.stringify(config, null, 2) + "\n");
+      console.log(`  vercel.json`);
+      break;
+    }
+    case "netlify": {
+      const toml = `[build]
+  command = "bunx explainr build netlify"
+  publish = "dist"
+`;
+      await writeFile(join(outDir, "netlify.toml"), toml);
+      console.log(`  netlify.toml`);
+      break;
+    }
+  }
+}
+
+function githubActionsWorkflow(): string {
+  return `name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+
+      - run: bun install
+
+      - run: bunx explainr build github
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+`;
 }
 
 function collectPages(nodes: NavNode[]): NavNode[] {
