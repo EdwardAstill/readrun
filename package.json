@@ -1,0 +1,24 @@
+{
+  "name": "explainr",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "explainr": "src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun --hot src/cli.ts dev",
+    "build": "bun src/cli.ts build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/markdown-it": "^14.1.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "github-markdown-css": "^5.9.0",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.1"
+  }
+}
