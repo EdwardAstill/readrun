@@ -191,9 +191,15 @@ function shortcutsOverlay(config: ExplainrConfig): string {
   </div>`;
 }
 
-export function htmlPage(nav: string, content: string, title: string, basePath?: string, liveMode = false, config: ExplainrConfig = defaultConfig): string {
+export interface EmbeddedFile {
+  name: string;
+  data: string; // base64
+}
+
+export function htmlPage(nav: string, content: string, title: string, basePath?: string, liveMode = false, config: ExplainrConfig = defaultConfig, embeddedFiles: EmbeddedFile[] = []): string {
   const baseTag = basePath ? `\n  <base href="${escape(basePath)}">` : "";
   const configJson = JSON.stringify(config.shortcuts);
+  const filesJson = JSON.stringify(embeddedFiles);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -205,6 +211,7 @@ export function htmlPage(nav: string, content: string, title: string, basePath?:
 </head>
 <body${liveMode ? ' data-live="true"' : ''}>
   <script id="explainr-shortcuts" type="application/json">${configJson}</script>
+  <script id="explainr-files" type="application/json">${filesJson}</script>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-title">explainr</div>
     ${nav}

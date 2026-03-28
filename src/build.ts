@@ -1,8 +1,8 @@
 import { join, dirname } from "path";
-import { readFile, mkdir, writeFile } from "fs/promises";
+import { readFile, readdir, mkdir, writeFile } from "fs/promises";
 import { renderMarkdown } from "./markdown";
 import { buildNavTree, renderNav, type NavNode } from "./nav";
-import { htmlPage } from "./template";
+import { htmlPage, type EmbeddedFile } from "./template";
 import { extractTitle, findFirstFile } from "./utils";
 import { loadConfig } from "./config";
 
@@ -27,6 +27,7 @@ export async function build(options: BuildOptions) {
   const config = await loadConfig(contentDir);
   const tree = await buildNavTree(contentDir);
   const pages = collectPages(tree);
+  const embeddedFiles = await loadEmbeddedFiles(contentDir);
 
   if (pages.length === 0) {
     console.log("No .md files found.");
@@ -44,7 +45,7 @@ export async function build(options: BuildOptions) {
       const nav = renderNav(tree, page.path);
       const title = extractTitle(source, page.name);
 
-      const html = htmlPage(nav, rendered, title, basePath, false, config);
+      const html = htmlPage(nav, rendered, title, basePath, false, config, embeddedFiles);
 
       const outPath = join(outDir, page.path, "index.html");
       await mkdir(dirname(outPath), { recursive: true });
@@ -70,6 +71,24 @@ export async function build(options: BuildOptions) {
   }
 
   console.log(`\nBuilt ${pages.length} pages.`);
+}
+
+async function loadEmbeddedFiles(contentDir: string): Promise<EmbeddedFile[]> {
+  const filesDir = join(contentDir, ".explainr", "files");
+  try {
+    const entries = await readdir(filesDir);
+    const files: EmbeddedFile[] = [];
+    for (const name of entries) {
+      const content = await readFile(join(filesDir, name));
+      files.push({ name, data: content.toString("base64") });
+    }
+    if (files.length > 0) {
+      console.log(`  Embedded ${files.length} file(s) from .explainr/files/`);
+    }
+    return files;
+  } catch {
+    return [];
+  }
 }
 
 async function writePlatformFiles(outDir: string, platform: Platform, basePath?: string) {

@@ -2,7 +2,7 @@ import { join, resolve, normalize } from "path";
 import { readFile, stat, mkdir, readdir, writeFile, unlink } from "fs/promises";
 import { renderMarkdown } from "./markdown";
 import { buildNavTree, renderNav } from "./nav";
-import { htmlPage } from "./template";
+import { htmlPage, type EmbeddedFile } from "./template";
 import { extractTitle, findFirstFile } from "./utils";
 import { loadConfig } from "./config";
 
@@ -115,6 +115,23 @@ function detectImports(code: string): string[] {
     packages.add(pkg);
   }
   return [...packages];
+}
+
+async function loadEmbeddedFiles(filesDir: string): Promise<EmbeddedFile[]> {
+  try {
+    const entries = await readdir(filesDir);
+    const files: EmbeddedFile[] = [];
+    for (const name of entries) {
+      const s = await stat(join(filesDir, name)).catch(() => null);
+      if (s && s.isFile()) {
+        const content = await readFile(join(filesDir, name));
+        files.push({ name, data: Buffer.from(content).toString("base64") });
+      }
+    }
+    return files;
+  } catch {
+    return [];
+  }
 }
 
 export async function startServer(contentDir: string, port: number, liveMode = false) {
@@ -286,7 +303,8 @@ export async function startServer(contentDir: string, port: number, liveMode = f
         const nav = renderNav(tree, pathname);
         const title = extractTitle(source, pathname.split("/").pop() || "explainr");
 
-        const html = htmlPage(nav, rendered, title, undefined, liveMode, config);
+        const embeddedFiles = liveMode ? [] : await loadEmbeddedFiles(filesDir);
+        const html = htmlPage(nav, rendered, title, undefined, liveMode, config, embeddedFiles);
         return new Response(html, {
           headers: { "Content-Type": "text/html; charset=utf-8" },
         });

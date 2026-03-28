@@ -97,7 +97,7 @@ Options:
   const baseFlagIndex = args.indexOf("--base");
   const basePath = baseFlagIndex !== -1 ? args[baseFlagIndex + 1] : undefined;
   const filteredArgs = args.filter(
-    (a, i) => a !== "-t" && a !== "--live" && a !== "--guide" && a !== "--base" && i !== baseFlagIndex + 1
+    (a, i) => a !== "-t" && a !== "--live" && a !== "--guide" && a !== "--base" && (baseFlagIndex === -1 || i !== baseFlagIndex + 1)
   );
   const command = guideMode ? "dev" : (filteredArgs[0] ?? "dev");
 

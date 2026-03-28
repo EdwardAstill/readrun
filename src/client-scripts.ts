@@ -19,6 +19,19 @@ export const executionScript = `
           script.onerror = reject;
         });
         pyodide = await globalThis.loadPyodide();
+
+        // Preload embedded files into Pyodide's virtual filesystem
+        const filesEl = document.getElementById("explainr-files");
+        if (filesEl) {
+          try {
+            const files = JSON.parse(filesEl.textContent);
+            for (const f of files) {
+              const bytes = Uint8Array.from(atob(f.data), c => c.charCodeAt(0));
+              pyodide.FS.writeFile(f.name, bytes);
+            }
+          } catch {}
+        }
+
         return pyodide;
       })();
       return pyodideLoading;
