@@ -18,8 +18,10 @@ async function buildTree(dir: string, root: string): Promise<NavNode[]> {
   const nodes: NavNode[] = [];
 
   // Sort: directories first, then files, alphabetical within each group
+  const IGNORE_DIRS = new Set(["node_modules", "dist", "out", ".git", "__pycache__", ".venv", "venv"]);
+
   const sorted = entries
-    .filter((e) => !e.name.startsWith("."))
+    .filter((e) => !e.name.startsWith(".") && !(e.isDirectory() && IGNORE_DIRS.has(e.name)))
     .sort((a, b) => {
       if (a.isDirectory() && !b.isDirectory()) return -1;
       if (!a.isDirectory() && b.isDirectory()) return 1;

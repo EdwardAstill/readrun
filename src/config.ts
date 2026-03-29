@@ -19,7 +19,6 @@ export interface ShortcutConfig {
   search: string;
   showShortcuts: string;
   closeOverlay: string;
-  edit: string;
 }
 
 export interface ReadrunConfig {
@@ -43,7 +42,6 @@ export const defaultShortcuts: ShortcutConfig = {
   search: "/",
   showShortcuts: "?",
   closeOverlay: "Escape",
-  edit: "e",
 };
 
 export const defaultConfig: ReadrunConfig = {

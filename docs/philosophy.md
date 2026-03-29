@@ -8,7 +8,7 @@ Point readrun at any folder of `.md` files and it renders a navigable website wi
 
 ## Optional enhancements, not requirements
 
-readrun supports executable Python code blocks (`:::python`) and will eventually support file uploads. These are **optional layers** on top of plain Markdown — they exist for authors who want interactivity, but they are never required. A site built entirely from standard Markdown is a first-class use case, not a fallback.
+readrun supports executable Python code blocks (`:::python`) and file downloads from generated output. These are **optional layers** on top of plain Markdown — they exist for authors who want interactivity, but they are never required. A site built entirely from standard Markdown is a first-class use case, not a fallback.
 
 This matters because:
 

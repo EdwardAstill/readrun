@@ -1,13 +1,8 @@
 # Deployment
 
-## Two ways to serve
+## Previewing your site
 
-readrun has two serving modes:
-
-- **View** — serves your Markdown site in the browser. Code blocks run in-browser via [Pyodide](https://pyodide.org/) (WebAssembly). No access to your filesystem. Safe to share — behaves like a static site with interactive code.
-- **Live Server** — serves your site with native Python execution via [uv](https://docs.astral.sh/uv/). Code runs on your machine with full filesystem access, file uploads, and no Pyodide limitations. Intended for local authoring and development.
-
-Both are available from the interactive TUI — just run `readrun` or `rr`.
+Select **View** from the TUI to build and preview your site locally. readrun builds static HTML from your Markdown folder and serves it on a local port. Python code blocks run in the browser via [Pyodide](https://pyodide.org/) (WebAssembly).
 
 ## Usage
 
@@ -16,9 +11,7 @@ readrun    # launch interactive TUI
 rr         # shorthand
 ```
 
-The TUI lets you choose between View, Live Server, Build, Demo, and Update. Each mode prompts for content directory and port.
-
-If the chosen port is already in use, readrun automatically picks the next available one.
+The TUI lets you choose between View, Build, Demo, and Update. Each mode prompts for content directory and port.
 
 ## Building a static site
 
@@ -49,33 +42,19 @@ Generates a `vercel.json` with the build command and output directory configured
 
 Generates a `netlify.toml` with the build command and publish directory configured.
 
-## Live server mode
-
-Select **Live Server** from the TUI to run readrun with native Python execution. In this mode, Python code blocks run on your machine via [uv](https://docs.astral.sh/uv/) rather than in the browser via Pyodide. This removes Pyodide's limitations (no C extensions, memory constraints) and enables server-side features.
-
-Key details:
-
-- **Native Python via uv** -- code runs on your machine using `uv run`. Dependencies are auto-detected from import statements and installed on the fly — no `pip install` needed. For example, a code block with `import matplotlib` will automatically run via `uv run --with matplotlib`.
-- **PEP 723 override** -- for packages where the import name differs from the PyPI name (e.g. `import cv2` needs `opencv-python`), add [PEP 723](https://peps.python.org/pep-0723/) inline script metadata and it takes precedence over auto-detection:
-  ```python
-  # /// script
-  # dependencies = ["opencv-python"]
-  # ///
-  import cv2
-  ```
-- **Files panel** -- at the bottom of the sidebar, a files panel lists everything in `.readrun/files/` and lets readers upload new files.
-- **Pre-seeded data files** -- place CSVs, JSON, or other data in `.readrun/files/` before starting the server. Code blocks can read them with standard `open()` or `pandas.read_csv()`.
-- **Inline images** -- generated images (e.g., matplotlib plots) display inline below the code block that produced them.
-- **Requires uv and Python 3** -- [uv](https://docs.astral.sh/uv/) and Python 3 must be installed and available on your `PATH`.
-
-Live server mode is intended for local use or deployment on a server that supports persistent processes. It is not compatible with static hosts like GitHub Pages.
-
 ## Configuration
 
 readrun stores settings at `~/.config/readrun/settings.toml`. This file is created automatically on first run with default keyboard shortcuts. Edit it to customize keybinds.
 
-## How code execution works on static hosts
+## How code execution works
 
-GitHub Pages and similar platforms only serve static files — there is no server-side code execution. This is fine for readrun because Python code blocks run entirely in the browser via [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly). No server is involved.
+Python code blocks run entirely in the browser via [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly). No server is involved.
 
-The limitation: there is no way to access files from the user's computer for server-side processing. Any file handling must happen client-side within the browser's Pyodide runtime.
+- **Automatic package installation** — import statements are parsed and packages are installed via micropip automatically. Common packages (numpy, pandas, matplotlib, scipy) are available from Pyodide's distribution. Pure-Python PyPI packages also work.
+- **Preloading** — when a page loads, all code blocks are scanned for imports and packages begin installing in the background, so they're ready by the time you click Run.
+- **Shared session** — all code blocks on a page share a single Python session. Variables and imports persist between blocks, like cells in a Jupyter notebook.
+- **Matplotlib** — plots render inline automatically when `plt.show()` is called.
+- **File generation** — files created by scripts are detected in Pyodide's virtual filesystem and offered as downloads via Blob URLs.
+- **Embedded data** — files placed in `.readrun/files/` are embedded into the static build (base64 encoded) and preloaded into Pyodide's virtual filesystem, so Python code can read them with standard file I/O.
+
+See [limitations](./limitations.md) for known constraints.

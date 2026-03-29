@@ -2,10 +2,44 @@ export const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodid
 
 export const executionScript = `
   <script type="module">
-    const isLiveMode = document.body.dataset.live === "true";
-
     let pyodide = null;
     let pyodideLoading = null;
+    let packagesReady = null;
+
+    const IMAGE_EXTS = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "bmp"]);
+
+    const IMPORT_TO_PKG = {
+      PIL: "pillow", cv2: "opencv-python", sklearn: "scikit-learn",
+      skimage: "scikit-image", bs4: "beautifulsoup4", yaml: "pyyaml",
+      attr: "attrs", dotenv: "python-dotenv", gi: "pygobject",
+    };
+    const STDLIB = new Set([
+      "sys","os","io","re","math","json","csv","collections","itertools",
+      "functools","operator","string","datetime","time","random","hashlib",
+      "pathlib","typing","abc","copy","enum","dataclasses","decimal",
+      "fractions","statistics","textwrap","unicodedata","struct","codecs",
+      "pprint","logging","warnings","traceback","unittest","doctest",
+      "argparse","configparser","pickle","shelve","sqlite3","gzip","zipfile",
+      "tarfile","tempfile","shutil","glob","fnmatch","base64","binascii",
+      "html","xml","urllib","http","email","socket","ssl","select",
+      "threading","multiprocessing","subprocess","signal","contextlib",
+      "weakref","array","queue","heapq","bisect","ast","dis","inspect",
+      "importlib","pkgutil","platform","sysconfig","gc","ctypes",
+      "calendar","locale","gettext","numbers",
+    ]);
+
+    function parseImports(code) {
+      const pkgs = new Set();
+      const importRe = /^(?:import|from)\\s+(\\w+)/gm;
+      let m;
+      while ((m = importRe.exec(code)) !== null) {
+        const mod = m[1];
+        if (!STDLIB.has(mod)) {
+          pkgs.add(IMPORT_TO_PKG[mod] || mod);
+        }
+      }
+      return [...pkgs];
+    }
 
     async function loadPyodideRuntime() {
       if (pyodide) return pyodide;
@@ -37,34 +71,112 @@ export const executionScript = `
       return pyodideLoading;
     }
 
-    async function runLive(code, btn, outputEl) {
-      btn.disabled = true;
-      btn.textContent = "Running...";
-      outputEl.innerHTML = "";
-
-      try {
-        const res = await fetch("/api/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-        });
-        const data = await res.json();
-
-        let html = "";
-        if (data.stdout) html += \`<span class="exec-stdout">\${escapeHtml(data.stdout)}</span>\`;
-        if (data.stderr) html += \`<span class="exec-stderr">\${escapeHtml(data.stderr)}</span>\`;
-        if (data.images && data.images.length > 0) {
-          for (const img of data.images) {
-            html += \`<img src="data:\${img.mime};base64,\${img.data}" alt="\${escapeHtml(img.name)}">\`;
-          }
-        }
-        outputEl.innerHTML = html || \`<span class="exec-stdout" style="color: var(--color-text-muted)">(no output)</span>\`;
-      } catch (err) {
-        outputEl.innerHTML = \`<span class="exec-stderr">Error: \${escapeHtml(err.message)}</span>\`;
+    async function installPackages(pkgs) {
+      if (pkgs.length === 0) return;
+      const py = await loadPyodideRuntime();
+      await py.loadPackage("micropip");
+      const micropip = py.pyimport("micropip");
+      for (const pkg of pkgs) {
+        try { await micropip.install(pkg); } catch {}
       }
+      // Set up matplotlib if loaded
+      if (pkgs.includes("matplotlib")) {
+        py.runPython(\`
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as _plt
+_readrun_figures = []
+def _readrun_show(*a, **kw):
+    import io as _io, base64 as _b64
+    for _num in _plt.get_fignums():
+        _fig = _plt.figure(_num)
+        _buf = _io.BytesIO()
+        _fig.savefig(_buf, format="png", dpi=150, bbox_inches="tight")
+        _buf.seek(0)
+        _readrun_figures.append(_b64.b64encode(_buf.read()).decode())
+    _plt.close("all")
+_plt.show = _readrun_show
+\`);
+      }
+    }
 
-      btn.disabled = false;
-      btn.textContent = "Run";
+    // Scan all code blocks on this page and start preloading
+    function scanPageImports() {
+      const allPkgs = new Set();
+      document.querySelectorAll('script[data-source]').forEach(el => {
+        try {
+          const code = atob(el.textContent);
+          for (const pkg of parseImports(code)) allPkgs.add(pkg);
+        } catch {}
+      });
+      return [...allPkgs];
+    }
+
+    // Start preloading immediately — Pyodide + packages load in background
+    const pagePackages = scanPageImports();
+    if (pagePackages.length > 0) {
+      packagesReady = installPackages(pagePackages);
+    }
+
+    function snapshotFS(py) {
+      try {
+        return new Set(py.FS.readdir("/home/pyodide").filter(f => f !== "." && f !== ".."));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function detectNewFiles(py, before) {
+      try {
+        const after = py.FS.readdir("/home/pyodide").filter(f => f !== "." && f !== "..");
+        return after.filter(f => !before.has(f));
+      } catch {
+        return [];
+      }
+    }
+
+    function renderFileDownloads(py, newFiles, outputEl) {
+      for (const file of newFiles) {
+        try {
+          const data = py.FS.readFile("/home/pyodide/" + file);
+          const blob = new Blob([data]);
+          const url = URL.createObjectURL(blob);
+          const ext = file.split(".").pop().toLowerCase();
+
+          if (IMAGE_EXTS.has(ext)) {
+            const img = document.createElement("img");
+            img.src = url;
+            img.alt = file;
+            img.style.maxWidth = "100%";
+            img.style.marginTop = "8px";
+            outputEl.appendChild(img);
+          }
+
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = file;
+          link.textContent = "\\u2B07 " + file;
+          link.style.cssText = "display:inline-block;margin:4px 8px 0 0;font-family:var(--font-mono);font-size:12px;color:var(--color-link);";
+          outputEl.appendChild(link);
+        } catch {}
+      }
+    }
+
+    function renderFigures(py, outputEl) {
+      try {
+        const figList = py.runPython("_readrun_figures if '_readrun_figures' in dir() else []");
+        const figures = figList.toJs ? figList.toJs() : figList;
+        if (!figures || !figures.length) return;
+        for (const b64 of figures) {
+          const img = document.createElement("img");
+          img.src = "data:image/png;base64," + b64;
+          img.style.maxWidth = "100%";
+          img.style.marginTop = "8px";
+          outputEl.appendChild(img);
+        }
+        // Clear for next run
+        py.runPython("_readrun_figures.clear()");
+      } catch {}
     }
 
     async function runPyodide(code, btn, outputEl) {
@@ -73,8 +185,24 @@ export const executionScript = `
       outputEl.innerHTML = "";
 
       try {
+        // Wait for preloading if in progress
+        if (packagesReady) {
+          btn.textContent = "Installing packages...";
+          await packagesReady;
+        }
+
         const py = await loadPyodideRuntime();
+
+        // Install any packages not caught by the page-level scan
+        const pkgs = parseImports(code);
+        if (pkgs.length > 0 && !packagesReady) {
+          btn.textContent = "Installing packages...";
+          await installPackages(pkgs);
+        }
+
         btn.textContent = "Running...";
+
+        const fsBefore = snapshotFS(py);
 
         py.runPython(\`
 import sys, io
@@ -94,6 +222,13 @@ sys.stderr = io.StringIO()
             html += \`<span class="exec-stdout">\${escapeHtml(String(result))}</span>\`;
           }
           outputEl.innerHTML = html || \`<span class="exec-stdout" style="color: var(--color-text-muted)">(no output)</span>\`;
+
+          // Render matplotlib figures inline
+          renderFigures(py, outputEl);
+
+          // Check for new files created by the script
+          const newFiles = detectNewFiles(py, fsBefore);
+          if (newFiles.length > 0) renderFileDownloads(py, newFiles, outputEl);
         } catch (pyErr) {
           const stderr = py.runPython("sys.stderr.getvalue()");
           outputEl.innerHTML = \`<span class="exec-stderr">\${escapeHtml(stderr || pyErr.message)}</span>\`;
@@ -145,8 +280,6 @@ sys.stderr = sys.__stderr__
 
       if (lang === "html") {
         runHtml(code, btn, outputEl);
-      } else if (isLiveMode) {
-        await runLive(code, btn, outputEl);
       } else {
         await runPyodide(code, btn, outputEl);
       }
@@ -190,6 +323,12 @@ export const settingsScript = `
     const FONT_SIZES = ["small", "medium", "large"];
     const fontSizeMap = { small: "14px", medium: "16px", large: "18px" };
     const defaults = { fontSize: "medium", contentWidth: 880, showSidebar: true, theme: "light", focusMode: false };
+
+    function escapeHtml(s) {
+      const d = document.createElement("div");
+      d.textContent = s;
+      return d.innerHTML;
+    }
 
     function loadSettings() {
       try {
@@ -459,8 +598,8 @@ export const settingsScript = `
     const sidebarNav = sidebar ? sidebar.querySelector(".sidebar-nav") : null;
     const mainContent = document.getElementById("main-content");
     let savedNavHtml = sidebarNav ? sidebarNav.outerHTML : "";
+    let savedMainHtml = mainContent ? mainContent.innerHTML : "";
     let activeTab = localStorage.getItem(TAB_KEY) || "content";
-    let currentResourceFile = null;
 
     function setActiveTab(tab) {
       activeTab = tab;
@@ -472,8 +611,12 @@ export const settingsScript = `
 
     async function loadResourceTab(tab) {
       if (tab === "content") {
-        if (sidebarNav && savedNavHtml) {
-          sidebarNav.outerHTML = savedNavHtml;
+        const currentNav = sidebar.querySelector(".sidebar-nav");
+        if (currentNav && savedNavHtml) {
+          currentNav.outerHTML = savedNavHtml;
+          if (mainContent && savedMainHtml) {
+            mainContent.innerHTML = savedMainHtml;
+          }
         } else {
           window.location.reload();
         }
@@ -502,7 +645,6 @@ export const settingsScript = `
 
     async function previewResource(tab, fileName) {
       if (!mainContent) return;
-      currentResourceFile = { tab, fileName };
       const url = "/api/resources/" + encodeURIComponent(tab) + "/" + encodeURIComponent(fileName);
 
       if (tab === "images") {
@@ -669,119 +811,7 @@ export const settingsScript = `
       const action = item.dataset.action;
       if (action === "settings") panel.classList.toggle("open");
       if (action === "search") openSearchBar();
-      if (action === "edit") enterEditMode();
     });
-
-    // --- Edit mode (live mode only) ---
-    const editorContainer = document.getElementById("editor-container");
-    const editorArea = document.getElementById("editor-area");
-    const editorPath = document.getElementById("editor-path");
-    const editorSave = document.getElementById("editor-save");
-    const editorCancel = document.getElementById("editor-cancel");
-    let cmView = null;
-    let cmLoaded = false;
-    let editingPath = null;
-
-    async function loadCodeMirror() {
-      if (cmLoaded) return;
-      const [
-        { EditorView, basicSetup },
-        { EditorState },
-        { markdown: markdownLang },
-        { python },
-        { oneDark }
-      ] = await Promise.all([
-        import("https://esm.sh/@codemirror/basic-setup@0.20.0"),
-        import("https://esm.sh/@codemirror/state@6.5.2"),
-        import("https://esm.sh/@codemirror/lang-markdown@6.3.2"),
-        import("https://esm.sh/@codemirror/lang-python@6.1.7"),
-        import("https://esm.sh/@codemirror/theme-one-dark@6.1.2"),
-      ]);
-      window._cm = { EditorView, EditorState, basicSetup, markdownLang, python, oneDark };
-      cmLoaded = true;
-    }
-
-    function getLangExtension(path) {
-      if (!window._cm) return null;
-      if (path.endsWith(".md")) return window._cm.markdownLang();
-      if (path.endsWith(".py")) return window._cm.python();
-      return null;
-    }
-
-    async function enterEditMode(path) {
-      if (!isLiveMode || !editorContainer) return;
-
-      if (!path) {
-        if (currentResourceFile) {
-          path = ".readrun/" + currentResourceFile.tab + "/" + currentResourceFile.fileName;
-        } else {
-          const urlPath = window.location.pathname.replace(/^\\//, "");
-          path = urlPath + ".md";
-        }
-      }
-
-      editingPath = path;
-      editorPath.textContent = "editing: " + path;
-
-      try {
-        await loadCodeMirror();
-        const res = await fetch("/api/source/" + encodeURIComponent(path));
-        if (!res.ok) throw new Error("Failed to load file");
-        const content = await res.text();
-
-        if (cmView) { cmView.destroy(); cmView = null; }
-
-        const cm = window._cm;
-        const extensions = [cm.basicSetup];
-        const isDark = document.documentElement.dataset.theme && document.documentElement.dataset.theme !== "light";
-        if (isDark) extensions.push(cm.oneDark);
-        const langExt = getLangExtension(path);
-        if (langExt) extensions.push(langExt);
-
-        cmView = new cm.EditorView({
-          state: cm.EditorState.create({ doc: content, extensions }),
-          parent: editorArea,
-        });
-
-        editorContainer.classList.add("open");
-      } catch (err) {
-        editorPath.textContent = "Error: " + err.message;
-      }
-    }
-
-    async function saveEdit() {
-      if (!cmView || !editingPath) return;
-      editorSave.textContent = "Saving...";
-      editorSave.disabled = true;
-      try {
-        const content = cmView.state.doc.toString();
-        const res = await fetch("/api/save", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: editingPath, content }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          exitEditMode();
-          window.location.reload();
-        } else {
-          editorPath.textContent = "Save failed: " + (data.error || "unknown error");
-        }
-      } catch (err) {
-        editorPath.textContent = "Save failed: " + err.message;
-      }
-      editorSave.textContent = "Save";
-      editorSave.disabled = false;
-    }
-
-    function exitEditMode() {
-      editorContainer.classList.remove("open");
-      if (cmView) { cmView.destroy(); cmView = null; }
-      editingPath = null;
-    }
-
-    if (editorSave) editorSave.addEventListener("click", saveEdit);
-    if (editorCancel) editorCancel.addEventListener("click", exitEditMode);
 
     // --- Keyboard shortcuts (configurable via ~/.config/readrun/settings.toml) ---
     const shortcuts = JSON.parse(document.getElementById("readrun-shortcuts").textContent);
@@ -827,12 +857,10 @@ export const settingsScript = `
       fontIncrease:   () => cycleFontSize(1),
       fontDecrease:   () => cycleFontSize(-1),
       search:         () => openSearchBar(),
-      edit:           () => enterEditMode(),
       showShortcuts:  () => openOverlay("shortcuts-overlay"),
       closeOverlay:   () => {
         if (isAnyOverlayOpen()) { closeAllOverlays(); return; }
         if (searchBar.classList.contains("open")) { closeSearchBar(); return; }
-        if (editorContainer && editorContainer.classList.contains("open")) { exitEditMode(); return; }
         if (panel.classList.contains("open")) { panel.classList.remove("open"); return; }
         if (settings.focusMode) { toggleFocusMode(); return; }
         panel.classList.toggle("open");

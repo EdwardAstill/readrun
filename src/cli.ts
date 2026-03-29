@@ -34,15 +34,14 @@ if (result.command === "update") {
   process.exit(0);
 }
 
-const demoDir = resolve(import.meta.dirname, "..", result.testMode && result.liveMode ? "readrun-demo-live" : "readrun-demo");
+const demoDir = resolve(import.meta.dirname, "..", "readrun-demo");
 const contentDir = result.testMode ? demoDir : result.contentDir;
 
 switch (result.command) {
   case "dev": {
     const { startServer } = await import("./server");
     const port = result.port || 3001;
-    if (result.testMode) console.log(`Using built-in demo: ${demoDir}`);
-    await startServer(contentDir, port, result.liveMode || false);
+    await startServer({ contentDir, port });
     openBrowser(`http://localhost:${port}`);
     break;
   }

@@ -49,7 +49,7 @@ export async function build(options: BuildOptions) {
       const nav = renderNav(tree, page.path);
       const title = extractTitle(source, page.name);
 
-      const html = htmlPage(nav, rendered, title, basePath, false, config, embeddedFiles, toc);
+      const html = htmlPage(nav, rendered, title, basePath, config, embeddedFiles, toc);
 
       const outPath = join(outDir, page.path, "index.html");
       await mkdir(dirname(outPath), { recursive: true });

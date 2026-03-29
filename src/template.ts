@@ -169,7 +169,6 @@ function shortcutsOverlay(config: ReadrunConfig): string {
           <div class="shortcuts-grid__category">Actions</div>
           ${row("Search", s.search)}
           ${row("Show shortcuts", s.showShortcuts)}
-          ${row("Edit file", s.edit)}
           ${row("Close overlay", s.closeOverlay)}
         </div>
       </div>
@@ -204,12 +203,12 @@ function renderTocNodes(nodes: TocNode[]): string {
   let html = "<ul>";
   for (const node of nodes) {
     if (node.children.length > 0) {
-      html += `<li><details open>
+      html += `<li class="nav-dir"><details open>
         <summary><a class="toc-link" href="#${escape(node.entry.id)}">${escape(node.entry.text)}</a></summary>
         ${renderTocNodes(node.children)}
       </details></li>`;
     } else {
-      html += `<li><a class="toc-link" href="#${escape(node.entry.id)}">${escape(node.entry.text)}</a></li>`;
+      html += `<li class="nav-file"><a class="toc-link" href="#${escape(node.entry.id)}">${escape(node.entry.text)}</a></li>`;
     }
   }
   html += "</ul>";
@@ -221,7 +220,7 @@ function tocSidebar(toc: TocEntry[]): string {
   const tree = buildTocTree(toc);
   return `
   <aside class="toc-sidebar" id="toc-sidebar">
-    <nav class="nav-tree">
+    <nav class="sidebar-nav nav-tree">
       ${renderTocNodes(tree)}
     </nav>
   </aside>`;
@@ -232,7 +231,7 @@ export interface EmbeddedFile {
   data: string; // base64
 }
 
-export function htmlPage(nav: string, content: string, title: string, basePath?: string, liveMode = false, config: ReadrunConfig = defaultConfig, embeddedFiles: EmbeddedFile[] = [], toc: TocEntry[] = []): string {
+export function htmlPage(nav: string, content: string, title: string, basePath?: string, config: ReadrunConfig = defaultConfig, embeddedFiles: EmbeddedFile[] = [], toc: TocEntry[] = []): string {
   const baseTag = basePath ? `\n  <base href="${escape(basePath)}">` : "";
   const configJson = JSON.stringify(config.shortcuts);
   const filesJson = JSON.stringify(embeddedFiles);
@@ -245,7 +244,7 @@ export function htmlPage(nav: string, content: string, title: string, basePath?:
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.43/dist/katex.min.css" crossorigin="anonymous">
   <style>${styles}</style>
 </head>
-<body${liveMode ? ' data-live="true"' : ''}>
+<body>
   <script id="readrun-shortcuts" type="application/json">${configJson}</script>
   <script id="readrun-files" type="application/json">${filesJson}</script>
   <aside class="sidebar" id="sidebar">
@@ -253,16 +252,6 @@ export function htmlPage(nav: string, content: string, title: string, basePath?:
 ${resourceSwitcherHtml()}
   </aside>
   <div class="resize-handle resize-handle--sidebar" id="resize-sidebar"></div>
-  <div class="editor-container" id="editor-container">
-    <div class="editor-toolbar" id="editor-toolbar">
-      <span class="editor-toolbar__path" id="editor-path"></span>
-      <div class="editor-toolbar__actions">
-        <button class="editor-toolbar__btn editor-toolbar__btn--save" id="editor-save">Save</button>
-        <button class="editor-toolbar__btn editor-toolbar__btn--cancel" id="editor-cancel">Cancel</button>
-      </div>
-    </div>
-    <div class="editor-area" id="editor-area"></div>
-  </div>
   <main class="main" id="main-content">
     <div class="search-bar" id="search-bar">
       <input class="search-bar__input" id="search-input" type="text" placeholder="Search this page...">
@@ -283,8 +272,6 @@ ${themePickerOverlayHtml}
   <div class="context-menu" id="context-menu">
     <div class="context-menu__item" data-action="search">Search</div>
     <div class="context-menu__sep"></div>
-    <div class="context-menu__item context-menu__item--live-only" data-action="edit">Edit</div>
-    <div class="context-menu__sep context-menu__item--live-only"></div>
     <div class="context-menu__item" data-action="settings">Settings</div>
   </div>
   <div class="lightbox" id="lightbox"><img id="lightbox-img" alt=""></div>

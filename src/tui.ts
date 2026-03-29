@@ -6,10 +6,8 @@ const BOLD = `${ESC}1m`;
 const DIM = `${ESC}2m`;
 const RESET = `${ESC}0m`;
 const CYAN = `${ESC}36m`;
-const GREEN = `${ESC}32m`;
-const YELLOW = `${ESC}33m`;
 const MAGENTA = `${ESC}35m`;
-const WHITE = `${ESC}37m`;
+const YELLOW = `${ESC}33m`;
 const CLEAR_LINE = `${ESC}2K`;
 const HIDE_CURSOR = `${ESC}?25l`;
 const SHOW_CURSOR = `${ESC}?25h`;
@@ -86,7 +84,6 @@ async function selectMenu(title: string, options: MenuOption[], startRow: number
         write(`${DIM}    ${options[i].label}${RESET}  ${DIM}${options[i].description}${RESET}`);
       }
     }
-    // Navigation hint
     moveTo(startRow + options.length + 1, 3);
     write(CLEAR_LINE);
     write(`${DIM}  ↑/↓ navigate  ⏎ select  q quit${RESET}`);
@@ -98,7 +95,6 @@ async function selectMenu(title: string, options: MenuOption[], startRow: number
     const key = await readKey();
 
     if (key === "\x03" || key === "q") {
-      // Ctrl+C or q
       return "quit";
     }
 
@@ -106,12 +102,9 @@ async function selectMenu(title: string, options: MenuOption[], startRow: number
       return options[selected].value;
     }
 
-    // Arrow keys
     if (key === "\x1b[A" || key === "k") {
-      // Up
       selected = (selected - 1 + options.length) % options.length;
     } else if (key === "\x1b[B" || key === "j") {
-      // Down
       selected = (selected + 1) % options.length;
     }
 
@@ -141,7 +134,6 @@ async function promptInput(label: string, defaultValue: string, row: number): Pr
     }
 
     if (key === "\x7f" || key === "\b") {
-      // Backspace
       if (value.length > 0) {
         value = value.slice(0, -1);
         write(`\b \b`);
@@ -149,45 +141,10 @@ async function promptInput(label: string, defaultValue: string, row: number): Pr
       continue;
     }
 
-    // Ignore control sequences
     if (key.charCodeAt(0) < 32 || key.startsWith("\x1b")) continue;
 
     value += key;
     write(key);
-  }
-}
-
-async function confirmPrompt(label: string, defaultYes: boolean, row: number): Promise<boolean | "quit"> {
-  const hint = defaultYes ? "Y/n" : "y/N";
-  moveTo(row, 3);
-  write(CLEAR_LINE);
-  write(`  ${BOLD}${label}${RESET} ${DIM}(${hint})${RESET}: `);
-  write(SHOW_CURSOR);
-
-  while (true) {
-    const key = await readKey();
-
-    if (key === "\x03") {
-      write(HIDE_CURSOR);
-      return "quit";
-    }
-
-    if (key === "\r" || key === "\n") {
-      write(HIDE_CURSOR);
-      return defaultYes;
-    }
-
-    if (key === "y" || key === "Y") {
-      write("yes");
-      write(HIDE_CURSOR);
-      return true;
-    }
-
-    if (key === "n" || key === "N") {
-      write("no");
-      write(HIDE_CURSOR);
-      return false;
-    }
   }
 }
 
@@ -197,7 +154,6 @@ export interface TuiResult {
   command: "dev" | "build" | "update" | "quit";
   contentDir: string;
   port?: number;
-  liveMode?: boolean;
   platform?: "github" | "vercel" | "netlify" | null;
   outDir?: string;
   basePath?: string;
@@ -212,15 +168,13 @@ export async function runTui(): Promise<TuiResult> {
   clearScreen();
   write(LOGO);
 
-  // Main menu
   moveTo(13, 3);
   write(`  ${BOLD}What would you like to do?${RESET}`);
 
   const mainChoice = await selectMenu("", [
-    { label: "🌐 View", description: "Serve your site in the browser (no file access)", value: "view" },
-    { label: "🖥  Live Server", description: "Dev server with native code execution + file uploads", value: "live" },
+    { label: "👁  View", description: "Preview your site locally", value: "view" },
     { label: "📦 Build", description: "Build a static site for deployment", value: "build" },
-    { label: "🧪 Demo", description: "Launch with built-in demo content + docs", value: "demo" },
+    { label: "🧪 Demo", description: "Preview the built-in demo", value: "demo" },
     { label: "🔄 Update", description: "Install/update dependencies", value: "update" },
   ], 15);
 
@@ -235,11 +189,7 @@ export async function runTui(): Promise<TuiResult> {
   }
 
   if (mainChoice === "view") {
-    return await devFlow(cwd, false);
-  }
-
-  if (mainChoice === "live") {
-    return await devFlow(cwd, true);
+    return await viewFlow(cwd);
   }
 
   if (mainChoice === "build") {
@@ -249,41 +199,15 @@ export async function runTui(): Promise<TuiResult> {
   return cleanup({ command: "quit", contentDir: cwd });
 }
 
-async function devFlow(cwd: string, liveMode: boolean): Promise<TuiResult> {
-  clearScreen();
-  write(LOGO);
-  moveTo(13, 3);
-  const title = liveMode ? `${BOLD}${GREEN}Live Server Setup${RESET}` : `${BOLD}${CYAN}View Setup${RESET}`;
-  write(`  ${title}`);
-
-  // Content directory
-  const contentDir = await promptInput("Content directory", cwd, 15);
-  if (contentDir === "quit") return cleanup({ command: "quit", contentDir: cwd });
-
-  // Port
-  const portStr = await promptInput("Port", "3001", 17);
-  if (portStr === "quit") return cleanup({ command: "quit", contentDir: cwd });
-  const port = Number(portStr) || 3001;
-
-  return cleanup({
-    command: "dev",
-    contentDir: resolve(contentDir),
-    port,
-    liveMode,
-  });
-}
-
 async function buildFlow(cwd: string): Promise<TuiResult> {
   clearScreen();
   write(LOGO);
   moveTo(13, 3);
   write(`  ${BOLD}${MAGENTA}Build Setup${RESET}`);
 
-  // Content directory
   const contentDir = await promptInput("Content directory", cwd, 15);
   if (contentDir === "quit") return cleanup({ command: "quit", contentDir: cwd });
 
-  // Platform selection
   moveTo(17, 3);
   write(`  ${BOLD}Target platform${RESET}`);
 
@@ -298,12 +222,10 @@ async function buildFlow(cwd: string): Promise<TuiResult> {
 
   const resolvedPlatform = platform === "none" ? null : platform as "github" | "vercel" | "netlify";
 
-  // Output directory
   const defaultOut = resolve(contentDir, "dist");
   const outDir = await promptInput("Output directory", defaultOut, 25);
   if (outDir === "quit") return cleanup({ command: "quit", contentDir: cwd });
 
-  // Base path (for GitHub Pages project sites)
   let basePath: string | undefined;
   if (resolvedPlatform === "github") {
     moveTo(27, 3);
@@ -322,24 +244,33 @@ async function buildFlow(cwd: string): Promise<TuiResult> {
   });
 }
 
+async function viewFlow(cwd: string): Promise<TuiResult> {
+  clearScreen();
+  write(LOGO);
+  moveTo(13, 3);
+  write(`  ${BOLD}${CYAN}View Site${RESET}`);
+
+  const contentDir = await promptInput("Content directory", cwd, 15);
+  if (contentDir === "quit") return cleanup({ command: "quit", contentDir: cwd });
+
+  const portStr = await promptInput("Port", "3001", 17);
+  if (portStr === "quit") return cleanup({ command: "quit", contentDir: cwd });
+  const port = Number(portStr) || 3001;
+
+  return cleanup({
+    command: "dev",
+    contentDir: resolve(contentDir),
+    port,
+  });
+}
+
 async function demoFlow(cwd: string): Promise<TuiResult> {
   clearScreen();
   write(LOGO);
   moveTo(13, 3);
-  write(`  ${BOLD}${YELLOW}Demo Mode${RESET}`);
+  write(`  ${BOLD}${YELLOW}Demo Preview${RESET}`);
 
-  moveTo(15, 3);
-  write(`  ${BOLD}Which demo?${RESET}`);
-
-  const demoChoice = await selectMenu("", [
-    { label: "Standard", description: "Basic demo with markdown examples", value: "standard" },
-    { label: "Live", description: "Demo with Python execution and file uploads", value: "live" },
-  ], 17);
-
-  if (demoChoice === "quit") return cleanup({ command: "quit", contentDir: cwd });
-
-  // Port
-  const portStr = await promptInput("Port", "3001", 21);
+  const portStr = await promptInput("Port", "3001", 15);
   if (portStr === "quit") return cleanup({ command: "quit", contentDir: cwd });
   const port = Number(portStr) || 3001;
 
@@ -347,7 +278,6 @@ async function demoFlow(cwd: string): Promise<TuiResult> {
     command: "dev",
     contentDir: cwd,
     port,
-    liveMode: demoChoice === "live",
     testMode: true,
   });
 }

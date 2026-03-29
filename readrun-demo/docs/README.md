@@ -6,7 +6,9 @@ readrun turns folders of Markdown into interactive websites. No config, no front
 
 **[Philosophy](./philosophy.md)** — the design principles behind readrun: markdown-first, optional enhancements, not a notebook.
 
-**[Deployment](./deployment.md)** — TUI usage, live server mode, static builds, and platform-specific deployment (GitHub Pages, Vercel, Netlify).
+**[Deployment](./deployment.md)** — TUI usage, static builds, and platform-specific deployment (GitHub Pages, Vercel, Netlify).
+
+**[Limitations](./limitations.md)** — known constraints: Pyodide limitations, package support, build behavior.
 
 **[Future Features](./future/README.md)** — planned improvements: client-side routing, frontmatter dependencies, and more.
 

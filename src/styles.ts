@@ -88,6 +88,14 @@ export const styles = `
 
     .nav-tree details[open] > summary::before { content: "\\2039"; transform: rotate(-90deg); }
 
+    /* Links inside summaries (TOC headings with children) — summary provides the padding */
+    .nav-tree details > summary > a {
+      padding: 0;
+      display: inline;
+      color: inherit;
+      font-weight: inherit;
+    }
+
     /* Sidebar-specific */
     .sidebar-nav > ul > li > ul { padding-left: 0; }
 
@@ -249,7 +257,7 @@ export const styles = `
     }
 
     .resource-switcher__item {
-      display: inline-block;
+      display: block;
       padding: 3px 12px;
       font-family: var(--font-mono);
       font-size: 12px;
@@ -264,71 +272,6 @@ export const styles = `
     .resource-switcher__item--active {
       background: var(--color-active-bg);
       color: var(--color-text);
-    }
-
-    /* Editor */
-    .editor-container {
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .editor-container.open {
-      display: flex;
-    }
-
-    .editor-container.open ~ .main,
-    .editor-container.open ~ .resize-handle--toc,
-    .editor-container.open ~ .toc-sidebar { display: none; }
-
-    .editor-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 12px;
-      background: var(--color-sidebar-bg);
-      border-bottom: 1px solid var(--color-border);
-      font-family: var(--font-mono);
-      font-size: 12px;
-    }
-
-    .editor-toolbar__path {
-      color: var(--color-text-muted);
-    }
-
-    .editor-toolbar__actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .editor-toolbar__btn {
-      background: none;
-      border: 1px solid var(--color-border);
-      padding: 3px 12px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      cursor: pointer;
-      color: var(--color-text-muted);
-    }
-
-    .editor-toolbar__btn:hover { border-color: var(--color-text-muted); color: var(--color-text); }
-
-    .editor-toolbar__btn--save { color: var(--color-link); border-color: var(--color-link); }
-    .editor-toolbar__btn--save:hover { background: var(--color-link); color: var(--color-bg); }
-
-    .editor-area {
-      flex: 1;
-      overflow: auto;
-    }
-
-    .editor-area .cm-editor {
-      height: 100%;
-    }
-
-    .editor-area .cm-editor .cm-scroller {
-      font-family: var(--font-mono);
-      font-size: 14px;
     }
 
     /* Search bar */
@@ -431,9 +374,6 @@ export const styles = `
       background: var(--color-border);
       margin: 2px 0;
     }
-
-    body:not([data-live="true"]) .context-menu__item--live-only { display: none; }
-    body:not([data-live="true"]) .context-menu__item--live-only + .context-menu__sep { display: none; }
 
     /* Themes */
     [data-theme="dark"] {

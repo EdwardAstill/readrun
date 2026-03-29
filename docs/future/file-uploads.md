@@ -1,22 +1,20 @@
 # File Uploads
 
-Corresponds to Phase 3 of the readrun vision.
-
 ## Goal
 
 Allow readers to upload their own data files (CSV, JSON, etc.) that executable code blocks can read and process. This turns a static document into a personal analysis tool — an author writes the analysis logic, and readers supply their own data.
 
-## Live server mode (implemented)
+## Current state
 
-In live server mode (select "Live Server" from the TUI), files are managed via a panel at the bottom of the sidebar:
+readrun is static-only — all Python execution happens in the browser via Pyodide. There is no server to receive uploads.
 
-- **Pre-seeded files** -- authors can place data files in `.readrun/files/` before starting the server. These appear in the files panel immediately (e.g. the live demo includes `sales_data.csv`).
-- **Upload** -- readers can add new files via the "+ Add file" button in the panel. Uploaded files are saved to `.readrun/files/`.
-- **File list** -- the panel shows all files with their sizes. Code blocks can read any listed file with standard `open()` or `pandas.read_csv()` calls.
+**Author-curated data** can be placed in `.readrun/files/` and is embedded into the static build. These files are preloaded into Pyodide's virtual filesystem so Python code can read them with standard file I/O.
 
-## Static mode (planned)
+**Generated files** — files created by Python scripts (e.g. matplotlib plots, CSVs) are detected in Pyodide's virtual filesystem after execution and offered as downloads via Blob URLs. Image files are also rendered inline.
 
-On static hosts (GitHub Pages, Netlify, Vercel), there is no server to receive uploads. File handling must happen client-side within Pyodide's in-browser filesystem:
+## Planned: client-side file uploads
+
+File handling must happen entirely client-side within Pyodide's in-browser filesystem:
 
 - Uploaded files would be loaded into Pyodide's virtual filesystem so Python code can read them with standard file I/O.
 - Files never leave the user's browser — no data is sent to a server.
