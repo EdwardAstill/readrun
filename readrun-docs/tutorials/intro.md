@@ -65,19 +65,26 @@ You can also keep code in separate files under `.readrun/scripts/` and reference
 
 The code is loaded from `.readrun/scripts/variables.py`, displayed on the page, and made runnable — exactly like an inline block. This keeps your markdown clean when scripts get longer.
 
-### HTML blocks
+### JSX blocks
 
-HTML is supported too — it renders in a sandboxed iframe that auto-resizes to fit the content. Inline or from a file:
+JSX blocks render directly in the page — no iframe, no run button. React and Tailwind are loaded automatically. Use the built-in `render()` helper to mount your component:
 
 ```
-:::html
-<p style="color: blue;">Hello!</p>
+:::jsx
+function App() {
+  return <h1 className="text-2xl font-bold">Hello!</h1>;
+}
+render(<App />);
 :::
 ```
 
+Reference a `.jsx` file from `.readrun/scripts/` the same way as any other file — it auto-renders on page load:
+
 ```
-:::greeting.html
+:::counter.jsx
 ```
+
+:::counter.jsx
 
 ### Images
 

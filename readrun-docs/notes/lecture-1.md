@@ -40,19 +40,9 @@ for key, value in student.items():
     print(f"  {key}: {value}")
 :::
 
-## HTML blocks
+The same data rendered as a card:
 
-You can also run HTML — it renders in a sandboxed iframe. This one is loaded from a file:
-
-:::greeting.html
-
-And inline HTML works too:
-
-:::html
-<div style="font-family: system-ui; padding: 16px;">
-  <p style="color: #1976D2; font-size: 18px; margin: 0;">This HTML was written inline in the markdown.</p>
-</div>
-:::
+:::student-card.jsx
 
 ## Regular code blocks
 

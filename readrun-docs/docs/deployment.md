@@ -101,25 +101,6 @@ Python code blocks run entirely in the browser via [Pyodide](https://pyodide.org
 - **File uploads** — `:::upload` directives render upload buttons that write files into Pyodide's virtual filesystem via the browser File API, making them available to Python code with standard file I/O
 - **Embedded data** — files placed in `.readrun/files/` are embedded into the static build (base64 encoded) and preloaded into Pyodide's virtual filesystem
 
-## How HTML blocks work
-
-`:::html` blocks render in a sandboxed iframe (`allow-scripts`) that auto-resizes to match content via `ResizeObserver` and `postMessage`. The iframe dynamically tracks content size — interactive elements that grow or shrink update the frame height automatically.
-
-JS library usage is auto-detected from the code and CDN scripts are injected automatically:
-
-| Library | Detection pattern | CDN |
-|---------|------------------|-----|
-| Plotly | `Plotly.` | plotly.js@2 |
-| D3 | `d3.` | d3@7 |
-| Chart.js | `new Chart`, `Chart.` | chart.js@4 |
-| Observable Plot | `Plot.` | @observablehq/plot@0.6 |
-| Three.js | `THREE` | three@0.170 |
-| p5.js | `p5` | p5@1 |
-| Leaflet | `L.map`, `L.tileLayer`, `Leaflet` | leaflet@1 (+ CSS) |
-| Mermaid | `mermaid` | mermaid@11 |
-
-No manual `<script>` or `<link>` tags needed — just use the library's API directly.
-
 ## User interface
 
 - **Settings panel** — press Escape to open. Adjust font size (small/medium/large), content width (500–1400px slider), theme, and sidebar visibility

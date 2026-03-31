@@ -43,4 +43,4 @@ No config files. No frontmatter. No special setup. Just Markdown.
 
 **[Philosophy](./docs/philosophy.md)** — the design principles behind readrun: markdown-first, optional enhancements, not a notebook.
 
-**[Future Features](./docs/future/README.md)** — planned improvements and roadmap.
+**[Roadmap](./docs/roadmap.md)** — planned improvements.

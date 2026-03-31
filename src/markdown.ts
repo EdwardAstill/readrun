@@ -99,6 +99,8 @@ md.block.ruler.before("fence", "exec_fence", (state, startLine, endLine, silent)
   if (nextLine >= endLine) return false;
   if (silent) return true;
 
+  if (lang !== "python" && lang !== "jsx") return false;
+
   const token = state.push("exec_fence", "code", 0);
   token.info = lang;
   token.meta = { hidden };
@@ -125,6 +127,13 @@ md.renderer.rules.exec_fence = (tokens, idx) => {
   }
   // Embed raw source in a hidden script tag for Pyodide to read
   const encoded = Buffer.from(rawCode).toString("base64");
+
+  // JSX blocks auto-render as seamless visualisations — no header, no code display
+  if (lang === "jsx") {
+    return `<div class="jsx-block" data-output="${id}" data-jsx-auto="${id}"></div>
+<script type="text/plain" data-source="${id}">${encoded}</script>`;
+  }
+
   const collapsedClass = hidden ? " exec-block--collapsed" : "";
   const toggleLabel = hidden ? "Show" : "Hide";
   return `<div class="exec-block${collapsedClass}" data-lang="${md.utils.escapeHtml(lang)}" data-block-id="${id}">
@@ -200,24 +209,7 @@ export function extractToc(source: string): TocEntry[] {
 
 const EXT_TO_LANG: Record<string, string> = {
   ".py": "python",
-  ".js": "javascript",
-  ".ts": "typescript",
-  ".rb": "ruby",
-  ".rs": "rust",
-  ".go": "go",
-  ".java": "java",
-  ".c": "c",
-  ".cpp": "cpp",
-  ".html": "html",
-  ".sh": "bash",
-  ".sql": "sql",
-  ".r": "r",
-  ".jl": "julia",
-  ".lua": "lua",
-  ".php": "php",
-  ".swift": "swift",
-  ".kt": "kotlin",
-  ".scala": "scala",
+  ".jsx": "jsx",
 };
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"]);

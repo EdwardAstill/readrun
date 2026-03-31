@@ -245,70 +245,67 @@ sys.stderr = sys.__stderr__
       btn.textContent = "Run";
     }
 
-    const RESIZE_SCRIPT = \`<script>
-(function(){
-  function send(){
-    var h = document.documentElement.scrollHeight;
-    parent.postMessage({type:"readrun-resize", height: h}, "*");
-  }
-  new ResizeObserver(send).observe(document.documentElement);
-  send();
-})();
-<\\/script>\`;
+    let jsxRuntimeLoading = null;
+    let jsxRuntime = null;
 
-    window.addEventListener("message", (e) => {
-      if (e.data && e.data.type === "readrun-resize" && typeof e.data.height === "number") {
-        const iframes = document.querySelectorAll("iframe[data-readrun-html]");
-        for (const iframe of iframes) {
-          if (iframe.contentWindow === e.source) {
-            iframe.style.height = Math.max(e.data.height, 20) + "px";
-            break;
-          }
-        }
-      }
-    });
-
-    const HTML_LIBS = [
-      { pattern: /\\bPlotly\\b/, url: "https://cdn.jsdelivr.net/npm/plotly.js@2/dist/plotly.min.js" },
-      { pattern: /\\bnew\\s+Chart\\b|\\bChart\\.|Chart\\.register/, url: "https://cdn.jsdelivr.net/npm/chart.js@4" },
-      { pattern: /\\bd3\\.[a-z]/, url: "https://cdn.jsdelivr.net/npm/d3@7" },
-      { pattern: /\\bPlot\\.[a-z]/, name: "observablePlot", url: "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6" },
-      { pattern: /\\bTHREE\\b/, url: "https://cdn.jsdelivr.net/npm/three@0.170/build/three.min.js" },
-      { pattern: /\\bp5\\b/, url: "https://cdn.jsdelivr.net/npm/p5@1/lib/p5.min.js" },
-      { pattern: /\\bLeaflet\\b|\\bL\\.map\\b|\\bL\\.tileLayer\\b/, url: "https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.js", css: "https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.css" },
-      { pattern: /\\bmermaid\\b/, url: "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js" },
-    ];
-
-    function detectHtmlLibs(code) {
-      const scripts = [];
-      const styles = [];
-      for (const lib of HTML_LIBS) {
-        if (lib.pattern.test(code)) {
-          scripts.push(lib.url);
-          if (lib.css) styles.push(lib.css);
-        }
-      }
-      return { scripts, styles };
+    async function loadJsxRuntime() {
+      if (jsxRuntime) return jsxRuntime;
+      if (jsxRuntimeLoading) return jsxRuntimeLoading;
+      jsxRuntimeLoading = (async () => {
+        const loadScript = (src) => new Promise((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = src;
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+        await loadScript("https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.development.js");
+        await loadScript("https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js");
+        // Disable Tailwind preflight so it doesn't reset readrun's base styles
+        const twCfg = document.createElement("script");
+        twCfg.textContent = "tailwind.config = { corePlugins: { preflight: false } }";
+        document.head.appendChild(twCfg);
+        await loadScript("https://cdn.tailwindcss.com");
+        jsxRuntime = { React: globalThis.React, ReactDOM: globalThis.ReactDOM, Babel: globalThis.Babel };
+        return jsxRuntime;
+      })();
+      return jsxRuntimeLoading;
     }
 
-    function runHtml(code, btn, outputEl) {
+    async function runJsx(code, btn, outputEl) {
+      btn.disabled = true;
+      btn.textContent = "Loading React...";
       outputEl.innerHTML = "";
-      const iframe = document.createElement("iframe");
-      iframe.sandbox = "allow-scripts";
-      iframe.setAttribute("data-readrun-html", "true");
-      iframe.style.width = "100%";
-      iframe.style.border = "none";
-      iframe.style.background = "transparent";
-      iframe.style.height = "60px";
-      outputEl.appendChild(iframe);
-
-      const { scripts, styles } = detectHtmlLibs(code);
-      let head = "";
-      for (const href of styles) head += \`<link rel="stylesheet" href="\${href}">\`;
-      for (const src of scripts) head += \`<script src="\${src}"><\\/script>\`;
-
-      iframe.srcdoc = head + code + RESIZE_SCRIPT;
+      try {
+        const { React, ReactDOM, Babel } = await loadJsxRuntime();
+        btn.textContent = "Running...";
+        let jsCode;
+        try {
+          jsCode = Babel.transform(code, { presets: ["react"] }).code;
+        } catch (err) {
+          outputEl.innerHTML = \`<span class="exec-stderr">\${escapeHtml(err.message)}</span>\`;
+          btn.disabled = false;
+          btn.textContent = "Run";
+          return;
+        }
+        const mountEl = document.createElement("div");
+        outputEl.appendChild(mountEl);
+        const root = ReactDOM.createRoot(mountEl);
+        const render = (el) => root.render(el);
+        try {
+          const fn = new Function("React", "ReactDOM", "render", jsCode);
+          fn(React, ReactDOM, render);
+        } catch (err) {
+          outputEl.innerHTML = \`<span class="exec-stderr">\${escapeHtml(err.message)}</span>\`;
+        }
+      } catch (loadErr) {
+        outputEl.innerHTML = \`<span class="exec-stderr">Failed to load React: \${escapeHtml(loadErr.message)}</span>\`;
+      }
+      btn.disabled = false;
+      btn.textContent = "Run";
     }
+
 
     document.addEventListener("click", (e) => {
       const toggleBtn = e.target.closest(".exec-toggle-btn");
@@ -329,11 +326,11 @@ sys.stderr = sys.__stderr__
       const outputEl = document.querySelector(\`[data-output="\${blockId}"]\`);
       if (!sourceEl || !outputEl) return;
 
-      const code = atob(sourceEl.textContent);
+      const code = decodeSource(sourceEl.textContent);
       const lang = block ? block.dataset.lang : "";
 
-      if (lang === "html") {
-        runHtml(code, btn, outputEl);
+      if (lang === "jsx") {
+        runJsx(code, btn, outputEl);
       } else {
         await runPyodide(code, btn, outputEl);
       }
@@ -344,4 +341,23 @@ sys.stderr = sys.__stderr__
       d.textContent = s;
       return d.innerHTML;
     }
+
+    function decodeSource(b64) {
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    // Auto-render JSX blocks — must run after all let declarations are initialized
+    (async () => {
+      const autoBlocks = document.querySelectorAll("[data-jsx-auto]");
+      if (autoBlocks.length === 0) return;
+      const dummyBtn = { disabled: false, textContent: "" };
+      for (const outputEl of autoBlocks) {
+        const id = outputEl.dataset.output;
+        const sourceEl = document.querySelector(\`script[data-source="\${id}"]\`);
+        if (!sourceEl) continue;
+        const code = decodeSource(sourceEl.textContent);
+        await runJsx(code, dummyBtn, outputEl);
+      }
+    })();
 `;

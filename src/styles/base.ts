@@ -12,7 +12,7 @@ export const baseStyles = `
       --color-link: #0969da;
       --color-active-bg: #dcdcdc;
       --color-code-bg: #f6f8fa;
-      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
       --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
     }
 
@@ -152,10 +152,10 @@ export const baseStyles = `
     }
 
     /* Markdown styles */
-    .markdown-body h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; margin-top: 24px; }
-    .markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; margin-top: 24px; }
-    .markdown-body h3 { font-size: 1.25em; margin-bottom: 16px; margin-top: 24px; }
-    .markdown-body h4 { font-size: 1em; margin-bottom: 16px; margin-top: 24px; }
+    .markdown-body h1 { font-size: 2em; font-weight: 700; padding-bottom: 0.3em; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; margin-top: 24px; }
+    .markdown-body h2 { font-size: 1.5em; font-weight: 700; padding-bottom: 0.3em; border-bottom: 1px solid var(--color-border); margin-bottom: 16px; margin-top: 24px; }
+    .markdown-body h3 { font-size: 1.25em; font-weight: 700; margin-bottom: 16px; margin-top: 24px; }
+    .markdown-body h4 { font-size: 1em; font-weight: 700; margin-bottom: 16px; margin-top: 24px; }
     .markdown-body p { margin-bottom: 16px; }
     .markdown-body ul, .markdown-body ol { padding-left: 2em; margin-bottom: 16px; }
     .markdown-body li + li { margin-top: 4px; }
