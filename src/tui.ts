@@ -1,5 +1,6 @@
 import { resolve, basename } from "path";
 import { readdirSync, statSync } from "fs";
+import { loadConfig, saveConfig } from "./config";
 
 // --- ANSI helpers ---
 const ESC = "\x1b[";
@@ -286,11 +287,123 @@ async function browseFolder(label: string, startDir: string, startRow: number): 
   }
 }
 
+async function browseFile(label: string, startDir: string, startRow: number): Promise<string> {
+  let currentDir = resolve(startDir);
+
+  while (true) {
+    let dirs: string[] = [];
+    let files: string[] = [];
+    try {
+      const entries = readdirSync(currentDir);
+      for (const name of entries) {
+        if (name.startsWith(".") || BROWSE_IGNORE.has(name)) continue;
+        try {
+          const stat = statSync(resolve(currentDir, name));
+          if (stat.isDirectory()) {
+            dirs.push(name);
+          } else if (name.endsWith(".md")) {
+            files.push(name);
+          }
+        } catch {}
+      }
+      dirs.sort();
+      files.sort();
+    } catch {
+      currentDir = resolve(currentDir, "..");
+      continue;
+    }
+
+    const options: MenuOption[] = [
+      { label: "../", description: "parent directory", value: "__up__" },
+      ...dirs.map((d) => ({ label: `${d}/`, description: "", value: `__dir__${d}` })),
+      ...files.map((f) => ({ label: f.replace(/\.md$/, ""), description: ".md", value: `__file__${f}` })),
+    ];
+
+    moveTo(startRow, 3);
+    write(CLEAR_LINE);
+    write(`  ${BOLD}${label}${RESET}`);
+    moveTo(startRow + 1, 3);
+    write(CLEAR_LINE);
+    write(`  ${DIM}📂 ${currentDir}${RESET}`);
+
+    const maxVisible = Math.min(options.length, 15);
+    for (let i = 0; i < maxVisible + 4; i++) {
+      moveTo(startRow + 3 + i, 1);
+      write(CLEAR_LINE);
+    }
+
+    let selected = 0;
+    let scrollOffset = 0;
+
+    const render = () => {
+      const visible = Math.min(options.length, 15);
+      if (selected < scrollOffset) scrollOffset = selected;
+      if (selected >= scrollOffset + visible) scrollOffset = selected - visible + 1;
+
+      for (let i = 0; i < visible; i++) {
+        const idx = scrollOffset + i;
+        moveTo(startRow + 3 + i, 3);
+        write(CLEAR_LINE);
+        if (idx === selected) {
+          write(`${CYAN}${BOLD}  ▸ ${options[idx].label}${RESET}  ${DIM}${options[idx].description}${RESET}`);
+        } else {
+          write(`${DIM}    ${options[idx].label}${RESET}  ${DIM}${options[idx].description}${RESET}`);
+        }
+      }
+      moveTo(startRow + 3 + visible, 3);
+      write(CLEAR_LINE);
+      if (options.length > visible) {
+        write(`${DIM}  ${scrollOffset > 0 ? "↑ " : "  "}${scrollOffset + visible < options.length ? "↓ " : "  "}(${options.length} items)${RESET}`);
+      }
+      moveTo(startRow + 3 + visible + 1, 3);
+      write(CLEAR_LINE);
+      write(`${DIM}  ↑/↓ navigate  ⏎ enter/select  q quit${RESET}`);
+    };
+
+    render();
+
+    let picked: string | null = null;
+    while (picked === null) {
+      const key = await readKey();
+
+      if (key === "\x03" || key === "q") return "quit";
+
+      if (key === "\r" || key === "\n") {
+        const val = options[selected].value;
+        if (val === "__up__") {
+          currentDir = resolve(currentDir, "..");
+          picked = "__navigate__";
+        } else if (val.startsWith("__dir__")) {
+          currentDir = resolve(currentDir, val.slice(7));
+          picked = "__navigate__";
+        } else if (val.startsWith("__file__")) {
+          return resolve(currentDir, val.slice(8));
+        }
+      }
+
+      if (key === "\x1b[A" || key === "k") {
+        selected = (selected - 1 + options.length) % options.length;
+      } else if (key === "\x1b[B" || key === "j") {
+        selected = (selected + 1) % options.length;
+      }
+
+      if (picked === null) render();
+    }
+
+    const clearRows = Math.min(options.length, 15) + 5;
+    for (let i = 0; i < clearRows; i++) {
+      moveTo(startRow + i, 1);
+      write(CLEAR_LINE);
+    }
+  }
+}
+
 // --- TUI Flows ---
 
 export interface TuiResult {
   command: "dev" | "build" | "update" | "quit";
   contentDir: string;
+  filePath?: string;
   port?: number;
   platform?: "github" | "vercel" | "netlify" | null;
   outDir?: string;
@@ -311,6 +424,8 @@ export async function runTui(): Promise<TuiResult> {
 
   const mainChoice = await selectMenu("", [
     { label: "👁  View", description: "Preview your site locally", value: "view" },
+    { label: "⭐ Saved", description: "Open a saved document", value: "saved" },
+    { label: "📄 File", description: "Preview a single markdown file", value: "file" },
     { label: "📦 Build", description: "Build a static site for deployment", value: "build" },
     { label: "📖 Docs", description: "Preview the built-in docs", value: "docs" },
     { label: "🔄 Update", description: "Install/update dependencies", value: "update" },
@@ -326,8 +441,16 @@ export async function runTui(): Promise<TuiResult> {
     return await docsFlow(cwd);
   }
 
+  if (mainChoice === "saved") {
+    return await savedFlow(cwd);
+  }
+
   if (mainChoice === "view") {
     return await viewFlow(cwd);
+  }
+
+  if (mainChoice === "file") {
+    return await fileFlow(cwd);
   }
 
   if (mainChoice === "build") {
@@ -335,6 +458,17 @@ export async function runTui(): Promise<TuiResult> {
   }
 
   return cleanup({ command: "quit", contentDir: cwd });
+}
+
+async function fileFlow(cwd: string): Promise<TuiResult> {
+  clearScreen();
+  write(LOGO);
+
+  const filePath = await browseFile("Choose a markdown file to preview", cwd, 13);
+  if (filePath === "quit") return cleanup({ command: "quit", contentDir: cwd });
+
+  const contentDir = resolve(filePath, "..");
+  return cleanup({ command: "dev", contentDir, filePath, port: 3001 });
 }
 
 async function buildFlow(cwd: string): Promise<TuiResult> {
@@ -425,6 +559,113 @@ async function docsFlow(cwd: string): Promise<TuiResult> {
     port,
     testMode: true,
   });
+}
+
+async function savedFlow(cwd: string): Promise<TuiResult> {
+  const config = await loadConfig();
+
+  while (true) {
+    clearScreen();
+    write(LOGO);
+    moveTo(13, 3);
+    write(`  ${BOLD}Saved Documents${RESET}`);
+
+    const options: MenuOption[] = [
+      ...config.saved.map((entry, i) => ({
+        label: `📂 ${entry.name}`,
+        description: entry.path,
+        value: `open:${i}`,
+      })),
+      { label: "➕ Add new", description: "Save a path for quick access", value: "add" },
+    ];
+
+    if (config.saved.length > 0) {
+      options.push({
+        label: "🗑  Remove",
+        description: "Remove a saved path",
+        value: "remove",
+      });
+    }
+
+    const choice = await selectMenu("", options, 15);
+
+    if (choice === "quit") {
+      return cleanup({ command: "quit", contentDir: cwd });
+    }
+
+    if (choice.startsWith("open:")) {
+      const idx = parseInt(choice.slice(5));
+      const entry = config.saved[idx];
+      try {
+        const s = statSync(entry.path);
+        if (s.isFile()) {
+          return cleanup({
+            command: "dev",
+            contentDir: resolve(entry.path, ".."),
+            filePath: entry.path,
+            port: 3001,
+          });
+        }
+        return cleanup({
+          command: "dev",
+          contentDir: entry.path,
+          port: 3001,
+        });
+      } catch {
+        moveTo(15 + options.length + 3, 3);
+        write(`  ${YELLOW}Path not found: ${entry.path}${RESET}`);
+        await readKey();
+        continue;
+      }
+    }
+
+    if (choice === "add") {
+      clearScreen();
+      write(LOGO);
+      moveTo(13, 3);
+      write(`  ${BOLD}Add Saved Document${RESET}`);
+
+      const path = await promptInput("Path (folder or .md file)", cwd, 15);
+      if (path === "quit") continue;
+
+      const name = await promptInput("Name", basename(path), 17);
+      if (name === "quit") continue;
+
+      try {
+        statSync(path);
+      } catch {
+        moveTo(19, 3);
+        write(`  ${YELLOW}Path does not exist: ${path}${RESET}`);
+        await readKey();
+        continue;
+      }
+
+      config.saved.push({ name, path: resolve(path) });
+      await saveConfig(config);
+      continue;
+    }
+
+    if (choice === "remove") {
+      clearScreen();
+      write(LOGO);
+      moveTo(13, 3);
+      write(`  ${BOLD}Remove Saved Document${RESET}`);
+
+      const removeOptions: MenuOption[] = config.saved.map((entry, i) => ({
+        label: entry.name,
+        description: entry.path,
+        value: String(i),
+      }));
+
+      const removeChoice = await selectMenu("", removeOptions, 15);
+      if (removeChoice === "quit") continue;
+
+      const removeIdx = parseInt(removeChoice);
+      config.saved.splice(removeIdx, 1);
+      await saveConfig(config);
+      continue;
+    }
+  }
 }
 
 function cleanup(result: TuiResult): TuiResult {

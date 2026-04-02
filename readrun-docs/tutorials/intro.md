@@ -10,14 +10,29 @@ bun install -g readrun
 
 ## Start the dev server
 
-Point `rr` at any folder of `.md` files:
+Run `rr` with no arguments to open the interactive menu:
 
 ```bash
 cd your-notes-folder
 rr
 ```
 
+Or pass a path directly to skip the menu:
+
+```bash
+rr .                      # serve the current folder
+rr ./my-notes             # serve a specific folder
+rr intro.md               # open a single file
+rr notes/lecture-1.md     # open a single file by path
+```
+
+When given a folder, readrun serves the whole directory. When given a `.md` file, it serves that file's folder and opens the browser directly on that page.
+
 Open [http://localhost:3001](http://localhost:3001) and you'll see your notes rendered as a navigable website with a sidebar built from your folder structure.
+
+### Previewing a single file from the TUI
+
+If you prefer the interactive menu, select **📄 File** from the main menu. You can then browse your filesystem and pick any `.md` file — readrun opens the browser directly on that page.
 
 ## Try it without your own notes
 

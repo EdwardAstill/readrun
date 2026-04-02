@@ -52,7 +52,12 @@ export interface ServerOptions {
   port: number;
 }
 
-export async function startServer(options: ServerOptions): Promise<number> {
+export interface ServerHandle {
+  port: number;
+  stop: () => void;
+}
+
+export async function startServer(options: ServerOptions): Promise<ServerHandle> {
   const port = await findAvailablePort(options.port);
   const { contentDir } = options;
   const normalizedContent = normalize(resolve(contentDir));
@@ -77,7 +82,7 @@ export async function startServer(options: ServerOptions): Promise<number> {
     }
   }
 
-  Bun.serve({
+  const server = Bun.serve({
     port,
     async fetch(req) {
       const url = new URL(req.url);
@@ -171,5 +176,5 @@ export async function startServer(options: ServerOptions): Promise<number> {
 
   console.log(`readrun running at http://localhost:${port}`);
   console.log(`Serving content from: ${contentDir}`);
-  return port;
+  return { port, stop: () => server.stop() };
 }
