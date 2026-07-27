@@ -5,7 +5,7 @@ import type { Navigation } from "../../domain/navigation/model.ts";
 import type { ResourceBrowserEntry } from "../contracts.ts";
 import {
 	Sidebar,
-	SidebarFooter,
+	SidebarContent,
 	SidebarTrigger,
 } from "../components/ui/Sidebar.tsx";
 import { PageNavPanel } from "./PageNavPanel.tsx";
@@ -29,16 +29,16 @@ export function LeftSidebar(props: LeftSidebarProps): React.JSX.Element {
 			className="readrun-sidebar"
 			aria-label="Site navigation"
 		>
-			<PageNavPanel
-				navigation={props.navigation}
-				currentUrl={props.currentUrl}
-				toolbar={props.toolbar}
-			/>
-			{props.resources && props.resources.length > 0 ? (
-				<SidebarFooter>
+			<SidebarContent className="gap-0">
+				<PageNavPanel
+					navigation={props.navigation}
+					currentUrl={props.currentUrl}
+					toolbar={props.toolbar}
+				/>
+				{props.resources && props.resources.length > 0 ? (
 					<ResourcePanel resources={props.resources} />
-				</SidebarFooter>
-			) : null}
+				) : null}
+			</SidebarContent>
 		</Sidebar>
 	);
 }

@@ -31,7 +31,7 @@ export function ReadrunShell(props: ReadrunShellProps): React.JSX.Element {
 
 	return (
 		<SidebarProvider
-			className="readrun-shell"
+			className="h-svh min-h-0 overflow-hidden readrun-shell"
 			data-readrun-root="true"
 		>
 			<div
@@ -44,9 +44,9 @@ export function ReadrunShell(props: ReadrunShellProps): React.JSX.Element {
 					resources={props.resources}
 				/>
 
-				<SidebarInset>
+				<SidebarInset className="h-full min-h-0 overflow-hidden">
 					<MobileSidebarTrigger />
-					<div className="readrun-content flex min-w-0 flex-1 flex-col p-4">
+					<div className="readrun-content flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4">
 						<div className="readrun-layout mx-auto w-full max-w-(--readrun-content-width)">
 							<section className="readrun-article min-w-0">
 								{props.mainContent}
@@ -57,7 +57,11 @@ export function ReadrunShell(props: ReadrunShellProps): React.JSX.Element {
 				</SidebarInset>
 
 				{hasToc ? (
-					<div id="toc-sidebar-slot" data-toc-slot="true">
+					<div
+						id="toc-sidebar-slot"
+						className="h-full min-h-0"
+						data-toc-slot="true"
+					>
 						<RightSidebar items={props.tocItems ?? []} />
 					</div>
 				) : null}

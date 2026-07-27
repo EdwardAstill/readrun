@@ -389,7 +389,7 @@ function buildRenderEntrySource(
 
 function replaceRenderSentinel(source: string, pascalName: string): string {
 	const sentinelCall = new RegExp(
-		`(^|\\n)${WIDGET_RENDER_SENTINEL}\\([A-Za-z_$][A-Za-z0-9_$]*\\);\\s*$`,
+		`(^|\\n)${WIDGET_RENDER_SENTINEL}\\([A-Za-z_$][A-Za-z0-9_$]*\\);(?=\\n|$)`,
 	);
 	if (!sentinelCall.test(source)) {
 		throw new Error(

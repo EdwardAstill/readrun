@@ -6,6 +6,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import type { PanelImperativeHandle, PanelSize } from "react-resizable-panels";
 
@@ -72,9 +73,17 @@ export function mountResizableShell(
 	host.dataset.resizableShellMounted = "true";
 
 	const reactRoot = createRoot(host);
-	reactRoot.render(<ResizableShell nodes={nodes} />);
+	commitResizableShell(reactRoot, <ResizableShell nodes={nodes} />);
 
 	return () => teardownResizableShell(reactRoot, host, nodes);
+}
+
+export function commitResizableShell(
+	root: Pick<Root, "render">,
+	children: React.ReactNode,
+	commit: (callback: () => void) => void = flushSync,
+): void {
+	commit(() => root.render(children));
 }
 
 function ResizableShell(props: { nodes: ShellNodes }): React.JSX.Element {
@@ -143,6 +152,7 @@ function ResizableShell(props: { nodes: ShellNodes }): React.JSX.Element {
 			<SidebarProvider
 				open={sidebarOpen}
 				onOpenChange={handleSidebarOpenChange}
+				className="h-svh min-h-0 overflow-hidden"
 				style={providerStyle}
 			>
 				<AppSidebar nodes={props.nodes.sidebarChildren} />
@@ -155,6 +165,7 @@ function ResizableShell(props: { nodes: ShellNodes }): React.JSX.Element {
 		<SidebarProvider
 			open={sidebarOpen}
 			onOpenChange={handleSidebarOpenChange}
+			className="h-svh min-h-0 overflow-hidden"
 			style={providerStyle}
 		>
 			<ResizablePanelGroup orientation="horizontal">
@@ -236,7 +247,7 @@ function AppSidebar(props: {
 
 function MainPane(props: { content: HTMLElement }): React.JSX.Element {
 	return (
-		<SidebarInset>
+		<SidebarInset className="h-full min-h-0 overflow-hidden">
 			<MobileSidebarTrigger />
 			<DomNodeMount node={props.content} />
 		</SidebarInset>

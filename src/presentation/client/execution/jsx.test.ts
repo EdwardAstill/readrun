@@ -1,5 +1,14 @@
 import { expect, test } from "bun:test";
-import { initialiseTailwind } from "./jsx.ts";
+import {
+	initialiseTailwind,
+	widgetTokenCompatibilityStyles,
+} from "./jsx.ts";
+
+test("widget compatibility tokens stay scoped to JSX output", () => {
+	expect(widgetTokenCompatibilityStyles).toContain(".jsx-output__mount {");
+	expect(widgetTokenCompatibilityStyles).not.toContain(":root");
+	expect(widgetTokenCompatibilityStyles).toContain("--radius: 0;");
+});
 
 test("initialiseTailwind loads the runtime before applying configuration", async () => {
 	const events: string[] = [];

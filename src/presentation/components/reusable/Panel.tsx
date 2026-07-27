@@ -2,7 +2,7 @@ import type React from "react";
 import type { ReactNode } from "react";
 
 import { Button } from "../ui/Button.tsx";
-import { SidebarHeader } from "../ui/Sidebar.tsx";
+import { SidebarGroup } from "../ui/Sidebar.tsx";
 import { PanelBody } from "./PanelBody.tsx";
 import { SearchBar } from "./SearchBar.tsx";
 
@@ -18,6 +18,7 @@ export interface PanelCollapseButton {
 }
 
 export interface PanelProps {
+	className?: string;
 	searchId: string;
 	searchPlaceholder: string;
 	searchAriaLabel?: string;
@@ -31,13 +32,13 @@ export interface PanelProps {
 }
 
 /**
- * Reusable panel: search bar + optional count/collapse button + scrollable body.
- * Compose with a Tree to create searchable tree panels.
+ * Reusable sidebar group: search bar + optional count/collapse button + body.
+ * Compose inside SidebarContent with a Tree to create searchable panels.
  */
 export function Panel(props: PanelProps): React.JSX.Element {
 	return (
-		<>
-			<SidebarHeader>
+		<SidebarGroup className={props.className}>
+			<div className="flex flex-col gap-2 pb-2">
 				<div className="flex min-w-0 items-center gap-2">
 					{props.leadingActions}
 					<SearchBar
@@ -67,8 +68,8 @@ export function Panel(props: PanelProps): React.JSX.Element {
 						</Button>
 					) : null}
 				</div>
-			</SidebarHeader>
+			</div>
 			<PanelBody ariaLabel={props.bodyAriaLabel}>{props.children}</PanelBody>
-		</>
+		</SidebarGroup>
 	);
 }

@@ -1,7 +1,10 @@
 import type React from "react";
 
 import type { TocItem } from "../contracts.ts";
-import { Sidebar } from "../components/ui/Sidebar.tsx";
+import {
+	Sidebar,
+	SidebarContent,
+} from "../components/ui/Sidebar.tsx";
 import { TocPanel } from "./TocPanel.tsx";
 
 export interface RightSidebarProps {
@@ -24,7 +27,9 @@ export function RightSidebar(
 			role="navigation"
 			aria-label="Table of contents"
 		>
-			<TocPanel items={props.items} />
+			<SidebarContent className="gap-0">
+				<TocPanel items={props.items} />
+			</SidebarContent>
 		</Sidebar>
 	);
 }

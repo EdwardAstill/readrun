@@ -45,6 +45,10 @@ test("renderMarkdown renders headings, tables, wikilinks, and TOC", () => {
 	expect(result.html).toContain('<div class="rr-table-wrap"');
 	expect(result.html).toContain('<span class="rr-table-language">table</span>');
 	expect(result.html).toContain(
+		'data-rr-slider-input="rr-1" data-rr-slider-min="10" data-rr-slider-max="100" data-rr-slider-value="28"',
+	);
+	expect(result.html).not.toContain('type="range"');
+	expect(result.html).toContain(
 		'<div class="rr-table-scroll" data-rr-scroll="rr-1" tabindex="0" aria-label="Scrollable table"><table class="rr-table"',
 	);
 	expect(result.html).toContain(

@@ -51,8 +51,8 @@ describe("sidebar panel search controls", () => {
 
 		expect(html).toContain('id="page-nav-search"');
 		expect(html).toContain('id="page-nav-fold-all-btn"');
-		expect(html).toContain('data-slot="sidebar-content"');
 		expect(html).toContain('data-slot="sidebar-group"');
+		expect(html).toContain('data-slot="sidebar-group-content"');
 		expect(html).toContain('data-nav-path="/start"');
 	});
 
@@ -68,7 +68,8 @@ describe("sidebar panel search controls", () => {
 
 		expect(html).toContain('id="toc-search"');
 		expect(html).toContain('id="toc-fold-all-btn"');
-		expect(html).toContain('data-slot="sidebar-content"');
+		expect(html).toContain('data-slot="sidebar-group"');
+		expect(html).toContain('data-slot="sidebar-group-content"');
 		expect(html).toContain('data-toc-heading="intro"');
 	});
 
@@ -90,7 +91,8 @@ describe("sidebar panel search controls", () => {
 		expect(html).toContain('id="resource-browser-fold-all-btn"');
 		expect(html).not.toContain('id="resource-browser-count"');
 		expect(html).not.toContain("resource-browser__category-count");
-		expect(html).toContain('data-slot="sidebar-content"');
+		expect(html).toContain('data-slot="sidebar-group"');
+		expect(html).toContain('data-slot="sidebar-group-content"');
 		expect(html).toContain('data-resource-browser-group="image"');
 		expect(html).toContain('data-resource-browser-item="true"');
 	});

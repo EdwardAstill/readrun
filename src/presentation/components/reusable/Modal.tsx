@@ -10,6 +10,7 @@ export interface ModalProps {
 	id: string;
 	open: boolean;
 	onClose: () => void;
+	contentClassName?: string;
 	ariaLabel?: string;
 	ariaLabelledBy?: string;
 	initialFocusRef?: React.RefObject<HTMLElement | null>;
@@ -28,6 +29,7 @@ export function Modal(props: ModalProps): React.JSX.Element {
 		>
 			<DialogContent
 				id={props.id}
+				className={props.contentClassName}
 				aria-modal="true"
 				aria-label={props.ariaLabel}
 				aria-labelledby={props.ariaLabelledBy}

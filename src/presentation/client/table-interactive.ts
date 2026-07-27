@@ -1,8 +1,13 @@
 // Client-side behavior for readrun-rendered Markdown tables.
 
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
+
 import { buttonVariants } from "../components/ui/Button.tsx";
+import { Slider } from "../components/ui/Slider.tsx";
 
 const DEFAULT_MIN_COL_WIDTH_CH = 10;
+const DEFAULT_MAX_COL_WIDTH_CH = 100;
 const TABLE_BORDER_PX = 2;
 const CONTENT_WIDTH_BUFFER_PX = 16;
 
@@ -115,7 +120,7 @@ function initTable(wrap: HTMLElement): () => void {
 	);
 	if (!table) return () => {};
 
-	const slider = wrap.querySelector<HTMLInputElement>(
+	const sliderMount = wrap.querySelector<HTMLElement>(
 		`[data-rr-slider-input="${uid}"]`,
 	);
 	const valueEl = wrap.querySelector<HTMLElement>(
@@ -130,17 +135,18 @@ function initTable(wrap: HTMLElement): () => void {
 	const toolbar = wrap.querySelector<HTMLElement>(".rr-table-toolbar");
 	const sliderControl = wrap.querySelector<HTMLElement>(".rr-table-slider");
 	let stickyEnabled = stickyButton?.ariaPressed !== "false";
+	let selectedColWidthCh = readPositiveInt(
+		sliderMount?.dataset.rrSliderValue,
+		DEFAULT_MIN_COL_WIDTH_CH,
+	);
 
 	if (!scrollViewport) return () => {};
+	const sliderRoot = sliderMount ? createRoot(sliderMount) : null;
 
 	const applyTableSizing = (): void => {
 		const cols = table.querySelectorAll("col");
 		if (cols.length === 0) return;
 
-		const selectedColWidthCh = readPositiveInt(
-			slider?.value,
-			DEFAULT_MIN_COL_WIDTH_CH,
-		);
 		const availableWidthPx = wrap.parentElement?.clientWidth ?? wrap.clientWidth;
 		const sizing = resolveTableSizing({
 			columnCount: cols.length,
@@ -190,10 +196,13 @@ function initTable(wrap: HTMLElement): () => void {
 		checkOverflow();
 	};
 
-	const handleSliderInput = (): void => {
-		if (!slider || !valueEl) return;
-		valueEl.textContent = `${parseInt(slider.value, 10)}ch`;
-		syncSliderAppearance(slider);
+	const handleSliderValueChange = (
+		values: number | readonly number[],
+	): void => {
+		const value = typeof values === "number" ? values : values[0];
+		if (typeof value !== "number") return;
+		selectedColWidthCh = value;
+		if (valueEl) valueEl.textContent = `${value}ch`;
 		syncTable();
 	};
 
@@ -202,9 +211,23 @@ function initTable(wrap: HTMLElement): () => void {
 		checkOverflow();
 	};
 
-	slider?.addEventListener("input", handleSliderInput);
+	sliderRoot?.render(
+		createElement(Slider, {
+			min: readPositiveInt(
+				sliderMount?.dataset.rrSliderMin,
+				DEFAULT_MIN_COL_WIDTH_CH,
+			),
+			max: readPositiveInt(
+				sliderMount?.dataset.rrSliderMax,
+				DEFAULT_MAX_COL_WIDTH_CH,
+			),
+			step: 1,
+			defaultValue: [selectedColWidthCh],
+			onValueChange: handleSliderValueChange,
+			"aria-labelledby": `${uid}-slider-label`,
+		}),
+	);
 	stickyButton?.addEventListener("click", handleStickyClick);
-	if (slider) syncSliderAppearance(slider);
 	syncTable();
 	requestAnimationFrameIfAvailable(syncTable);
 
@@ -215,22 +238,11 @@ function initTable(wrap: HTMLElement): () => void {
 	resizeObserver?.observe(wrap.parentElement ?? wrap);
 
 	return () => {
-		slider?.removeEventListener("input", handleSliderInput);
+		sliderRoot?.unmount();
 		stickyButton?.removeEventListener("click", handleStickyClick);
 		resizeObserver?.disconnect();
 		delete wrap.dataset.rrMounted;
 	};
-}
-
-function syncSliderAppearance(slider: HTMLInputElement): void {
-	const min = Number(slider.min);
-	const max = Number(slider.max);
-	const value = Number(slider.value);
-	const progress = max > min ? ((value - min) / (max - min)) * 100 : 0;
-	slider.style.setProperty(
-		"--rr-table-slider-progress",
-		`${Math.max(0, Math.min(progress, 100))}%`,
-	);
 }
 
 function measureColumnContentWidths(

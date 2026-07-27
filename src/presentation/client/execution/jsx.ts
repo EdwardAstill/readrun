@@ -167,8 +167,8 @@ function ensureWidgetStyles(): void {
 	document.head.appendChild(style);
 }
 
-const widgetTokenCompatibilityStyles = `
-:root {
+export const widgetTokenCompatibilityStyles = `
+.jsx-output__mount {
   --bg: var(--color-bg);
   --text: var(--color-text);
   --border: var(--color-border);

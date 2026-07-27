@@ -169,11 +169,11 @@ function renderTableHtml(data: TableData): string {
 	html += `<span class="rr-table-language">table</span>`;
 	html += `<div class="rr-table-actions">`;
 	html += `<span class="rr-table-info">${colCount} cols · ${rowCount} rows</span>`;
-	html += `<label class="rr-table-slider" data-rr-slider="${uid}">`;
-	html += `<span class="rr-table-slider-label">col width</span>`;
-	html += `<input type="range" class="rr-table-width-slider" data-rr-slider-input="${uid}" min="${MIN_COL_WIDTH}" max="${MAX_COL_WIDTH}" value="${charWidth}" aria-label="Column width">`;
+	html += `<div class="rr-table-slider" data-rr-slider="${uid}">`;
+	html += `<span class="rr-table-slider-label" id="${uid}-slider-label">col width</span>`;
+	html += `<div class="rr-table-width-slider" data-rr-slider-input="${uid}" data-rr-slider-min="${MIN_COL_WIDTH}" data-rr-slider-max="${MAX_COL_WIDTH}" data-rr-slider-value="${charWidth}"></div>`;
 	html += `<output class="rr-table-width-value" data-rr-value="${uid}">${charWidth}ch</output>`;
-	html += `</label>`;
+	html += `</div>`;
 	html += `<button type="button" class="${escapeAttribute(buttonVariants({ size: "sm" }))}" data-rr-sticky="${uid}" aria-label="Keep first column visible while scrolling" aria-pressed="true">Sticky on</button>`;
 	html += `</div>`;
 	html += `</div>`;

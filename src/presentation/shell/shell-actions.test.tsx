@@ -32,3 +32,29 @@ test("renders the shadcn sidebar shell and client dialog islands", () => {
 	expect(html).not.toContain("🔍");
 	expect(html).not.toContain("☰");
 });
+
+test("keeps the article and sidebars in independent scroll regions", () => {
+	const html = renderToStaticMarkup(
+		<ReadrunShell
+			navigation={{ mode: "tree", source: "filesystem", tree: [] }}
+			page={{ url: "/", relPath: "README.md", title: "Home", kind: "markdown" }}
+			mainContent={<main id="main-content">Content</main>}
+			tocItems={[{ id: "content", label: "Content", level: 1 }]}
+			resources={[
+				{
+					id: "asset",
+					label: "diagram.png",
+					href: "/assets/diagram.png",
+					kind: "image",
+				},
+			]}
+		/>,
+	);
+
+	expect(html.match(/data-slot="sidebar-content"/g)).toHaveLength(2);
+	expect(html).not.toContain('data-slot="sidebar-footer"');
+	expect(html).toContain("h-svh min-h-0 overflow-hidden readrun-shell");
+	expect(html).toContain(
+		"readrun-content flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4",
+	);
+});

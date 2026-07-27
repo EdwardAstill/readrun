@@ -302,64 +302,6 @@ export const vizStyles = `
   font-weight: normal;
 }
 
-.viz-slider-row input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  background: var(--border);
-  border: none;
-  outline: none;
-  margin: 8px 0;
-  cursor: pointer;
-}
-
-.viz-slider-row input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px;
-  background: var(--border);
-  border: none;
-  border-radius: 0;
-}
-
-.viz-slider-row input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  background: var(--text);
-  border: none;
-  border-radius: 0;
-  margin-top: -4px;
-  box-shadow: none;
-  cursor: grab;
-}
-
-.viz-slider-row input[type="range"]:active::-webkit-slider-thumb {
-  cursor: grabbing;
-}
-
-.viz-slider-row input[type="range"]::-moz-range-track {
-  height: 4px;
-  background: var(--border);
-  border: none;
-  border-radius: 0;
-}
-
-.viz-slider-row input[type="range"]::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: var(--text);
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  cursor: grab;
-}
-
-.viz-slider-row input[type="range"]:focus {
-  outline: 1px solid var(--text-muted);
-  outline-offset: 2px;
-}
-
 /* ── Tabs ── */
 .viz-tabs {
   display: flex;
@@ -498,33 +440,11 @@ export const vizStyles = `
   margin-bottom: 12px;
 }
 
-input[type="checkbox"] {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
-  border: 1px solid var(--text-muted);
-  background: var(--bg);
-  cursor: pointer;
-  vertical-align: middle;
-  position: relative;
-}
-
-input[type="checkbox"]:checked {
-  background: var(--text);
-  border-color: var(--text);
-}
-
-input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 3px;
-  top: 0px;
-  width: 4px;
-  height: 8px;
-  border: solid var(--bg);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.viz-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
 }
 
 /* ── WidgetLayout ── */

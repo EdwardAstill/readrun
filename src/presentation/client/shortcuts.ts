@@ -53,6 +53,10 @@ function openPageSearch(): void {
 	openOverlay("page-search-overlay");
 }
 
+function getMainScrollContainer(): HTMLElement | null {
+	return document.querySelector<HTMLElement>(".readrun-content");
+}
+
 function getNavLinks(): HTMLAnchorElement[] {
 	return Array.from(
 		document.querySelectorAll<HTMLAnchorElement>(".sidebar-nav a[href]"),
@@ -110,22 +114,29 @@ const actions: ShortcutActions = {
 			links[0]!.click();
 		}
 	},
-	scrollDown: () =>
-		window.scrollBy({
-			top: window.innerHeight * 0.85,
+	scrollDown: () => {
+		const container = getMainScrollContainer();
+		container?.scrollBy({
+			top: container.clientHeight * 0.85,
 			behavior: "smooth",
-		}),
-	scrollUp: () =>
-		window.scrollBy({
-			top: -window.innerHeight * 0.85,
+		});
+	},
+	scrollUp: () => {
+		const container = getMainScrollContainer();
+		container?.scrollBy({
+			top: -container.clientHeight * 0.85,
 			behavior: "smooth",
-		}),
-	scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
-	scrollToBottom: () =>
-		window.scrollTo({
-			top: document.body.scrollHeight,
+		});
+	},
+	scrollToTop: () =>
+		getMainScrollContainer()?.scrollTo({ top: 0, behavior: "smooth" }),
+	scrollToBottom: () => {
+		const container = getMainScrollContainer();
+		container?.scrollTo({
+			top: container.scrollHeight,
 			behavior: "smooth",
-		}),
+		});
+	},
 	toggleSidebar: () => {
 		const s = getSettings();
 		s.showSidebar = !s.showSidebar;

@@ -1,25 +1,31 @@
 import { expect, test } from "bun:test";
+import { createRef } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { SettingsSwitchRow } from "./SettingsIsland.tsx";
+import { Dialog } from "../../components/ui/Dialog.tsx";
+import { DEFAULT_SETTINGS } from "../settings.ts";
+import { SettingsPanel, SettingsSwitchRow } from "./SettingsIsland.tsx";
 
 test("settings switch rows associate their shadcn label with the control", () => {
 	const html = renderToStaticMarkup(
 		<SettingsSwitchRow
-			id="readrun-sidebar-toggle"
-			label="Show sidebar"
-			labelId="readrun-sidebar-label"
+			id="example-toggle"
+			label="Example setting"
+			labelId="example-label"
+			description="Explains what the setting changes."
 			checked
 			onCheckedChange={() => {}}
 		/>,
 	);
 
 	expect(html).toContain('data-slot="label"');
-	expect(html).toContain('for="readrun-sidebar-toggle"');
-	expect(html).toContain('id="readrun-sidebar-label"');
+	expect(html).toContain('for="example-toggle"');
+	expect(html).toContain('id="example-label"');
 	expect(html).toContain('role="switch"');
 	expect(html).toContain('aria-checked="true"');
-	expect(html).toContain('id="readrun-sidebar-toggle"');
+	expect(html).toContain('id="example-toggle"');
+	expect(html).toContain('aria-describedby="example-toggle-description"');
+	expect(html).toContain('id="example-toggle-description"');
 });
 
 test("settings switch rows preserve the disabled state", () => {
@@ -36,4 +42,30 @@ test("settings switch rows preserve the disabled state", () => {
 
 	expect(html).toContain('aria-checked="false"');
 	expect(html).toContain("disabled");
+});
+
+test("settings panel uses the approved controls and omits sidebar visibility", () => {
+	const html = renderToStaticMarkup(
+		<Dialog open>
+			<SettingsPanel
+				settings={DEFAULT_SETTINGS}
+				localPythonAvailable={false}
+				initialFocusRef={createRef<HTMLButtonElement>()}
+				onOpenShortcuts={() => {}}
+				onUpdate={() => {}}
+			/>
+		</Dialog>,
+	);
+
+	expect(html).toContain("Changes apply as you go.");
+	expect(html).toContain("Appearance");
+	expect(html).toContain("Reading");
+	expect(html).toContain("Behaviour");
+	expect(html).not.toContain("Show sidebar");
+	expect(html).not.toContain("readrun-sidebar-toggle");
+	expect(html).toContain('id="open-shortcuts-btn"');
+	expect(html).toMatch(/<button[^>]*id="open-shortcuts-btn"/);
+	expect(html).toContain("Keyboard shortcuts");
+	expect(html).toContain("Saved automatically");
+	expect(html).toContain("Done");
 });

@@ -179,8 +179,6 @@ export const markdownStyles = `
 .readrun-main .rr-table-width-slider {
   width: 92px;
   margin: 0;
-  accent-color: var(--color-link);
-  cursor: pointer;
 }
 .readrun-main .rr-table-width-value {
   font-size: 11px;

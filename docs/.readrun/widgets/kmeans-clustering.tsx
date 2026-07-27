@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Shell, Sub, Stage, Panel, SectionLabel, Btn, Slider, Notice, Stat } from "@readrun/widgets/primitives";
+import { Shell, Sub, Stage, Panel, SectionLabel, Btn, Slider, ToggleRow, Notice, Stat } from "@readrun/widgets/primitives";
 import { mulberry32, sampleNormal } from "@readrun/widgets/math";
 
 export interface Pt {
@@ -312,19 +312,11 @@ export function KmeansClustering() {
             </Btn>
           </div>
 
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              marginTop: 10,
-              fontSize: 11,
-              color: "var(--text-muted)",
-            }}
-          >
-            <input type="checkbox" checked={showRegions} onChange={(e) => setShowRegions(e.currentTarget.checked)} />
+          <div style={{ marginTop: 10 }}>
+            <ToggleRow checked={showRegions} onChange={setShowRegions}>
             Show decision regions
-          </label>
+            </ToggleRow>
+          </div>
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
             <Btn kind="primary" onClick={step}>

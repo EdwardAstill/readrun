@@ -265,5 +265,5 @@ function scrollAfterNavigation(url: string): void {
       return;
     }
   }
-  window.scrollTo({ top: 0 });
+  document.querySelector<HTMLElement>(".readrun-content")?.scrollTo({ top: 0 });
 }

@@ -49,7 +49,7 @@ test("production shell follows the shadcn sidebar and resizable composition", as
 
 	expect(shell).toContain("<SidebarProvider");
 	expect(shell).toContain("<LeftSidebar");
-	expect(shell).toContain("<SidebarInset>");
+	expect(shell).toContain("<SidebarInset");
 	expect(shell).toContain("<MobileSidebarTrigger");
 	expect(shell).not.toContain("<header");
 	expect(sidebar).toContain("export function MobileSidebarTrigger");
@@ -64,6 +64,12 @@ test("production shell follows the shadcn sidebar and resizable composition", as
 	);
 	expect(resizable).toContain(
 		'collapsible={props.fillPanel ? "none" : undefined}',
+	);
+	expect(
+		resizable.match(/className="h-svh min-h-0 overflow-hidden"/g),
+	).toHaveLength(2);
+	expect(resizable).toContain(
+		'<SidebarInset className="h-full min-h-0 overflow-hidden">',
 	);
 	expect(resizable).toContain(
 		'"readrun-sidebar w-full overflow-hidden rounded-r-xl"',

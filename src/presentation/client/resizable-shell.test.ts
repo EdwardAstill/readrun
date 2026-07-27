@@ -1,9 +1,25 @@
 import { expect, test } from "bun:test";
 
 import {
+	commitResizableShell,
 	syncPanelVisibility,
 	syncSidebarPanelWidth,
 } from "./resizable-shell.tsx";
+
+test("commits the resizable shell before sidebar features mount", () => {
+	const calls: string[] = [];
+	const root = {
+		render: () => calls.push("render"),
+	};
+
+	commitResizableShell(root, null, (render) => {
+		calls.push("commit:start");
+		render();
+		calls.push("commit:end");
+	});
+
+	expect(calls).toEqual(["commit:start", "render", "commit:end"]);
+});
 
 function panelSpy() {
 	const calls: Array<[string, number?]> = [];

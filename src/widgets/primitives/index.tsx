@@ -1,6 +1,10 @@
 import React from "react";
 import type { ReactNode, CSSProperties } from "react";
 
+import { Label } from "../../presentation/components/ui/Label";
+import { Slider as ShadcnSlider } from "../../presentation/components/ui/Slider";
+import { Switch as ShadcnSwitch } from "../../presentation/components/ui/Switch";
+
 export { vizStyles } from "./styles";
 export { WidgetLayout } from "./WidgetLayout";
 export type { WidgetArrangement } from "./WidgetLayout";
@@ -131,22 +135,26 @@ export function Slider({
   format?: (v: number) => string;
 }) {
   const fmt = format || ((v: number) => (Number.isFinite(v) ? v.toFixed(2) : String(v)));
+  const labelId = React.useId();
   return (
     <div className="viz-slider-row">
       <div className="viz-slider-head">
-        <span>{label}</span>
+        <span id={labelId}>{label}</span>
         <span className="viz-slider-value">
           {fmt(value)}
           {unit && <span className="viz-slider-unit">{unit}</span>}
         </span>
       </div>
-      <input
-        type="range"
+      <ShadcnSlider
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => onChange(+e.target.value)}
+        value={[value]}
+        onValueChange={(values) => {
+          const next = typeof values === "number" ? values : values[0];
+          if (typeof next === "number") onChange(next);
+        }}
+        aria-labelledby={labelId}
       />
     </div>
   );
@@ -221,7 +229,7 @@ export function Notice({ children }: { children: ReactNode }) {
   return <div className="viz-notice">{children}</div>;
 }
 
-/* ───────────── ToggleRow (checkbox label) ───────────── */
+/* ───────────── ToggleRow (switch label) ───────────── */
 
 export function ToggleRow({
   checked,
@@ -232,19 +240,11 @@ export function ToggleRow({
   onChange: (v: boolean) => void;
   children: ReactNode;
 }) {
+  const id = React.useId();
   return (
-    <label
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        fontSize: 11,
-        color: "var(--text-muted)",
-        cursor: "pointer",
-      }}
-    >
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      {children}
-    </label>
+    <div className="viz-toggle-row">
+      <ShadcnSwitch id={id} checked={checked} onCheckedChange={onChange} />
+      <Label htmlFor={id}>{children}</Label>
+    </div>
   );
 }
