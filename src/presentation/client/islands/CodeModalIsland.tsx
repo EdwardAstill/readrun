@@ -1,0 +1,183 @@
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { Modal } from "../../components/reusable/Modal.tsx";
+
+export function CodeModalIsland(): React.JSX.Element {
+	const [block, setBlock] = useState<HTMLElement | null>(null);
+	const outputRef = useRef<HTMLDivElement>(null);
+	const returnFocusRef = useRef<HTMLElement | null>(null);
+	const close = useCallback(() => setBlock(null), []);
+
+	useEffect(() => {
+		const handleClick = (event: MouseEvent): void => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+
+			const enlargeButton = target.closest<HTMLElement>(".exec-enlarge-btn");
+			if (enlargeButton) {
+				const sourceBlock = enlargeButton.closest<HTMLElement>(
+					".code-panel, .exec-block, .block-exec",
+				);
+				if (sourceBlock) {
+					event.preventDefault();
+					returnFocusRef.current = enlargeButton;
+					setBlock(sourceBlock);
+				}
+				return;
+			}
+
+			const copyButton = target.closest<HTMLButtonElement>(".code-copy-btn");
+			if (copyButton) {
+				event.preventDefault();
+				void copyCodeFromButton(copyButton);
+			}
+		};
+
+		document.addEventListener("click", handleClick);
+		return () => document.removeEventListener("click", handleClick);
+	}, []);
+
+	useEffect(() => {
+		if (!block || !outputRef.current) return;
+		const output = outputRef.current;
+		syncOutput(block, output);
+		const source = findOutput(block);
+		if (!source) return;
+
+		const observer = new MutationObserver(() => syncOutput(block, output));
+		observer.observe(source, {
+			childList: true,
+			subtree: true,
+			characterData: true,
+		});
+		return () => observer.disconnect();
+	}, [block]);
+
+	const language =
+		block?.dataset.language ?? block?.getAttribute("data-language") ?? "text";
+	const canRun = Boolean(block?.querySelector(".exec-run-btn"));
+
+	return (
+		<Modal
+			id="code-modal"
+			open={block !== null}
+			onClose={close}
+			className="code-modal"
+			contentClassName="code-modal__card"
+			ariaLabelledBy="code-modal-title"
+			finalFocusRef={returnFocusRef}
+		>
+			<h2 id="code-modal-title" className="rr-visually-hidden">
+				Enlarged code block
+			</h2>
+			<div className="code-modal__header">
+				<span id="code-modal-lang" className="code-modal__lang">
+					{language}
+				</span>
+				<div>
+					{canRun ? (
+						<button
+							id="code-modal-run"
+							type="button"
+							className="code-modal__run"
+							onClick={() =>
+								block?.querySelector<HTMLElement>(".exec-run-btn")?.click()
+							}
+						>
+							Run
+						</button>
+					) : null}
+					<button
+						id="code-modal-close"
+						type="button"
+						className="code-modal__close"
+						onClick={close}
+						aria-label="Close enlarged code block"
+					>
+						<span aria-hidden="true">×</span>
+					</button>
+				</div>
+			</div>
+			<div className="code-modal__body">
+				<div id="code-modal-code" className="code-modal__code">
+					<pre>
+						<code>{block ? readCodeText(block) : ""}</code>
+					</pre>
+				</div>
+				<div
+					id="code-modal-output"
+					className="code-modal__output"
+					ref={outputRef}
+				/>
+			</div>
+		</Modal>
+	);
+}
+
+function findOutput(block: HTMLElement): HTMLElement | null {
+	return block.querySelector<HTMLElement>("output.exec-output, .exec-output");
+}
+
+/** Replace output contents with a safe clone of the source output element. */
+export function syncOutput(block: HTMLElement, target: HTMLElement): void {
+	const source = findOutput(block);
+	target.replaceChildren(
+		...(source
+			? Array.from(source.childNodes, (child) => child.cloneNode(true))
+			: []),
+	);
+}
+
+export function readCodeText(block: HTMLElement): string {
+	const editable = block.querySelector<HTMLTextAreaElement>(".exec-editable");
+	if (editable) return editable.value;
+
+	const source = block.querySelector<HTMLScriptElement>("script[data-source]");
+	if (source?.textContent) {
+		try {
+			return atob(source.textContent.trim());
+		} catch {
+			// Fall back to the visible code if the source payload is malformed.
+		}
+	}
+
+	return block.querySelector<HTMLElement>("pre code")?.textContent ?? "";
+}
+
+async function copyCodeFromButton(button: HTMLButtonElement): Promise<void> {
+	const block = button.closest<HTMLElement>(
+		".code-panel, .exec-block, .block-exec",
+	);
+	if (!block) return;
+
+	const originalText = button.textContent ?? "Copy";
+	try {
+		await writeClipboard(readCodeText(block));
+		button.textContent = "Copied";
+	} catch {
+		button.textContent = "Failed";
+	} finally {
+		window.setTimeout(() => {
+			button.textContent = originalText;
+		}, 1200);
+	}
+}
+
+async function writeClipboard(text: string): Promise<void> {
+	if (navigator.clipboard?.writeText) {
+		await navigator.clipboard.writeText(text);
+		return;
+	}
+
+	const textarea = document.createElement("textarea");
+	textarea.value = text;
+	textarea.readOnly = true;
+	textarea.style.position = "fixed";
+	textarea.style.top = "-9999px";
+	document.body.append(textarea);
+	textarea.select();
+	const copied = document.execCommand("copy");
+	textarea.remove();
+	if (!copied) throw new Error("Clipboard copy failed");
+}

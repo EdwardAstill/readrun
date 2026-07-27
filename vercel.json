@@ -1,0 +1,5 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "bun src/cli.ts build docs --platform=vercel",
+  "outputDirectory": "dist"
+}

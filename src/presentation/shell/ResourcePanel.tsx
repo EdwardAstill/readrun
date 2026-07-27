@@ -1,0 +1,46 @@
+import type React from "react";
+
+import type { ResourceBrowserEntry } from "../contracts.ts";
+import {
+	groupResourceBrowserEntries,
+	ResourceBrowserTree,
+} from "../client/resource-browser/ResourceBrowserTree.tsx";
+import { Panel } from "../components/reusable/Panel.tsx";
+
+export interface ResourcePanelProps {
+	resources: readonly ResourceBrowserEntry[];
+}
+
+export function ResourcePanel(props: ResourcePanelProps): React.JSX.Element {
+	const categories = groupResourceBrowserEntries(props.resources);
+	const hasResources = props.resources.length > 0;
+
+	return (
+		<div className="resource-browser">
+			<Panel
+				searchId="resource-browser-search"
+				searchPlaceholder="Search resource"
+				count={<span id="resource-browser-count">{props.resources.length}</span>}
+				collapseButton={{
+					id: "resource-browser-fold-all-btn",
+					label: "Collapse all resource groups",
+					icon: "-",
+					disabled: categories.length === 0,
+					controls: "resource-browser-tree",
+				}}
+				bodyClassName="resource-browser__list"
+			>
+				{!hasResources ? (
+					<div className="resource-browser__empty">No resources found</div>
+				) : null}
+				<ResourceBrowserTree groups={categories} groupsOpen={true} />
+				<div
+					className="resource-browser__empty rr-resource-empty"
+					hidden
+				>
+					No resources match
+				</div>
+			</Panel>
+		</div>
+	);
+}

@@ -1,0 +1,53 @@
+index: welcome.md
+
+pages:
+  Home: welcome.md
+
+  Start Here:
+    index: README.md
+    pages:
+      Tutorial: start/intro.md
+      Philosophy: start/philosophy.md
+      Commands: start/commands.md
+
+  Reference:
+    index: reference/overview.md
+    pages:
+      Runtime Flow: reference/runtime.md
+      Project Layout: reference/project-layout.md
+
+  Authoring:
+    index: authoring/blocks.md
+    pages:
+      Frontmatter: authoring/frontmatter.md
+      Navigation: authoring/nav.md
+      Tables: authoring/tables.md
+      File Viewers: authoring/file-viewers.md
+      Quiz Format: authoring/quiz-format.md
+      Code: authoring/code.md
+      Widgets: authoring/widgets.md
+
+  Widget Library:
+    index: widget-library/index.md
+    pages:
+      Primitives: widget-library/primitives.md
+      Plot: widget-library/plot.md
+      Diagram: widget-library/diagram.md
+      Interaction And Draw: widget-library/interaction-draw.md
+      Reference Widgets: widget-library/reference-widgets.md
+
+  Deployment:
+    index: deployment/overview.md
+    pages:
+      Password Auth: deployment/auth.md
+
+  Project:
+    index: project/architecture.md
+    pages:
+      Limitations: project/limitations.md
+      Roadmap: project/roadmap.md
+
+  Example Content:
+    pages:
+      Lecture 1: examples/lecture-1.md
+      Lecture 2: examples/lecture-2.md

@@ -1,0 +1,59 @@
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+*.log
+*.pid
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store
+.superpowers/
+
+# readrun generated output in any content root
+**/.readrun/.preview/
+**/.readrun/.widgets-out/
+
+# Vercel project metadata and generated output
+.vercel/
+
+# git worktrees
+.worktrees/
+
+# warden plan-exec state
+.warden/plans/*.state.json
+.warden/runtime/
+.warden/ui-previews/
+
+# pi coding agent cache
+.pi-lens/
+.pi/
+
+# local planning and research notes
+.plans/
+.research/

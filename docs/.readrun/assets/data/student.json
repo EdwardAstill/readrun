@@ -1,0 +1,6 @@
+{
+  "name": "Ada Lovelace",
+  "course": "ReadRun Demo",
+  "scores": [92, 88, 95],
+  "notes": "Loaded from .readrun/assets/data/student.json"
+}

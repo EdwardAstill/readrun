@@ -1,0 +1,59 @@
+{
+  "name": "readrun",
+  "version": "0.1.0",
+  "description": "Turn Markdown folders into interactive sites with runnable Python and React widgets.",
+  "type": "module",
+  "packageManager": "bun@1.3.14",
+  "bin": {
+    "rr": "src/cli.ts"
+  },
+  "files": [
+    "src",
+    "docs",
+    "integrations",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "bun --hot src/cli.ts serve docs --no-open",
+    "build:docs": "bun src/cli.ts build docs",
+    "check": "bun run typecheck && bun run test && bun run validate:docs",
+    "test": "bun test ./src",
+    "typecheck": "tsc --noEmit",
+    "validate:docs": "bun src/cli.ts validate docs --strict"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EdwardAstill/readrun.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EdwardAstill/readrun/issues"
+  },
+  "homepage": "https://github.com/EdwardAstill/readrun#readme",
+  "keywords": [
+    "markdown",
+    "documentation",
+    "static-site-generator",
+    "pyodide",
+    "bun"
+  ],
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "@types/markdown-it": "^14.1.2",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.184.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@vscode/markdown-it-katex": "^1.1.2",
+    "citty": "^0.2.2",
+    "esbuild": "^0.24.0",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.1",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "three": "^0.184.0",
+    "yaml": "^2.8.3"
+  }
+}
