@@ -14,7 +14,16 @@ export const execBlockStyles = `
 
 .lightbox.open { display: flex; }
 
+.lightbox__close {
+  display: block;
+  border: 0;
+  cursor: zoom-out;
+}
+
 .lightbox img {
+  display: block;
+  width: auto;
+  height: auto;
   max-width: 92vw;
   max-height: 92vh;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);

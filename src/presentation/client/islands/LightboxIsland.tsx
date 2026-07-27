@@ -3,9 +3,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Modal } from "../../components/reusable/Modal.tsx";
 
-interface LightboxImage {
+export interface LightboxImage {
 	src: string;
 	alt: string;
+	width: number;
+	height: number;
 }
 
 export function LightboxIsland(): React.JSX.Element {
@@ -33,7 +35,7 @@ export function LightboxIsland(): React.JSX.Element {
 				image.tabIndex = -1;
 			}
 			returnFocusRef.current = focusTarget;
-			setImage({ src: image.src, alt: image.alt });
+			setImage(readLightboxImage(image));
 		};
 
 		document.addEventListener("click", handleClick);
@@ -50,9 +52,48 @@ export function LightboxIsland(): React.JSX.Element {
 			ariaLabel={image?.alt ? `Image preview: ${image.alt}` : "Image preview"}
 			finalFocusRef={returnFocusRef}
 		>
-			{image ? <img id="lightbox-img" src={image.src} alt={image.alt} /> : null}
+			{image ? <LightboxPreview image={image} onClose={close} /> : null}
 		</Modal>
 	);
+}
+
+export function LightboxPreview(props: {
+	image: LightboxImage;
+	onClose: () => void;
+}): React.JSX.Element {
+	return (
+		<img
+			id="lightbox-img"
+			className="lightbox__close"
+			src={props.image.src}
+			alt={props.image.alt}
+			width={props.image.width}
+			height={props.image.height}
+			style={{
+				width: `min(${props.image.width}px, 92vw, ${
+					(92 * props.image.width) / props.image.height
+				}vh)`,
+			}}
+			role="button"
+			tabIndex={0}
+			onClick={props.onClose}
+			onKeyDown={(event) => {
+				if (event.key !== "Enter" && event.key !== " ") return;
+				event.preventDefault();
+				props.onClose();
+			}}
+			aria-label="Close image preview"
+		/>
+	);
+}
+
+export function readLightboxImage(image: HTMLImageElement): LightboxImage {
+	return {
+		src: image.currentSrc || image.src,
+		alt: image.alt,
+		width: image.naturalWidth,
+		height: image.naturalHeight,
+	};
 }
 
 export function isContentImage(image: HTMLImageElement): boolean {
