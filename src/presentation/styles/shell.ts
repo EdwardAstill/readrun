@@ -32,7 +32,7 @@ export const shellStyles = `
 }
 
 /* ── Focus mode navbar ── */
-.readrun-sidebar.rr-focus-active .sidebar-navigation { padding: 0; }
+.readrun-sidebar.rr-focus-active > .sidebar-panel-body { padding: 0; }
 
 .rr-focus-search-wrap {
   padding: var(--rr-space-sm);
@@ -95,7 +95,7 @@ export const shellStyles = `
   padding: 2px 6px;
   background: transparent;
   border: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
 }
 
 .rr-crumb:hover { color: var(--color-text); background: var(--color-border); }
@@ -304,7 +304,7 @@ export const shellStyles = `
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   padding: 0 var(--rr-space-sm);
   margin: 0 0 var(--rr-space-xs);
 }

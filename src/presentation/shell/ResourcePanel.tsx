@@ -20,7 +20,6 @@ export function ResourcePanel(props: ResourcePanelProps): React.JSX.Element {
 			<Panel
 				searchId="resource-browser-search"
 				searchPlaceholder="Search resource"
-				count={<span id="resource-browser-count">{props.resources.length}</span>}
 				collapseButton={{
 					id: "resource-browser-fold-all-btn",
 					label: "Collapse all resource groups",
@@ -28,7 +27,6 @@ export function ResourcePanel(props: ResourcePanelProps): React.JSX.Element {
 					disabled: categories.length === 0,
 					controls: "resource-browser-tree",
 				}}
-				bodyClassName="resource-browser__list"
 			>
 				{!hasResources ? (
 					<div className="resource-browser__empty">No resources found</div>

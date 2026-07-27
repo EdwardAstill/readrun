@@ -106,14 +106,8 @@ function syncResourceBrowser(root: HTMLElement): void {
 		);
 		visibleTotal += visibleItems.length;
 		group.classList.toggle("rr-resource-hidden", visibleItems.length === 0);
-		const count = group.querySelector<HTMLElement>(
-			".resource-browser__category-count",
-		);
-		if (count) count.textContent = String(visibleItems.length);
 	}
 
-	const count = document.getElementById("resource-browser-count");
-	if (count) count.textContent = String(visibleTotal);
 	const empty = root.querySelector<HTMLElement>(".rr-resource-empty");
 	if (empty) empty.hidden = visibleTotal !== 0 || resourceItems(root).length === 0;
 }

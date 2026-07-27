@@ -73,36 +73,6 @@ export function ReadrunShell(props: ReadrunShellProps): React.JSX.Element {
 				navigation={props.navigation}
 				currentUrl={props.page.url}
 				resources={props.resources}
-				toolbar={
-					props.searchEnabled || props.settingsEnabled ? (
-						<nav className="shell-toolbar" aria-label="Reader actions">
-							{props.searchEnabled ? (
-								<button
-									type="button"
-									className="shell-toolbar__button sidebar-icon-button"
-									id="desktop-search-btn"
-									data-open-overlay="site-search-overlay"
-									aria-label="Search all pages"
-									title="Search all pages (Ctrl+K)"
-								>
-									<ShellIcon name="search" />
-								</button>
-							) : null}
-							{props.settingsEnabled ? (
-								<button
-									type="button"
-									className="shell-toolbar__button sidebar-icon-button"
-									id="desktop-settings-btn"
-									data-open-overlay="settings-overlay"
-									aria-label="Open settings"
-									title="Settings"
-								>
-									<ShellIcon name="settings" />
-								</button>
-							) : null}
-						</nav>
-					) : null
-				}
 			/>
 
 			{/* Scrim backdrop for mobile drawer */}

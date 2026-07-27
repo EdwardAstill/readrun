@@ -6,13 +6,19 @@ import { mobileStyles } from "./mobile.ts";
 import { uiStyles } from "./ui.ts";
 
 describe("responsive shell styles", () => {
-	test("lets resource and TOC summary rows span their panels", () => {
+	test("uses one full-width body contract for sidebar panels", () => {
 		expect(baseStyles).toMatch(
-			/\.toc-sidebar__body\s*\{[^}]*padding: var\(--rr-space-sm\) 0;/,
+			/\.sidebar-panel-body\s*\{[^}]*flex: 1 1 auto;[^}]*overflow-y: auto;[^}]*padding: var\(--rr-space-sm\) 0;/,
 		);
-		expect(uiStyles).toMatch(
-			/\.resource-browser__list\s*\{[^}]*padding: var\(--rr-space-sm\) 0;/,
+		expect(baseStyles).toMatch(
+			/\.sidebar-footer \.sidebar-panel-body\s*\{[^}]*max-height: 28vh;/,
 		);
+		expect(baseStyles).toMatch(
+			/\.toc-sidebar > \.sidebar-panel-body\s*\{[^}]*padding-top: 0;/,
+		);
+		expect(baseStyles).not.toContain(".sidebar-navigation");
+		expect(baseStyles).not.toContain(".toc-sidebar__body");
+		expect(uiStyles).not.toContain(".resource-browser__list");
 	});
 
 	test("makes leaf targets and active branches full-width rows", () => {

@@ -32,7 +32,7 @@ export const uiStyles = `
 
 /* ── Resource browser ── */
 .resource-browser {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 12px;
 }
 
@@ -60,18 +60,6 @@ export const uiStyles = `
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
-}
-
-.resource-browser__count,
-.resource-browser__category-count {
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.resource-browser__list {
-  max-height: 28vh;
-  overflow: auto;
-  padding: var(--rr-space-sm) 0;
 }
 
 .resource-browser__category-header {

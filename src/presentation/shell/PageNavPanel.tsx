@@ -26,7 +26,6 @@ export function PageNavPanel(props: PageNavPanelProps): React.JSX.Element {
 				label: "Collapse all folders",
 				icon: "-",
 			}}
-			bodyClassName="sidebar-navigation"
 			bodyAriaLabel={navigationLabel}
 		>
 			<div

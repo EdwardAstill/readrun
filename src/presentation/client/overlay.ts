@@ -61,7 +61,7 @@ export function isOverlayOpen(id: string): boolean {
 	return activeOverlay === id;
 }
 
-/** Dismiss transient UI. Escape never opens a new surface. */
+/** Dismiss transient UI, then open settings when nothing else consumes Escape. */
 export function escapeSequence(): boolean {
 	if (isAnyOverlayOpen()) {
 		closeAllOverlays();
@@ -75,7 +75,8 @@ export function escapeSequence(): boolean {
 		return true;
 	}
 
-	return false;
+	openOverlay("settings-overlay");
+	return true;
 }
 
 function notifyListeners(): void {

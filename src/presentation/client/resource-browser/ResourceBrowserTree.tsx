@@ -77,11 +77,6 @@ function toResourceBrowserTreeNode(
 				{categoryIcon(group.kind)}
 			</span>
 		),
-		trailing: (
-			<span className="resource-browser__category-count">
-				{group.entries.length}
-			</span>
-		),
 		itemProps: {
 			"data-resource-browser-group": group.kind,
 		},

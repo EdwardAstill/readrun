@@ -1,6 +1,7 @@
 import type React from "react";
 import type { ReactNode } from "react";
 
+import { PanelBody } from "./PanelBody.tsx";
 import { SearchBar } from "./SearchBar.tsx";
 
 export interface PanelCollapseButton {
@@ -23,7 +24,6 @@ export interface PanelProps {
 	leadingActions?: ReactNode;
 	count?: ReactNode;
 	collapseButton?: PanelCollapseButton;
-	bodyClassName?: string;
 	bodyAriaLabel?: string;
 	children: ReactNode;
 }
@@ -66,12 +66,7 @@ export function Panel(props: PanelProps): React.JSX.Element {
 					) : null}
 				</div>
 			</div>
-			<div
-				className={props.bodyClassName ?? "sidebar-panel-body"}
-				aria-label={props.bodyAriaLabel}
-			>
-				{props.children}
-			</div>
+			<PanelBody ariaLabel={props.bodyAriaLabel}>{props.children}</PanelBody>
 		</>
 	);
 }

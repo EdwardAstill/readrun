@@ -19,7 +19,6 @@ export function TocPanel(props: TocPanelProps): React.JSX.Element {
 				icon: "-",
 				controls: "toc-tree",
 			}}
-			bodyClassName="toc-sidebar__body"
 		>
 			<TocSidebarBody items={props.items} />
 		</Panel>

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
 	closeAllOverlays,
 	closeOverlay,
+	escapeSequence,
 	getActiveOverlay,
 	openOverlay,
 	subscribeOverlays,
@@ -41,5 +42,27 @@ describe("overlay coordination", () => {
 	test("ignores unknown overlay IDs", () => {
 		openOverlay("not-an-overlay");
 		expect(getActiveOverlay()).toBeNull();
+	});
+
+	test("opens settings when Escape has nothing to dismiss", () => {
+		const documentDescriptor = Object.getOwnPropertyDescriptor(
+			globalThis,
+			"document",
+		);
+		Object.defineProperty(globalThis, "document", {
+			configurable: true,
+			value: { querySelector: () => null },
+		});
+
+		try {
+			expect(escapeSequence()).toBe(true);
+			expect(getActiveOverlay()).toBe("settings-overlay");
+		} finally {
+			if (documentDescriptor) {
+				Object.defineProperty(globalThis, "document", documentDescriptor);
+			} else {
+				Reflect.deleteProperty(globalThis, "document");
+			}
+		}
 	});
 });

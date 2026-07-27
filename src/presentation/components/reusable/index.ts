@@ -6,6 +6,7 @@ export {
 	type SearchPaletteProps,
 } from "./SearchPalette.tsx";
 export { Panel, type PanelProps, type PanelCollapseButton } from "./Panel.tsx";
+export { PanelBody, type PanelBodyProps } from "./PanelBody.tsx";
 export { Modal, type ModalProps } from "./Modal.tsx";
 export {
 	Button,
