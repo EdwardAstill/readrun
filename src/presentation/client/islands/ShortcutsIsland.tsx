@@ -1,5 +1,10 @@
 import type React from "react";
 
+import {
+	DialogHeader,
+	DialogTitle,
+} from "../../components/ui/Dialog.tsx";
+import { Kbd, KbdGroup } from "../../components/ui/Kbd.tsx";
 import { Modal } from "../../components/reusable/Modal.tsx";
 import { closeOverlay } from "../overlay.ts";
 import { SHORTCUT_BINDINGS, SHORTCUT_GROUPS } from "../shortcuts.ts";
@@ -16,36 +21,29 @@ export function ShortcutsIsland(
 			id="shortcuts-overlay"
 			open={props.open}
 			onClose={() => closeOverlay("shortcuts-overlay")}
-			className="overlay"
-			contentClassName="overlay__card"
 			ariaLabelledBy="shortcuts-dialog-title"
 		>
-			<div className="overlay__header">
-				<h2 className="overlay__title" id="shortcuts-dialog-title">
+			<DialogHeader>
+				<DialogTitle id="shortcuts-dialog-title">
 					Keyboard Shortcuts
-				</h2>
-				<button
-					type="button"
-					className="overlay__close-hint"
-					data-overlay-close="shortcuts-overlay"
-					aria-label="Close keyboard shortcuts"
-					onClick={() => closeOverlay("shortcuts-overlay")}
-				>
-					<span aria-hidden="true">×</span>
-				</button>
-			</div>
-			<div className="shortcuts-grid settings-panel">
+				</DialogTitle>
+			</DialogHeader>
+			<div className="grid gap-4">
 				{SHORTCUT_GROUPS.map((group) => (
-					<section key={group.label} aria-labelledby={`shortcuts-${group.label}`}>
+					<section
+						className="grid gap-2"
+						key={group.label}
+						aria-labelledby={`shortcuts-${group.label}`}
+					>
 						<h3
-							className="shortcuts-grid__category"
+							className="text-sm font-medium"
 							id={`shortcuts-${group.label}`}
 						>
 							{group.label}
 						</h3>
 						{group.items.map(([label, action]) => (
-							<div className="shortcuts-grid__row" key={action}>
-								<span className="shortcuts-grid__label">{label}</span>
+							<div className="flex items-center justify-between gap-4" key={action}>
+								<span>{label}</span>
 								<span>{formatBinding(SHORTCUT_BINDINGS[action])}</span>
 							</div>
 						))}
@@ -57,7 +55,11 @@ export function ShortcutsIsland(
 }
 
 function formatBinding(binding: string): React.ReactNode {
-	return binding.split(/\s+/).map((key, index) => (
-		<kbd key={`${key}-${index}`}>{key}</kbd>
-	));
+	return (
+		<KbdGroup>
+			{binding.split(/\s+/).map((key, index) => (
+				<Kbd key={`${key}-${index}`}>{key}</Kbd>
+			))}
+		</KbdGroup>
+	);
 }

@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import tailwind from "bun-plugin-tailwind";
 
 export interface BundleResult {
   script: string;
@@ -23,6 +24,7 @@ export async function bundleClient(entry?: string): Promise<BundleResult> {
       format: "esm",
       splitting: false,
       minify: false,
+      plugins: [tailwind],
     });
 
     const script = await firstOutputText(result.outputs, ".js");

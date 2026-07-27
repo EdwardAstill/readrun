@@ -1,5 +1,7 @@
 // Client-side behavior for readrun-rendered Markdown tables.
 
+import { buttonVariants } from "../components/ui/Button.tsx";
+
 const DEFAULT_MIN_COL_WIDTH_CH = 10;
 const TABLE_BORDER_PX = 2;
 const CONTENT_WIDTH_BUFFER_PX = 16;
@@ -174,8 +176,10 @@ function initTable(wrap: HTMLElement): () => void {
 
 		if (stickyButton) {
 			stickyButton.disabled = !overflows;
-			stickyButton.classList.toggle("rr-button--primary", stickyEnabled);
-			stickyButton.classList.toggle("rr-button--secondary", !stickyEnabled);
+			stickyButton.className = buttonVariants({
+				variant: stickyEnabled ? "default" : "outline",
+				size: "sm",
+			});
 			stickyButton.ariaPressed = String(stickyEnabled);
 			stickyButton.textContent = stickyEnabled ? "Sticky on" : "Sticky off";
 		}

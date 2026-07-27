@@ -1,6 +1,9 @@
 import type React from "react";
 import { useCallback, useEffect, useRef } from "react";
 
+import { Button } from "../ui/Button.tsx";
+import { Input } from "../ui/Input.tsx";
+
 export interface SearchBarProps {
 	id?: string;
 	inputRef?: React.RefObject<HTMLInputElement>;
@@ -58,7 +61,7 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 
 	return (
 		<div className={props.className}>
-			<input
+			<Input
 				id={props.id}
 				ref={inputRef}
 				className={props.inputClassName}
@@ -85,35 +88,38 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 			)}
 			{props.onNavigate && (
 				<>
-					<button
-						type="button"
-						className={props.buttonClassName ?? "search-bar__button"}
+					<Button
+						variant="ghost"
+						size="sm"
+						className={props.buttonClassName}
 						onClick={() => props.onNavigate?.(-1)}
 						disabled={total === 0}
 						aria-label="Previous match"
 					>
 						{props.prevLabel ?? "Prev"}
-					</button>
-					<button
-						type="button"
-						className={props.buttonClassName ?? "search-bar__button"}
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						className={props.buttonClassName}
 						onClick={() => props.onNavigate?.(1)}
 						disabled={total === 0}
 						aria-label="Next match"
 					>
 						{props.nextLabel ?? "Next"}
-					</button>
+					</Button>
 				</>
 			)}
 			{props.onClose && (
-				<button
-					type="button"
-					className={props.closeClassName ?? "search-bar__close"}
+				<Button
+					variant="ghost"
+					size="icon"
+					className={props.closeClassName}
 					onClick={props.onClose}
 					aria-label="Close search"
 				>
 					×
-				</button>
+				</Button>
 			)}
 		</div>
 	);

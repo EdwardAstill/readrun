@@ -73,9 +73,7 @@ function toResourceBrowserTreeNode(
 		detailsClassName: "resource-browser__category",
 		summaryClassName: "resource-browser__category-header",
 		leading: (
-			<span className="resource-browser__category-icon">
-				{categoryIcon(group.kind)}
-			</span>
+			<span>{categoryIcon(group.kind)}</span>
 		),
 		itemProps: {
 			"data-resource-browser-group": group.kind,
@@ -104,13 +102,13 @@ function toResourceBrowserResourceNode(
 		leading:
 			resource.kind === "image" && resource.href ? (
 				<img
-					className="resource-browser__thumbnail"
+					className="size-5 object-cover"
 					src={resource.href}
 					alt={resource.label}
 					loading="lazy"
 				/>
 			) : (
-				<span className="resource-browser__file-icon">
+				<span className="w-5 text-center">
 					{fileIcon(resource.label)}
 				</span>
 			),

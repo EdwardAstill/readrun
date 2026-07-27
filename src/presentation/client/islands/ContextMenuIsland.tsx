@@ -1,7 +1,14 @@
-import { Menu } from "@base-ui/react/menu";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuPortal,
+	DropdownMenuPositioner,
+	DropdownMenuSeparator,
+} from "../../components/ui/DropdownMenu.tsx";
 import { openOverlay } from "../overlay.ts";
 import { commitSettings, loadSettings } from "../settings.ts";
 
@@ -89,7 +96,7 @@ export function ContextMenuIsland(): React.JSX.Element {
 	};
 
 	return (
-		<Menu.Root
+		<DropdownMenu
 			open={open}
 			modal={false}
 			onOpenChange={(nextOpen, details) => {
@@ -99,48 +106,42 @@ export function ContextMenuIsland(): React.JSX.Element {
 				}
 			}}
 		>
-			<Menu.Portal>
-				<Menu.Positioner
-					className="context-menu__positioner"
+			<DropdownMenuPortal>
+				<DropdownMenuPositioner
 					anchor={anchor}
 					positionMethod="fixed"
 					side="bottom"
 					align="start"
 					collisionPadding={8}
 				>
-					<Menu.Popup
+					<DropdownMenuContent
 						id="context-menu"
-						className="context-menu"
 						finalFocus={false}
 						ref={popupRef}
 					>
-						<Menu.Item
-							className="context-menu__item"
+						<DropdownMenuItem
 							onClick={() =>
 								runAction(() => openOverlay("settings-overlay"))
 							}
 						>
 							Settings
-						</Menu.Item>
-						<Menu.Item
-							className="context-menu__item"
+						</DropdownMenuItem>
+						<DropdownMenuItem
 							onClick={() =>
 								runAction(() => openOverlay("page-search-overlay"))
 							}
 						>
 							Search Page
-						</Menu.Item>
-						<Menu.Item
-							className="context-menu__item"
+						</DropdownMenuItem>
+						<DropdownMenuItem
 							onClick={() =>
 								runAction(() => openOverlay("site-search-overlay"))
 							}
 						>
 							Search Site
-						</Menu.Item>
-						<Menu.Separator className="context-menu__sep" />
-						<Menu.Item
-							className="context-menu__item"
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem
 							onClick={() =>
 								runAction(() => {
 									const settings = loadSettings();
@@ -150,9 +151,8 @@ export function ContextMenuIsland(): React.JSX.Element {
 							}
 						>
 							Toggle Sidebar
-						</Menu.Item>
-						<Menu.Item
-							className="context-menu__item"
+						</DropdownMenuItem>
+						<DropdownMenuItem
 							onClick={() =>
 								runAction(() => {
 									const settings = loadSettings();
@@ -162,10 +162,10 @@ export function ContextMenuIsland(): React.JSX.Element {
 							}
 						>
 							Toggle Focus Mode
-						</Menu.Item>
-					</Menu.Popup>
-				</Menu.Positioner>
-			</Menu.Portal>
-		</Menu.Root>
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenuPositioner>
+			</DropdownMenuPortal>
+		</DropdownMenu>
 	);
 }

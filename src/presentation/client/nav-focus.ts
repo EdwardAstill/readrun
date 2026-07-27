@@ -1,7 +1,12 @@
+import { buttonVariants } from "../components/ui/Button.tsx";
+import { cn } from "../components/ui/cn.ts";
+
 // Focus mode (double-click folder to zoom in) + nav collapse persistence.
 
 const FOCUS_STORAGE_KEY = "rr:focus-path";
 const OPEN_STORAGE_KEY = "readrun:nav-open";
+const FOCUS_CRUMBS_CLASS =
+	"rr-focus-crumbs flex flex-wrap items-center gap-1 border-b p-2 text-sm empty:hidden";
 
 // ── Focus mode ──
 
@@ -61,14 +66,17 @@ function unmountFocusChrome(nav: HTMLElement): void {
 function createCrumbButton(className: string, text: string): HTMLButtonElement {
 	const button = document.createElement("button");
 	button.type = "button";
-	button.className = className;
+	button.className = cn(
+		buttonVariants({ variant: "ghost", size: "sm" }),
+		className,
+	);
 	button.textContent = text;
 	return button;
 }
 
 function createCrumbSeparator(): HTMLSpanElement {
 	const sep = document.createElement("span");
-	sep.className = "rr-crumb-sep";
+	sep.className = "rr-crumb-sep text-muted-foreground";
 	sep.textContent = "›";
 	return sep;
 }
@@ -122,8 +130,10 @@ function renderBreadcrumbs(
 	if (!crumbs) return;
 
 	crumbs.textContent = "";
-	crumbs.className =
-		segments.length > 0 ? "rr-focus-crumbs has-focus" : "rr-focus-crumbs empty";
+	crumbs.className = cn(
+		FOCUS_CRUMBS_CLASS,
+		segments.length > 0 && "has-focus bg-sidebar-accent",
+	);
 
 	if (segments.length === 0) {
 		return;
@@ -150,7 +160,7 @@ function renderBreadcrumbs(
 				applyFn(nextFocus);
 			});
 		} else {
-			btn.classList.add("current");
+			btn.classList.add("current", "text-primary");
 			btn.disabled = true;
 		}
 		crumbs.appendChild(btn);

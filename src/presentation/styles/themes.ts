@@ -25,14 +25,6 @@ const themeRule = (name: ThemeName): string =>
 	`[data-theme="${name}"] {${themeVariables(themeCatalog[name].colors)}
 }`;
 
-const swatchRule = (name: ThemeName): string => {
-	const { background, sidebarBackground, accent } = themeCatalog[name].colors;
-	const selector = `.theme-card[data-theme-choice="${name}"] .theme-card__swatches`;
-	return `${selector} span:nth-child(1) { background: ${background}; }
-${selector} span:nth-child(2) { background: ${sidebarBackground}; }
-${selector} span:nth-child(3) { background: ${accent}; }`;
-};
-
 const highlightRule = (
 	name: ThemeName,
 	selectors: string,
@@ -100,10 +92,6 @@ const syntaxThemeRules = themeNames
 	.map((name) => highlightThemeRules(name, themeCatalog[name].syntax))
 	.join("\n\n");
 
-const themeSwatchRules = themeNames
-	.map(swatchRule)
-	.join("\n\n");
-
 export const themeStyles = `
 /* ── Themes: generated from the canonical TypeScript palettes ── */
 ${nonDefaultThemeRules}
@@ -111,7 +99,4 @@ ${nonDefaultThemeRules}
 /* highlight.js — base colors follow the active semantic theme. */
 .hljs { background: var(--rr-code-bg); color: var(--rr-text); }
 ${syntaxThemeRules}
-
-/* Theme picker swatches use the same semantic colors as the active themes. */
-${themeSwatchRules}
 `;

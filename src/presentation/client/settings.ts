@@ -136,12 +136,6 @@ export function applySettings(s: Settings): void {
 		main.style.maxWidth = `${s.contentWidth}px`;
 	}
 
-	// Sidebar
-	const sidebar = document.getElementById("readrun-sidebar");
-	if (sidebar) {
-		sidebar.style.display = s.showSidebar && !s.focusMode ? "" : "none";
-	}
-
 	// Theme
 	if (s.theme === "light") {
 		delete document.documentElement.dataset.theme;

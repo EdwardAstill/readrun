@@ -1,5 +1,5 @@
 import { themePalette } from "../tokens.ts";
-import { fontTokens, spacingTokens } from "./tokens.ts";
+import { fontTokens } from "./tokens.ts";
 
 const lightTheme = themePalette.light;
 
@@ -20,17 +20,49 @@ export const rootThemeStyles = `
   --rr-code-bg: ${lightTheme.codeBackground};
   --rr-highlight-bg: ${lightTheme.highlightBackground};
   --rr-focus: var(--rr-link);
-  --rr-space-xs: ${spacingTokens.xs};
-  --rr-space-sm: ${spacingTokens.sm};
-  --rr-space-md: ${spacingTokens.md};
-  --rr-space-lg: ${spacingTokens.lg};
-  --rr-space-xl: ${spacingTokens.xl};
-  --rr-control-height-compact: 28px;
-  --rr-control-height-default: 34px;
-  --rr-control-radius: 4px;
+  --rr-destructive: #dc2626;
+  --rr-destructive-foreground: #ffffff;
+  --rr-success: #2f9e44;
+  --rr-warning: #d97706;
 }
 
-/* Legacy variable names are mapped here so component CSS has one theme source. */
+/* shadcn-compatible semantic aliases stay linked to readrun's live themes. */
+:root {
+  --background: var(--rr-bg);
+  --foreground: var(--rr-text);
+  --card: var(--rr-bg);
+  --card-foreground: var(--rr-text);
+  --popover: var(--rr-bg);
+  --popover-foreground: var(--rr-text);
+  --primary: var(--rr-accent);
+  --primary-foreground: var(--rr-on-accent);
+  --secondary: var(--rr-surface);
+  --secondary-foreground: var(--rr-text);
+  --muted: var(--rr-surface);
+  --muted-foreground: var(--rr-muted);
+  --accent: var(--rr-active-bg);
+  --accent-foreground: var(--rr-text);
+  --destructive: var(--rr-destructive);
+  --destructive-foreground: var(--rr-destructive-foreground);
+  --border: var(--rr-border);
+  --input: var(--rr-border);
+  --ring: var(--rr-focus);
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --sidebar: var(--rr-sidebar-bg);
+  --sidebar-foreground: var(--rr-text);
+  --sidebar-primary: var(--rr-accent);
+  --sidebar-primary-foreground: var(--rr-on-accent);
+  --sidebar-accent: var(--rr-active-bg);
+  --sidebar-accent-foreground: var(--rr-text);
+  --sidebar-border: var(--rr-border);
+  --sidebar-ring: var(--rr-focus);
+}
+
+/* Content color aliases remain linked to the same live theme source. */
 :root {
   --color-bg: var(--rr-bg);
   --color-sidebar-bg: var(--rr-sidebar-bg);
@@ -45,11 +77,7 @@ export const rootThemeStyles = `
   --color-fg-muted: var(--rr-muted);
   --color-bg-alt: var(--rr-surface);
   --color-surface: var(--rr-surface);
-  --sidebar-width: 260px;
   --readrun-content-width: 880px;
-  --readrun-content-toc-gap: 1.5rem;
-  --readrun-toc-width: 16rem;
-  --readrun-toc-handle-width: 4px;
   --font-body: ${fontTokens.body};
   --font-mono: ${fontTokens.mono};
 }

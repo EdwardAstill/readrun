@@ -21,7 +21,7 @@ test("JSX output uses a consistent inset theme canvas", () => {
 	expect(baseOutput).toContain("display: block");
 	expect(baseOutput).toContain("white-space: normal");
 	expect(output).toContain("margin-top: 0");
-	expect(output).toContain("padding: var(--rr-space-md)");
+	expect(output).toContain("padding: 1rem");
 	expect(output).toContain("background: var(--color-surface, var(--rr-surface))");
 	expect(mount).toContain("display: flex");
 	expect(mount).toContain("width: 100%");

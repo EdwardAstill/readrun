@@ -1,6 +1,7 @@
 import type React from "react";
 
 import type { TocItem } from "../contracts.ts";
+import { Sidebar } from "../components/ui/Sidebar.tsx";
 import { TocPanel } from "./TocPanel.tsx";
 
 export interface RightSidebarProps {
@@ -15,12 +16,15 @@ export function RightSidebar(
 	}
 
 	return (
-		<nav
+		<Sidebar
 			id="toc-sidebar"
-			className="toc-sidebar"
+			side="right"
+			collapsible="none"
+			className="w-full"
+			role="navigation"
 			aria-label="Table of contents"
 		>
 			<TocPanel items={props.items} />
-		</nav>
+		</Sidebar>
 	);
 }

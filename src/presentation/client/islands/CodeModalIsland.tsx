@@ -1,6 +1,11 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { Button } from "../../components/ui/Button.tsx";
+import {
+	DialogHeader,
+	DialogTitle,
+} from "../../components/ui/Dialog.tsx";
 import { Modal } from "../../components/reusable/Modal.tsx";
 
 export function CodeModalIsland(): React.JSX.Element {
@@ -63,42 +68,25 @@ export function CodeModalIsland(): React.JSX.Element {
 			id="code-modal"
 			open={block !== null}
 			onClose={close}
-			className="code-modal"
-			contentClassName="code-modal__card"
 			ariaLabelledBy="code-modal-title"
 			finalFocusRef={returnFocusRef}
 		>
-			<h2 id="code-modal-title" className="rr-visually-hidden">
-				Enlarged code block
-			</h2>
-			<div className="code-modal__header">
-				<span id="code-modal-lang" className="code-modal__lang">
+			<DialogHeader>
+				<DialogTitle id="code-modal-title">
 					{language}
-				</span>
-				<div>
-					{canRun ? (
-						<button
-							id="code-modal-run"
-							type="button"
-							className="code-modal__run"
-							onClick={() =>
-								block?.querySelector<HTMLElement>(".exec-run-btn")?.click()
-							}
-						>
-							Run
-						</button>
-					) : null}
-					<button
-						id="code-modal-close"
-						type="button"
-						className="code-modal__close"
-						onClick={close}
-						aria-label="Close enlarged code block"
-					>
-						<span aria-hidden="true">×</span>
-					</button>
-				</div>
-			</div>
+				</DialogTitle>
+			</DialogHeader>
+			{canRun ? (
+				<Button
+					id="code-modal-run"
+					size="sm"
+					onClick={() =>
+						block?.querySelector<HTMLElement>(".exec-run-btn")?.click()
+					}
+				>
+					Run
+				</Button>
+			) : null}
 			<div className="code-modal__body">
 				<div id="code-modal-code" className="code-modal__code">
 					<pre>

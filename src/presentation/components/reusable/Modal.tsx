@@ -1,15 +1,15 @@
-import { Dialog } from "@base-ui/react/dialog";
 import type React from "react";
 import type { ReactNode } from "react";
+
+import {
+	Dialog,
+	DialogContent,
+} from "../ui/Dialog.tsx";
 
 export interface ModalProps {
 	id: string;
 	open: boolean;
 	onClose: () => void;
-	className: string;
-	openClassName?: string;
-	contentClassName: string;
-	scrimClassName?: string;
 	ariaLabel?: string;
 	ariaLabelledBy?: string;
 	initialFocusRef?: React.RefObject<HTMLElement | null>;
@@ -17,38 +17,25 @@ export interface ModalProps {
 	children: ReactNode;
 }
 
-/** Shared dialog shell backed by Base UI's focus and dismissal behavior. */
+/** Shared modal using the unmodified shadcn Dialog presentation. */
 export function Modal(props: ModalProps): React.JSX.Element {
-	const openClassName = props.openClassName ?? "open";
-
 	return (
-		<Dialog.Root
+		<Dialog
 			open={props.open}
 			onOpenChange={(open) => {
 				if (!open) props.onClose();
 			}}
 		>
-			<Dialog.Portal
+			<DialogContent
 				id={props.id}
-				className={`${props.className} ${openClassName}`}
+				aria-modal="true"
+				aria-label={props.ariaLabel}
+				aria-labelledby={props.ariaLabelledBy}
+				initialFocus={props.initialFocusRef}
+				finalFocus={props.finalFocusRef}
 			>
-				{props.scrimClassName ? (
-					<Dialog.Backdrop className={props.scrimClassName} />
-				) : null}
-				<Dialog.Popup
-					className={`${props.contentClassName} rr-modal-popup`}
-					aria-modal="true"
-					aria-label={props.ariaLabel}
-					aria-labelledby={props.ariaLabelledBy}
-					initialFocus={props.initialFocusRef}
-					finalFocus={props.finalFocusRef}
-				>
-					{props.children}
-					<Dialog.Close className="rr-visually-hidden" tabIndex={-1}>
-						Close dialog
-					</Dialog.Close>
-				</Dialog.Popup>
-			</Dialog.Portal>
-		</Dialog.Root>
+				{props.children}
+			</DialogContent>
+		</Dialog>
 	);
 }

@@ -49,9 +49,6 @@ export const viewerStyles = `
   background: var(--color-sidebar-bg);
   border-bottom: 1px solid var(--color-border);
 }
-.csv-filter {
-  width: 100%;
-}
 .csv-table-wrap {
   flex: 1;
   overflow: auto;

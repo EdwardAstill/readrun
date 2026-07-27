@@ -77,22 +77,6 @@ export function SiteSearchIsland(
 			placeholder="Search all pages..."
 			ariaLabel="Search all pages"
 			loading={loading}
-			classes={{
-				root: "site-search-palette",
-				open: "site-search-palette--open",
-				scrim: "site-search-palette__scrim",
-				card: "site-search-palette__card",
-				bar: "site-search-palette__bar",
-				input: "site-search-palette__input",
-				close: "site-search-palette__close",
-				results: "site-search-palette__results",
-				result: "site-search-palette__result",
-				activeResult: "site-search-palette__result--active",
-				title: "site-search-palette__title",
-				subtitle: "site-search-palette__snippet",
-				empty: "site-search-palette__empty",
-				loading: "site-search-palette__empty",
-			}}
 		/>
 	);
 }

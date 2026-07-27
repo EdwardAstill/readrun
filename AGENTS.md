@@ -4,6 +4,11 @@
 - Demo/reference content lives in `docs/`; `rr docs` serves that folder.
 - `dist/` is generated static output from `rr build`, is gitignored, and should not be edited as source.
 
+## UI conventions
+
+- Preserve the established shadcn/ui corner radii when adapting or wrapping components. Do not replace rounded controls, panels, dialogs, popovers, or sidebar surfaces with square-cornered wrappers unless the user explicitly requests square corners.
+- When a surface touches a viewport edge, keep that edge flush and round its exposed corners with the existing radius scale.
+
 ## `@readrun/widgets` toolkit
 
 readrun ships the widgets React component library in-repo at `src/widgets/`.

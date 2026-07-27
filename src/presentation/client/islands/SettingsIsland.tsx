@@ -1,8 +1,17 @@
-import { Switch } from "@base-ui/react/switch";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Modal } from "../../components/reusable/Modal.tsx";
+import { Button } from "../../components/ui/Button.tsx";
+import { Label } from "../../components/ui/Label.tsx";
+import { NativeSelect } from "../../components/ui/NativeSelect.tsx";
+import { Slider } from "../../components/ui/Slider.tsx";
+import { Switch } from "../../components/ui/Switch.tsx";
+import type { SwitchProps } from "../../components/ui/Switch.tsx";
+import {
+	DialogHeader,
+	DialogTitle,
+} from "../../components/ui/Dialog.tsx";
 import { closeOverlay, openOverlay } from "../overlay.ts";
 import {
 	commitSettings,
@@ -22,9 +31,43 @@ export interface SettingsIslandProps {
 	open: boolean;
 }
 
+interface SettingsSwitchRowProps
+	extends Pick<
+		SwitchProps,
+		"checked" | "disabled" | "onCheckedChange" | "title"
+	> {
+	id: string;
+	label: string;
+	labelId: string;
+}
+
+export function SettingsSwitchRow({
+	id,
+	label,
+	labelId,
+	...switchProps
+}: SettingsSwitchRowProps): React.JSX.Element {
+	return (
+		<div className="flex items-center justify-between gap-2">
+			<Label
+				className={switchProps.disabled ? "text-muted-foreground" : "cursor-pointer"}
+				htmlFor={id}
+				id={labelId}
+			>
+				{label}
+			</Label>
+			<Switch
+				id={id}
+				aria-labelledby={labelId}
+				{...switchProps}
+			/>
+		</div>
+	);
+}
+
 export function SettingsIsland(props: SettingsIslandProps): React.JSX.Element {
 	const [settings, setSettings] = useState<Settings>(() => loadSettings());
-	const initialFocusRef = useRef<HTMLInputElement>(null);
+	const initialFocusRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		return subscribeSettings(setSettings);
@@ -35,8 +78,8 @@ export function SettingsIsland(props: SettingsIslandProps): React.JSX.Element {
 	}, []);
 
 	const handleFontSizeChange = useCallback(
-		(event: React.ChangeEvent<HTMLInputElement>) => {
-			const value = Number(event.currentTarget.value);
+		(values: number | readonly number[]) => {
+			const value = typeof values === "number" ? values : values[0];
 			if (FONT_SIZES.includes(value as (typeof FONT_SIZES)[number])) {
 				update({ fontSize: value as (typeof FONT_SIZES)[number] });
 			}
@@ -62,50 +105,36 @@ export function SettingsIsland(props: SettingsIslandProps): React.JSX.Element {
 			id="settings-overlay"
 			open={props.open}
 			onClose={() => closeOverlay("settings-overlay")}
-			className="overlay"
-			contentClassName="overlay__card"
 			ariaLabelledBy="settings-dialog-title"
 			initialFocusRef={initialFocusRef}
 		>
-			<div className="overlay__header">
-				<h2 className="overlay__title" id="settings-dialog-title">
+			<DialogHeader>
+				<DialogTitle id="settings-dialog-title">
 					Settings
-				</h2>
-				<button
-					type="button"
-					className="overlay__close-hint"
-					data-overlay-close="settings-overlay"
-					aria-label="Close settings"
-					onClick={() => closeOverlay("settings-overlay")}
-				>
-					<span aria-hidden="true">×</span>
-				</button>
-			</div>
-			<div className="settings-panel" id="settings-panel">
-				<div className="settings__section">
-					<span className="settings__label" id="readrun-font-label">
+				</DialogTitle>
+			</DialogHeader>
+			<div className="grid gap-4" id="settings-panel">
+				<div className="grid gap-2">
+					<span className="text-sm font-medium" id="readrun-font-label">
 						Font size — {settings.fontSize}px
 					</span>
-					<input
+					<Slider
 						ref={initialFocusRef}
-						className="settings__range"
 						id="readrun-font-range"
-						type="range"
 						min={12}
 						max={24}
 						step={2}
-						value={settings.fontSize}
-						onChange={handleFontSizeChange}
+						value={[settings.fontSize]}
+						onValueChange={handleFontSizeChange}
 						aria-labelledby="readrun-font-label"
 					/>
 				</div>
 
-				<div className="settings__section">
-					<label className="settings__label" htmlFor="readrun-font-family">
+				<div className="grid gap-2">
+					<label className="text-sm font-medium" htmlFor="readrun-font-family">
 						Font
 					</label>
-					<select
-						className="settings__select"
+					<NativeSelect
 						id="readrun-font-family"
 						value={settings.fontFamily}
 						onChange={handleFontFamilyChange}
@@ -114,118 +143,82 @@ export function SettingsIsland(props: SettingsIslandProps): React.JSX.Element {
 						<option value="system">System</option>
 						<option value="serif">Serif</option>
 						<option value="mono">Mono</option>
-					</select>
+					</NativeSelect>
 				</div>
 
-				<div className="settings__section">
-					<span className="settings__label" id="readrun-theme-label">
+				<div className="grid gap-2">
+					<span className="text-sm font-medium" id="readrun-theme-label">
 						Theme
 					</span>
-					<div className="theme-grid" aria-labelledby="readrun-theme-label">
+					<div className="grid grid-cols-2 gap-2" aria-labelledby="readrun-theme-label">
 						{THEMES.map((theme) => (
-							<button
+							<Button
 								type="button"
 								key={theme}
-								className={`theme-card${
-									settings.theme === theme ? " theme-card--active" : ""
-								}`}
+								variant={settings.theme === theme ? "secondary" : "outline"}
 								data-theme-choice={theme}
 								onClick={() => update({ theme: theme as Theme })}
 								aria-pressed={settings.theme === theme}
 							>
-								<span className="theme-card__swatches" aria-hidden="true">
-									<span />
-									<span />
-									<span />
-								</span>
-								<span className="theme-card__name">
-									{THEME_LABELS[theme]}
-								</span>
-							</button>
+								<span>{THEME_LABELS[theme]}</span>
+							</Button>
 						))}
 					</div>
 				</div>
 
-				<div className="settings__section" id="width-section">
-					<span className="settings__label" id="readrun-width-label">
+				<div className="hidden gap-2 md:grid" id="width-section">
+					<span className="text-sm font-medium" id="readrun-width-label">
 						Content width — {settings.contentWidth}px
 					</span>
-					<input
-						className="settings__range"
+					<Slider
 						id="readrun-width-range"
-						type="range"
 						min={500}
 						max={1400}
 						step={20}
-						value={settings.contentWidth}
-						onChange={(event) =>
-							update({ contentWidth: Number(event.currentTarget.value) })
+						value={[settings.contentWidth]}
+						onValueChange={(values) =>
+							update({
+								contentWidth:
+									typeof values === "number"
+										? values
+										: (values[0] ?? settings.contentWidth),
+							})
 						}
 						aria-labelledby="readrun-width-label"
 					/>
 				</div>
 
-				<div className="settings__section">
-					<div className="settings__toggle-row">
-						<span className="settings__label" id="readrun-sidebar-label">
-							Show sidebar
-						</span>
-						<Switch.Root
-							render={<button type="button" />}
-							nativeButton
-							className={({ checked }) =>
-								`settings__switch${
-									checked ? " settings__switch--on" : ""
-								}`
-							}
-							id="readrun-sidebar-toggle"
-							aria-labelledby="readrun-sidebar-label"
-							checked={settings.showSidebar}
-							onCheckedChange={(checked) => update({ showSidebar: checked })}
-						>
-							<Switch.Thumb className="settings__switch-thumb" />
-						</Switch.Root>
-					</div>
-				</div>
+				<SettingsSwitchRow
+					id="readrun-sidebar-toggle"
+					label="Show sidebar"
+					labelId="readrun-sidebar-label"
+					checked={settings.showSidebar}
+					onCheckedChange={(checked) => update({ showSidebar: checked })}
+				/>
 
-				<div className="settings__section">
-					<div className="settings__toggle-row">
-						<span className="settings__label" id="readrun-local-python-label">
-							Run Python locally
-						</span>
-						<Switch.Root
-							render={<button type="button" />}
-							nativeButton
-							className={({ checked }) =>
-								`settings__switch${
-									checked ? " settings__switch--on" : ""
-								}${!localPythonAvailable ? " settings__switch--locked" : ""}`
-							}
-							id="readrun-local-python-toggle"
-							aria-labelledby="readrun-local-python-label"
-							checked={localPythonEnabled}
-							disabled={!localPythonAvailable}
-							title={
-								localPythonAvailable
-									? undefined
-									: "Local Python execution requires uv to be installed."
-							}
-							onCheckedChange={(checked) => update({ useLocalPython: checked })}
-						>
-							<Switch.Thumb className="settings__switch-thumb" />
-						</Switch.Root>
-					</div>
-				</div>
+				<SettingsSwitchRow
+					id="readrun-local-python-toggle"
+					label="Run Python locally"
+					labelId="readrun-local-python-label"
+					checked={localPythonEnabled}
+					disabled={!localPythonAvailable}
+					title={
+						localPythonAvailable
+							? undefined
+							: "Local Python execution requires uv to be installed."
+					}
+					onCheckedChange={(checked) => update({ useLocalPython: checked })}
+				/>
 
-				<div className="settings__section">
-					<button
-						type="button"
-						className="settings__shortcuts-btn"
+				<div>
+					<Button
+						variant="outline"
+						size="default"
 						id="open-shortcuts-btn"
 						onClick={() => openOverlay("shortcuts-overlay")}
 					>
 						Keyboard Shortcuts
-					</button>
+					</Button>
 				</div>
 			</div>
 		</Modal>

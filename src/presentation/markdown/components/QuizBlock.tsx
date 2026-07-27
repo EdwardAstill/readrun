@@ -8,6 +8,8 @@ import type {
 	InfoItem,
 } from "../../../domain/quiz/model.ts";
 import { escapeHtml } from "../../../shared/html.ts";
+import { Button } from "../../components/ui/Button.tsx";
+import { Input } from "../../components/ui/Input.tsx";
 
 export interface QuizBlockProps {
 	quiz: Quiz;
@@ -58,19 +60,18 @@ export function QuizBlock(props: QuizBlockProps): React.JSX.Element {
 
 			{/* Navigation — only shown on client */}
 			<div className="quiz__nav" style={{ display: "none" }}>
-				<button className="quiz__nav-btn quiz__nav-btn--prev" type="button">
+				<Button variant="outline" className="quiz__nav-btn quiz__nav-btn--prev">
 					Previous
-				</button>
-				<button className="quiz__nav-btn quiz__nav-btn--next" type="button">
+				</Button>
+				<Button variant="outline" className="quiz__nav-btn quiz__nav-btn--next">
 					Next
-				</button>
-				<button
+				</Button>
+				<Button
 					className="quiz__nav-btn quiz__nav-btn--finish"
-					type="button"
 					style={{ display: "none" }}
 				>
 					Finish
-				</button>
+				</Button>
 			</div>
 
 			{/* Results — shown when quiz is complete */}
@@ -113,12 +114,11 @@ function InfoDisplay(props: { item: InfoItem }): React.JSX.Element {
 				className="quiz__info-content"
 				dangerouslySetInnerHTML={{ __html: props.item.content }}
 			/>
-			<button
+			<Button
 				className="quiz__submit-btn quiz__submit-btn--continue"
-				type="button"
 			>
 				Continue
-			</button>
+			</Button>
 		</div>
 	);
 }
@@ -142,9 +142,9 @@ function ChoiceQuestion(props: {
 
 			{q.hint ? (
 				<div className="quiz__hint">
-					<button className="quiz__hint-btn" type="button" data-hint={q.id}>
+					<Button variant="link" className="quiz__hint-btn" data-hint={q.id}>
 						Show hint
-					</button>
+					</Button>
 					<div
 						className="quiz__hint-text"
 						id={`hint-${q.id}`}
@@ -184,15 +184,14 @@ function ChoiceQuestion(props: {
 				))}
 			</div>
 
-			<button
+			<Button
 				className="quiz__submit-btn"
-				type="button"
 				data-submit={q.type}
 				data-qid={q.id}
 				disabled
 			>
 				Submit
-			</button>
+			</Button>
 
 			<div className="quiz__feedback" style={{ display: "none" }}>
 				<div className="quiz__feedback-result"></div>
@@ -222,9 +221,9 @@ function TrueFalseQuestionDisplay(props: {
 
 			{q.hint ? (
 				<div className="quiz__hint">
-					<button className="quiz__hint-btn" type="button" data-hint={q.id}>
+					<Button variant="link" className="quiz__hint-btn" data-hint={q.id}>
 						Show hint
-					</button>
+					</Button>
 					<div
 						className="quiz__hint-text"
 						id={`hint-${q.id}`}
@@ -236,22 +235,22 @@ function TrueFalseQuestionDisplay(props: {
 			) : null}
 
 			<div className="quiz__tf-options">
-				<button
+				<Button
+					variant="outline"
 					className="quiz__tf-btn"
-					type="button"
 					data-tf="true"
 					data-qid={q.id}
 				>
 					True
-				</button>
-				<button
+				</Button>
+				<Button
+					variant="outline"
 					className="quiz__tf-btn"
-					type="button"
 					data-tf="false"
 					data-qid={q.id}
 				>
 					False
-				</button>
+				</Button>
 			</div>
 
 			<div className="quiz__feedback" style={{ display: "none" }}>
@@ -281,9 +280,9 @@ function FreeTextDisplay(props: {
 
 			{q.hint ? (
 				<div className="quiz__hint">
-					<button className="quiz__hint-btn" type="button" data-hint={q.id}>
+					<Button variant="link" className="quiz__hint-btn" data-hint={q.id}>
 						Show hint
-					</button>
+					</Button>
 					<div
 						className="quiz__hint-text"
 						id={`hint-${q.id}`}
@@ -295,21 +294,20 @@ function FreeTextDisplay(props: {
 			) : null}
 
 			<div className="quiz__freetext">
-				<input
+				<Input
 					className="quiz__freetext-input"
 					type="text"
 					id={`freetext-${q.id}`}
 					data-qid={q.id}
 					placeholder="Type your answer..."
 				/>
-				<button
+				<Button
 					className="quiz__submit-btn"
-					type="button"
 					data-submit="freetext"
 					data-qid={q.id}
 				>
 					Submit
-				</button>
+				</Button>
 			</div>
 
 			<div className="quiz__feedback" style={{ display: "none" }}>
@@ -339,9 +337,9 @@ function GroupDisplay(props: { group: QuestionGroup }): React.JSX.Element {
 
 			{g.hint ? (
 				<div className="quiz__hint">
-					<button className="quiz__hint-btn" type="button" data-hint={g.id}>
+					<Button variant="link" className="quiz__hint-btn" data-hint={g.id}>
 						Show hint
-					</button>
+					</Button>
 					<div
 						className="quiz__hint-text"
 						id={`hint-${g.id}`}

@@ -27,15 +27,10 @@ test("theme CSS is generated from every catalog entry", () => {
 		}
 
 		expect(themeStyles).toContain(`color: ${syntax.keyword};`);
-		expect(themeStyles).toContain(
-			`.theme-card[data-theme-choice="${name}"] .theme-card__swatches span:nth-child(1) { background: ${colors.background}; }`,
-		);
-		expect(themeStyles).toContain(
-			`.theme-card[data-theme-choice="${name}"] .theme-card__swatches span:nth-child(3) { background: ${colors.accent}; }`,
-		);
 	}
 });
 
-test("theme swatch colors are not duplicated in static UI CSS", () => {
+test("theme picker presentation is not generated in static CSS", () => {
 	expect(uiStyles).not.toContain("data-theme-choice=");
+	expect(themeStyles).not.toContain("theme-card");
 });

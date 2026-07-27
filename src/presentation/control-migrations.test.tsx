@@ -15,7 +15,7 @@ test("code panel actions retain client hook classes on shared buttons", () => {
 		/>,
 	);
 
-	expect(html).toContain("rr-button--primary");
+	expect(html).toContain("bg-primary");
 	expect(html).toContain("exec-run-btn");
 	expect(html).toContain("exec-enlarge-btn");
 	expect(html).toContain("code-copy-btn");
@@ -33,9 +33,10 @@ test("CSV controls retain client data hooks and expose an input label", () => {
 	];
 	const html = renderToStaticMarkup(<CsvViewer rows={rows} />);
 
-	expect(html).toContain("rr-input csv-filter");
+	expect(html).toContain('data-slot="input"');
+	expect(html).toContain("h-8");
 	expect(html).toContain('aria-label="Filter CSV rows"');
 	expect(html).toContain("data-csv-prev");
 	expect(html).toContain("data-csv-next");
-	expect(html).toContain("rr-button--secondary");
+	expect(html).toContain("border-border");
 });

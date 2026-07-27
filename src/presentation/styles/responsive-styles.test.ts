@@ -2,112 +2,30 @@ import { describe, expect, test } from "bun:test";
 
 import { baseStyles } from "./base.ts";
 import { markdownStyles } from "./markdown.ts";
-import { mobileStyles } from "./mobile.ts";
 import { uiStyles } from "./ui.ts";
 
-describe("responsive shell styles", () => {
-	test("uses one full-width body contract for sidebar panels", () => {
-		expect(baseStyles).toMatch(
-			/\.sidebar-panel-body\s*\{[^}]*flex: 1 1 auto;[^}]*overflow-y: auto;[^}]*padding: var\(--rr-space-sm\) 0;/,
-		);
-		expect(baseStyles).toMatch(
-			/\.sidebar-footer \.sidebar-panel-body\s*\{[^}]*max-height: 28vh;/,
-		);
-		expect(baseStyles).toMatch(
-			/\.toc-sidebar > \.sidebar-panel-body\s*\{[^}]*padding-top: 0;/,
-		);
-		expect(baseStyles).not.toContain(".sidebar-navigation");
-		expect(baseStyles).not.toContain(".toc-sidebar__body");
-		expect(uiStyles).not.toContain(".resource-browser__list");
+describe("shadcn shell style ownership", () => {
+	test("leaves sidebar and resize presentation to shadcn components", () => {
+		expect(baseStyles).not.toContain(".resize-handle");
+		expect(baseStyles).not.toContain("#resize-sidebar");
+		expect(baseStyles).not.toContain("grid-template-columns: var(--sidebar-width)");
 	});
 
-	test("makes leaf targets and active branches full-width rows", () => {
-		expect(baseStyles).toMatch(/\.nav-tree a\s*\{[^}]*display: flex;/);
-		expect(baseStyles).toContain(
-			'.sidebar-nav details > summary:has(> a[aria-current="page"])',
-		);
-		expect(baseStyles).toContain(
-			".toc-tree details > summary:has(> .toc-link--active)",
-		);
-		expect(uiStyles).toContain(
-			".resource-browser__item:hover { background: var(--color-border); }",
-		);
+	test("does not ship a legacy mobile override sheet", async () => {
+		const mobileFile = Bun.file(new URL("./mobile.ts", import.meta.url));
+		expect(await mobileFile.exists()).toBe(false);
 	});
 
-	test("uses one row-height contract for links and folders", () => {
-		expect(baseStyles).toMatch(
-			/\.nav-tree :is\(li > a, details > summary\)\s*\{[^}]*min-height: var\(--rr-control-height-compact\);/,
-		);
-		expect(mobileStyles).toMatch(
-			/\.nav-tree :is\(li > a, details > summary\)\s*\{[^}]*min-height: 40px;/,
-		);
-		expect(mobileStyles).not.toContain("padding: 10px 14px;");
-	});
-
-	test("overlays the TOC resize handle instead of reserving a spacer column", () => {
-		expect(baseStyles).toContain(
-			"grid-template-columns: var(--readrun-toc-width);",
-		);
-		expect(baseStyles).toContain("width: var(--readrun-toc-width);");
-		expect(baseStyles).toContain("justify-self: start;");
-		expect(baseStyles).not.toContain(
-			"calc(var(--readrun-toc-handle-width) + var(--readrun-toc-width))",
-		);
-	});
-
-	test("collapses the sidebar grid track in focus mode", () => {
-		expect(baseStyles).toMatch(
-			/\[data-focus="true"\] \.readrun-shell\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
-		);
-		expect(baseStyles).toMatch(
-			/\[data-focus="true"\] \.readrun-content\s*\{[^}]*grid-column: 1;/,
-		);
-		expect(baseStyles).toContain(
-			'[data-focus="true"] #resize-sidebar { display: none !important; }',
-		);
-	});
-
-	test("keeps the primary sidebar lateral until the mobile breakpoint", () => {
-		expect(baseStyles).toContain("@media (max-width: 960px)");
-		expect(baseStyles).toContain(
-			"grid-template-columns: var(--sidebar-width) minmax(0, 1fr);",
-		);
-		expect(baseStyles).toContain(".toc-sidebar-slot { display: none; }");
-		expect(baseStyles).not.toContain(
-			".readrun-sidebar { border-right: 0; border-bottom:",
-		);
-	});
-
-	test("reserves the fixed mobile topbar exactly once", () => {
-		expect(mobileStyles).toContain("--readrun-mobile-topbar-height: 44px;");
-		expect(mobileStyles).toContain(
-			"padding-top: var(--readrun-mobile-topbar-height);",
-		);
-		expect(
-			mobileStyles.match(
-				/padding-top: var\(--readrun-mobile-topbar-height\);/g,
-			),
-		).toHaveLength(1);
-		expect(mobileStyles).not.toContain("padding-top: 56px;");
-		expect(mobileStyles).toContain(
-			".readrun-shell--with-toc {\n    grid-template-columns: 1fr;",
-		);
-	});
-
-	test("disables drawer motion when reduced motion is requested", () => {
-		expect(mobileStyles).toContain(
-			"@media (max-width: 768px) and (prefers-reduced-motion: reduce)",
-		);
-		expect(mobileStyles).toContain(
-			".readrun-sidebar { transition: none; }",
-		);
+	test("does not reintroduce legacy control styling", () => {
+		expect(uiStyles).not.toContain(".settings__switch");
+		expect(uiStyles).not.toContain(".settings__select");
+		expect(uiStyles).not.toContain(".overlay__close-hint");
 	});
 });
 
 describe("markdown style ownership", () => {
-	test("keeps legacy markdown selectors out of shell and mobile styles", () => {
+	test("keeps legacy markdown selectors out of shell styles", () => {
 		expect(baseStyles).not.toContain(".markdown-body");
-		expect(mobileStyles).not.toContain(".markdown-body");
 	});
 
 	test("keeps desktop and mobile table rules with readrun-main", () => {

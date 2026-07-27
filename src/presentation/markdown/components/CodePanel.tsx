@@ -58,7 +58,7 @@ export function CodePanelActions(
 		<>
 			{props.canRun ? (
 				<Button
-					variant="primary"
+					variant="default"
 					className="code-action-btn code-action-btn--primary exec-run-btn"
 					data-block-id={props.blockId}
 				>
@@ -67,6 +67,7 @@ export function CodePanelActions(
 			) : null}
 			{props.canEnlarge ? (
 				<Button
+					variant="outline"
 					className="code-action-btn exec-enlarge-btn"
 					data-block-id={props.blockId}
 				>
@@ -75,6 +76,7 @@ export function CodePanelActions(
 			) : null}
 			{props.canCopy ? (
 				<Button
+					variant="outline"
 					className="code-action-btn code-copy-btn"
 					data-block-id={props.blockId}
 				>
@@ -82,7 +84,7 @@ export function CodePanelActions(
 				</Button>
 			) : null}
 			{props.canEdit ? (
-				<Button className="code-action-btn exec-toggle-btn">
+				<Button variant="outline" className="code-action-btn exec-toggle-btn">
 					Edit
 				</Button>
 			) : null}

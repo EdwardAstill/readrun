@@ -59,24 +59,17 @@ export function PageSearchIsland(
 			id="page-search-overlay"
 			open={props.open}
 			onClose={close}
-			className="page-search-modal"
-			openClassName="page-search-modal--open"
-			contentClassName="page-search-modal__dialog"
-			scrimClassName="page-search-modal__scrim"
 			ariaLabel="Search this page"
 			initialFocusRef={inputRef}
 		>
 			<SearchBar
 				inputRef={inputRef}
-				className="page-search-modal__bar"
-				inputClassName="page-search-modal__input"
+				className="flex items-center gap-2"
 				value={query}
 				onChange={setQuery}
 				placeholder="Search this page..."
 				ariaLabel="Search this page"
-				countClassName="page-search-modal__count"
-				buttonClassName="page-search-modal__button"
-				closeClassName="page-search-modal__close"
+				countClassName="text-sm text-muted-foreground"
 				matchCount={{
 					current: stateRef.current.activeIdx + 1,
 					total: stateRef.current.marks.length,

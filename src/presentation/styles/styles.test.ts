@@ -10,25 +10,18 @@ test("execBlockStyles includes key selectors", () => {
 	expect(execBlockStyles).toContain(".code-panel");
 	expect(execBlockStyles).toContain(".code-panel__header");
 	expect(execBlockStyles).toContain(".code-panel__actions");
-	expect(execBlockStyles).toContain(".code-copy-btn");
 	expect(execBlockStyles).toContain(".exec-block-header");
-	expect(execBlockStyles).toContain(".exec-run-btn");
 	expect(execBlockStyles).toContain(".exec-output");
 	expect(execBlockStyles).toContain(".exec-editable");
-	expect(execBlockStyles).toContain(".exec-toggle-btn");
-	expect(execBlockStyles).toContain(".exec-enlarge-btn");
 	expect(execBlockStyles).toContain(".upload-block");
-	expect(execBlockStyles).toContain(".code-modal");
-	expect(execBlockStyles).toContain(".code-modal.open");
-	expect(execBlockStyles).toContain(".lightbox");
-	expect(execBlockStyles).toContain(".lightbox.open");
 	expect(execBlockStyles).toContain(".upload-file-tag");
 	expect(execBlockStyles).toContain(".upload-error");
-	expect(execBlockStyles).toContain(".code-modal__card");
-	expect(execBlockStyles).toContain(".code-modal__header");
-	expect(execBlockStyles).toContain(".code-modal__close");
 	expect(execBlockStyles).toContain(".code-modal__code");
 	expect(execBlockStyles).toContain(".code-modal__output");
+	expect(execBlockStyles).not.toContain(".code-modal__card");
+	expect(execBlockStyles).not.toContain(".code-modal__header");
+	expect(execBlockStyles).not.toContain(".code-copy-btn");
+	expect(execBlockStyles).not.toContain(".exec-run-btn");
 });
 
 test("quizStyles includes all quiz component selectors", () => {
@@ -52,11 +45,8 @@ test("quizStyles includes all quiz component selectors", () => {
 	expect(quizStyles).toContain(".quiz__tf-btn--correct");
 	expect(quizStyles).toContain(".quiz__tf-btn--wrong");
 	expect(quizStyles).toContain(".quiz__freetext");
-	expect(quizStyles).toContain(".quiz__freetext-input");
 	expect(quizStyles).toContain(".quiz__freetext-answer");
-	expect(quizStyles).toContain(".quiz__submit-btn");
 	expect(quizStyles).toContain(".quiz__hint");
-	expect(quizStyles).toContain(".quiz__hint-btn");
 	expect(quizStyles).toContain(".quiz__hint-text");
 	expect(quizStyles).toContain(".quiz__feedback");
 	expect(quizStyles).toContain(".quiz__feedback-result");
@@ -64,8 +54,6 @@ test("quizStyles includes all quiz component selectors", () => {
 	expect(quizStyles).toContain(".quiz__correct-answer");
 	expect(quizStyles).toContain(".quiz__explanation");
 	expect(quizStyles).toContain(".quiz__nav");
-	expect(quizStyles).toContain(".quiz__nav-btn");
-	expect(quizStyles).toContain(".quiz__nav-btn--finish");
 	expect(quizStyles).toContain(".quiz__group-prompt");
 	expect(quizStyles).toContain(".quiz__group-part");
 	expect(quizStyles).toContain(".quiz__group-part-label");
@@ -91,6 +79,10 @@ test("quizStyles includes all quiz component selectors", () => {
 	expect(quizStyles).toContain(".quiz__info code");
 	expect(quizStyles).toContain(".quiz__info pre");
 	expect(quizStyles).toContain(".quiz__info blockquote");
+	expect(quizStyles).not.toContain(".quiz__submit-btn {");
+	expect(quizStyles).not.toContain(".quiz__hint-btn {");
+	expect(quizStyles).not.toContain(".quiz__nav-btn {");
+	expect(quizStyles).not.toContain(".quiz__freetext-input {");
 });
 
 test("viewerStyles includes key viewer selectors", () => {
@@ -102,7 +94,6 @@ test("viewerStyles includes key viewer selectors", () => {
 	expect(viewerStyles).toContain(".video-viewer");
 	expect(viewerStyles).toContain(".csv-viewer");
 	expect(viewerStyles).toContain(".csv-toolbar");
-	expect(viewerStyles).toContain(".csv-filter");
 	expect(viewerStyles).toContain(".csv-table-wrap");
 	expect(viewerStyles).toContain(".csv-table");
 	expect(viewerStyles).toContain(".csv-table th");
@@ -114,16 +105,19 @@ test("viewerStyles includes key viewer selectors", () => {
 	expect(viewerStyles).toContain(".viewer-error");
 });
 
-test("uiStyles includes local Python settings controls", () => {
-	expect(uiStyles).toContain(".settings__switch");
-	expect(uiStyles).toContain(".settings__switch--locked");
-});
-
-test("shared modal popup does not reposition dialog contents", () => {
-	const popupRule = uiStyles.match(/\.rr-modal-popup\s*\{([^}]*)\}/)?.[1];
-
-	expect(popupRule).toBeDefined();
-	expect(popupRule).not.toContain("position:");
+test("legacy CSS does not restyle shadcn controls", () => {
+	expect(viewerStyles).not.toContain(".csv-filter");
+	for (const selector of [
+		".settings__",
+		".site-search-palette__",
+		".context-menu__",
+		".shortcuts-grid",
+		".theme-card",
+		".sidebar-panel-",
+		".overlay__close-hint",
+	]) {
+		expect(presentationStyles).not.toContain(selector);
+	}
 });
 
 test("all exports are non-empty strings", () => {

@@ -47,8 +47,6 @@ export function LightboxIsland(): React.JSX.Element {
 			id="lightbox"
 			open={image !== null}
 			onClose={close}
-			className="lightbox"
-			contentClassName="lightbox__content"
 			ariaLabel={image?.alt ? `Image preview: ${image.alt}` : "Image preview"}
 			finalFocusRef={returnFocusRef}
 		>
@@ -64,7 +62,7 @@ export function LightboxPreview(props: {
 	return (
 		<img
 			id="lightbox-img"
-			className="lightbox__close"
+			className="cursor-zoom-out"
 			src={props.image.src}
 			alt={props.image.alt}
 			width={props.image.width}

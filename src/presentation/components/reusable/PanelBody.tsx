@@ -1,6 +1,12 @@
 import type React from "react";
 import type { ReactNode } from "react";
 
+import {
+	SidebarContent,
+	SidebarGroup,
+	SidebarGroupContent,
+} from "../ui/Sidebar.tsx";
+
 export interface PanelBodyProps {
 	ariaLabel?: string;
 	children: ReactNode;
@@ -9,8 +15,12 @@ export interface PanelBodyProps {
 /** Shared scrollable body for sidebar navigation panels. */
 export function PanelBody(props: PanelBodyProps): React.JSX.Element {
 	return (
-		<div className="sidebar-panel-body" aria-label={props.ariaLabel}>
-			{props.children}
-		</div>
+		<SidebarContent className="gap-0">
+			<SidebarGroup>
+				<SidebarGroupContent aria-label={props.ariaLabel}>
+					{props.children}
+				</SidebarGroupContent>
+			</SidebarGroup>
+		</SidebarContent>
 	);
 }

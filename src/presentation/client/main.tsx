@@ -7,8 +7,7 @@ import { initModelViewers } from "./model-viewer.ts";
 import { initUploadBlocks } from "./upload.ts";
 import { initQuizzes } from "./quiz.ts";
 import { initExecBlocks } from "./execution/python.ts";
-import { initMobileDrawer } from "./mobile.ts";
-import { initResizeHandles } from "./resize.ts";
+import { mountResizableShell } from "./resizable-shell.tsx";
 import { initNavCollapse, initNavFocus } from "./nav-focus.ts";
 import { initPageNavTreeChrome } from "./page-nav-tree.ts";
 import { initResourceBrowserChrome } from "./resource-browser.ts";
@@ -26,6 +25,7 @@ import {
 } from "./shell-islands.tsx";
 import { readRuntimeConfig } from "./runtime-config.ts";
 import type { ClientFeature } from "./features.ts";
+import "../styles/shadcn.css";
 
 const runtime = readRuntimeConfig();
 
@@ -36,6 +36,7 @@ if (typeof document !== "undefined") {
 
 function clientFeatures(): ClientFeature[] {
 	return [
+		applicationFeature("resizable-shell", mountResizableShell),
 		applicationFeature("shell-navigation", () => {
 			const navigation = createShellNavigation();
 			const live = runtime ? createLiveClient({ runtime, navigation }) : null;
@@ -58,7 +59,6 @@ function clientFeatures(): ClientFeature[] {
 		}),
 		applicationFeature("shortcuts", initShortcuts),
 		applicationFeature("uploads", initUploadBlocks),
-		applicationFeature("mobile-drawer", initMobileDrawer),
 		pageFeature("quizzes", initQuizzes),
 		pageFeature("page-islands", () => {
 			const handle = mountPageShellIslands();
@@ -67,7 +67,6 @@ function clientFeatures(): ClientFeature[] {
 		pageFeature("execution", initExecBlocks),
 		pageFeature("jsx", mountPageJsx),
 		pageFeature("model-viewers", initModelViewers),
-		pageFeature("resize-handles", initResizeHandles),
 		pageFeature("page-nav-tree", initPageNavTreeChrome),
 		pageFeature("resource-browser", initResourceBrowserChrome),
 		pageFeature("toc", initTocSidebar),

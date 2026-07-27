@@ -2,6 +2,8 @@ import { Autocomplete } from "@base-ui/react/autocomplete";
 import type React from "react";
 import { useCallback, useRef } from "react";
 
+import { Input } from "../ui/Input.tsx";
+import { cn } from "../ui/cn.ts";
 import { Modal } from "./Modal.tsx";
 
 export interface SearchPaletteItem {
@@ -9,23 +11,6 @@ export interface SearchPaletteItem {
 	title: string;
 	subtitle?: string;
 	href?: string;
-}
-
-export interface SearchPaletteClasses {
-	root?: string;
-	open?: string;
-	scrim?: string;
-	card?: string;
-	bar?: string;
-	input?: string;
-	close?: string;
-	results?: string;
-	result?: string;
-	activeResult?: string;
-	title?: string;
-	subtitle?: string;
-	empty?: string;
-	loading?: string;
 }
 
 export interface SearchPaletteProps {
@@ -40,28 +25,9 @@ export interface SearchPaletteProps {
 	ariaLabel?: string;
 	loading?: boolean;
 	emptyLabel?: string;
-	classes?: SearchPaletteClasses;
 }
 
-const defaultClasses: Required<SearchPaletteClasses> = {
-	root: "search-palette",
-	open: "search-palette--open",
-	scrim: "search-palette__scrim",
-	card: "search-palette__card",
-	bar: "search-palette__bar",
-	input: "search-palette__input",
-	close: "search-palette__close",
-	results: "search-palette__results",
-	result: "search-palette__result",
-	activeResult: "search-palette__result--active",
-	title: "search-palette__title",
-	subtitle: "search-palette__subtitle",
-	empty: "search-palette__empty",
-	loading: "search-palette__loading",
-};
-
 export function SearchPalette(props: SearchPaletteProps): React.JSX.Element {
-	const classes = { ...defaultClasses, ...props.classes };
 	const inputRef = useRef<HTMLInputElement>(null);
 	const items = props.loading ? [] : props.items;
 	const ariaLabel = props.ariaLabel ?? props.placeholder ?? "Search";
@@ -83,10 +49,6 @@ export function SearchPalette(props: SearchPaletteProps): React.JSX.Element {
 			id={props.id ?? "search-palette"}
 			open={props.open}
 			onClose={props.onClose}
-			className={classes.root}
-			openClassName={classes.open}
-			contentClassName={classes.card}
-			scrimClassName={classes.scrim}
 			ariaLabel={ariaLabel}
 			initialFocusRef={inputRef}
 		>
@@ -103,48 +65,41 @@ export function SearchPalette(props: SearchPaletteProps): React.JSX.Element {
 				autoHighlight="always"
 				keepHighlight
 			>
-				<div className={classes.bar}>
+				<div>
 					<Autocomplete.Input
 						ref={inputRef}
-						className={classes.input}
+						render={<Input />}
 						type="search"
 						placeholder={props.placeholder}
 						aria-label={ariaLabel}
 					/>
-					<button
-						type="button"
-						className={classes.close}
-						onClick={props.onClose}
-						aria-label="Close search"
-					>
-						×
-					</button>
 				</div>
 				{props.loading ? (
-					<div className={classes.loading} role="status" aria-live="polite">
+					<div className="py-6 text-center text-sm" role="status" aria-live="polite">
 						Loading...
 					</div>
 				) : props.value.trim() ? (
 					<Autocomplete.Empty
-						className={classes.empty}
+						className="py-6 text-center text-sm"
 						role="status"
 						aria-live="polite"
 					>
 						{props.emptyLabel ?? "No matches"}
 					</Autocomplete.Empty>
 				) : null}
-				<Autocomplete.List className={classes.results}>
+				<Autocomplete.List className="max-h-80 overflow-y-auto">
 					{(item: SearchPaletteItem, index: number) => (
 						<Autocomplete.Item
 							key={item.id}
 							value={item}
 							index={index}
 							render={<a href={item.href ?? "#"} />}
-							className={({ highlighted }) =>
-								`${classes.result}${
-									highlighted ? ` ${classes.activeResult}` : ""
-								}`
-							}
+						className={({ highlighted }) =>
+							cn(
+								"block rounded-md px-2 py-1.5 text-sm outline-none",
+								highlighted && "bg-accent text-accent-foreground",
+							)
+						}
 							onClick={(event) => {
 								if (!item.href || props.onSelect) {
 									event.preventDefault();
@@ -154,9 +109,11 @@ export function SearchPalette(props: SearchPaletteProps): React.JSX.Element {
 								}
 							}}
 						>
-							<span className={classes.title}>{item.title}</span>
-							{item.subtitle ? (
-								<span className={classes.subtitle}>{item.subtitle}</span>
+						<span className="font-medium">{item.title}</span>
+						{item.subtitle ? (
+							<span className="block text-muted-foreground">
+								{item.subtitle}
+							</span>
 							) : null}
 						</Autocomplete.Item>
 					)}

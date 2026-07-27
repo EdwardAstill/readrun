@@ -1,6 +1,8 @@
 import type React from "react";
 import type { ReactNode } from "react";
 
+import { Button } from "../ui/Button.tsx";
+import { SidebarHeader } from "../ui/Sidebar.tsx";
 import { PanelBody } from "./PanelBody.tsx";
 import { SearchBar } from "./SearchBar.tsx";
 
@@ -35,25 +37,25 @@ export interface PanelProps {
 export function Panel(props: PanelProps): React.JSX.Element {
 	return (
 		<>
-			<div className="sidebar-panel-header">
-				<div className="sidebar-panel-action-row">
+			<SidebarHeader>
+				<div className="flex min-w-0 items-center gap-2">
 					{props.leadingActions}
 					<SearchBar
 						id={props.searchId}
-						className="sidebar-panel-search sidebar-panel-search--unlabeled"
+						className="min-w-0 flex-1"
 						value={props.searchValue ?? ""}
 						onChange={(value) => props.onSearchChange?.(value)}
 						placeholder={props.searchPlaceholder}
 						ariaLabel={props.searchAriaLabel ?? props.searchPlaceholder}
 					/>
 					{props.count ? (
-						<span className="sidebar-panel-count">{props.count}</span>
+						<span className="text-xs text-muted-foreground">{props.count}</span>
 					) : null}
 					{props.collapseButton ? (
-						<button
+						<Button
 							id={props.collapseButton.id}
-							className="sidebar-panel-icon-button"
-							type="button"
+							variant="ghost"
+							size="icon-sm"
 							aria-label={props.collapseButton.label}
 							title={props.collapseButton.title ?? props.collapseButton.label}
 							aria-expanded={props.collapseButton.expanded}
@@ -62,10 +64,10 @@ export function Panel(props: PanelProps): React.JSX.Element {
 							onClick={props.collapseButton.onClick}
 						>
 							{props.collapseButton.icon ?? "-"}
-						</button>
+						</Button>
 					) : null}
 				</div>
-			</div>
+			</SidebarHeader>
 			<PanelBody ariaLabel={props.bodyAriaLabel}>{props.children}</PanelBody>
 		</>
 	);

@@ -17,6 +17,7 @@ import {
 } from "../../domain/pages/wikilinks.ts";
 import { parseQuiz } from "../../domain/quiz/parser.ts";
 import { escapeHtml, joinHtml } from "../../shared/html.ts";
+import { buttonVariants } from "../components/ui/Button.tsx";
 import { CodeBlock } from "./components/CodeBlock.tsx";
 import { ExecBlock } from "./components/ExecBlock.tsx";
 import { QueryBlock } from "./components/QueryBlock.tsx";
@@ -272,10 +273,11 @@ function renderBlock(
 			const label = stringAttr(attrs, "label") ?? "Upload";
 			const accept = stringAttr(attrs, "accept");
 			const multiple = attrs.has("multiple");
+			const uploadButtonClass = escapeHtml(buttonVariants());
 			return `<div class="upload-block" data-upload-id="${escapeHtml(uploadId)}">
   <div class="upload-block-header">${escapeHtml(label)}</div>
   <div class="upload-block-body">
-    <label class="upload-btn">Choose Files
+    <label class="${uploadButtonClass}">Choose Files
       <input type="file" class="upload-input" data-upload-id="${escapeHtml(uploadId)}"${accept ? ` accept="${escapeHtml(accept)}"` : ""}${multiple ? " multiple" : ""} style="display:none">
     </label>
     <span class="upload-block-status" data-upload-status="${escapeHtml(uploadId)}"></span>

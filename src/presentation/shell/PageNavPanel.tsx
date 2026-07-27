@@ -30,7 +30,7 @@ export function PageNavPanel(props: PageNavPanelProps): React.JSX.Element {
 		>
 			<div
 				id="rr-focus-crumbs"
-				className="rr-focus-crumbs empty"
+				className="rr-focus-crumbs flex flex-wrap items-center gap-1 border-b p-2 text-sm empty:hidden"
 				aria-label="Focused navigation folder"
 			/>
 			{props.navigation.mode === "tree" ? (

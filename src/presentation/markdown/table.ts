@@ -2,6 +2,8 @@
 // It replaces markdown-it table tokens with stable HTML that the client can
 // measure and resize through one content-aware sizing path.
 
+import { buttonVariants } from "../components/ui/Button.tsx";
+
 const DEFAULT_COL_WIDTH = 28; // ch
 const MIN_COL_WIDTH = 10;
 const MAX_COL_WIDTH = 100;
@@ -172,7 +174,7 @@ function renderTableHtml(data: TableData): string {
 	html += `<input type="range" class="rr-table-width-slider" data-rr-slider-input="${uid}" min="${MIN_COL_WIDTH}" max="${MAX_COL_WIDTH}" value="${charWidth}" aria-label="Column width">`;
 	html += `<output class="rr-table-width-value" data-rr-value="${uid}">${charWidth}ch</output>`;
 	html += `</label>`;
-	html += `<button type="button" class="rr-control rr-control--compact rr-button rr-button--primary rr-table-sticky" data-rr-sticky="${uid}" aria-label="Keep first column visible while scrolling" aria-pressed="true">Sticky on</button>`;
+	html += `<button type="button" class="${escapeAttribute(buttonVariants({ size: "sm" }))}" data-rr-sticky="${uid}" aria-label="Keep first column visible while scrolling" aria-pressed="true">Sticky on</button>`;
 	html += `</div>`;
 	html += `</div>`;
 

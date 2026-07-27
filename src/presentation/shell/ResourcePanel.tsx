@@ -29,11 +29,11 @@ export function ResourcePanel(props: ResourcePanelProps): React.JSX.Element {
 				}}
 			>
 				{!hasResources ? (
-					<div className="resource-browser__empty">No resources found</div>
+					<div className="text-xs text-muted-foreground">No resources found</div>
 				) : null}
 				<ResourceBrowserTree groups={categories} groupsOpen={true} />
 				<div
-					className="resource-browser__empty rr-resource-empty"
+					className="rr-resource-empty text-xs text-muted-foreground"
 					hidden
 				>
 					No resources match

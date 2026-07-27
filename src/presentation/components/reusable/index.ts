@@ -12,6 +12,5 @@ export {
 	Button,
 	type ButtonProps,
 	type ButtonVariant,
-	type ControlSize,
 } from "./Button.tsx";
 export { TextInput, type TextInputProps } from "./TextInput.tsx";

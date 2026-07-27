@@ -10,11 +10,12 @@ import { rootThemeStyles } from "./root.ts";
 
 const themeNames = Object.keys(themePalette) as ThemeName[];
 
-test("root theme exposes canonical tokens and maps legacy aliases once", () => {
+test("root theme exposes canonical color tokens and maps content aliases once", () => {
 	expect(rootThemeStyles).toContain("--rr-sidebar-bg:");
 	expect(rootThemeStyles).toContain("--rr-on-accent:");
 	expect(rootThemeStyles).toContain("--rr-link:");
-	expect(rootThemeStyles).toContain("--rr-control-height-compact:");
+	expect(rootThemeStyles).not.toContain("--rr-control-height-compact:");
+	expect(rootThemeStyles).not.toContain("--rr-space-sm:");
 	expect(rootThemeStyles).toContain("--color-bg: var(--rr-bg)");
 	expect(rootThemeStyles).toContain(
 		"--color-sidebar-bg: var(--rr-sidebar-bg)",

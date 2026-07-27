@@ -1,9 +1,6 @@
 import type React from "react";
 
-import {
-	Button,
-	TextInput,
-} from "../components/reusable/index.ts";
+import { Button, Input } from "../components/ui/index.ts";
 
 export interface CsvViewerProps {
 	source?: string;
@@ -36,8 +33,7 @@ export function CsvViewer(props: CsvViewerProps): React.JSX.Element {
 		<figure className="viewer viewer-csv" data-csv-block={blockId}>
 			{props.caption ? <figcaption>{props.caption}</figcaption> : null}
 			<div className="csv-toolbar">
-				<TextInput
-					className="csv-filter"
+				<Input
 					placeholder="Filter…"
 					aria-label="Filter CSV rows"
 					data-csv-filter={blockId}
@@ -76,11 +72,11 @@ export function CsvViewer(props: CsvViewerProps): React.JSX.Element {
 			</div>
 			{totalPages > 1 ? (
 				<div className="csv-pagination" data-csv-pagination={blockId}>
-					<Button data-csv-prev={blockId} disabled>
+					<Button variant="outline" size="sm" data-csv-prev={blockId} disabled>
 						← Prev
 					</Button>
 					<span data-csv-page-label={blockId}>1 / {totalPages}</span>
-					<Button data-csv-next={blockId}>
+					<Button variant="outline" size="sm" data-csv-next={blockId}>
 						Next →
 					</Button>
 				</div>

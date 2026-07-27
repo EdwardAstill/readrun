@@ -181,7 +181,10 @@ export function replaceShellRegions(snapshot: ShellSwapSnapshot): boolean {
   } else if (currentTocSlot && !snapshot.tocSlot) {
     currentTocSlot.remove();
   } else if (!currentTocSlot && snapshot.tocSlot) {
-    document.querySelector(READRUN_SHELL_SELECTOR)?.appendChild(snapshot.tocSlot);
+    const tocDock = document.querySelector("[data-resizable-toc-slot]");
+    (tocDock ?? document.querySelector(READRUN_SHELL_SELECTOR))?.appendChild(
+      snapshot.tocSlot,
+    );
   }
   document
     .querySelector(READRUN_SHELL_SELECTOR)
