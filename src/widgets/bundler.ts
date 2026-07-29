@@ -11,7 +11,7 @@ import * as esbuild from "esbuild";
 import * as fs from "fs";
 import * as path from "path";
 import * as ts from "typescript";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -352,9 +352,14 @@ export function readrunWidgetsPlugin(toolkitRoot: string): esbuild.Plugin {
 export function buildBanner(widgetName: string, toolkitRoot: string): string {
 	let sha = "unknown";
 	try {
-		sha = execSync(`git -C "${toolkitRoot}" rev-parse --short HEAD`, {
-			encoding: "utf8",
-		}).trim();
+		sha = execFileSync(
+			"git",
+			["-C", toolkitRoot, "rev-parse", "--short", "HEAD"],
+			{
+				encoding: "utf8",
+				stdio: ["ignore", "pipe", "ignore"],
+			},
+		).trim();
 	} catch {
 		// not a git repo or git not available — use placeholder
 	}

@@ -8,6 +8,14 @@ This page walks you through using readrun with your own Markdown notes.
 bun install -g github:EdwardAstill/readrun
 ```
 
+When working from a source checkout, link that checkout instead of installing a
+second global copy:
+
+```bash
+bun install
+bun link
+```
+
 ## Start the dev server
 
 Run `rr` with no arguments to serve the current folder:

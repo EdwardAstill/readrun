@@ -204,4 +204,12 @@ describe("buildBanner", () => {
 		expect(match).not.toBeNull();
 		expect(match![1]).toHaveLength(7);
 	});
+
+	it("uses an unknown SHA when the toolkit is not a git checkout", () => {
+		const banner = buildBanner(
+			"any",
+			path.join(TOOLKIT_ROOT, "missing-toolkit-root"),
+		);
+		expect(banner).toContain("@readrun/widgets@unknown");
+	});
 });
