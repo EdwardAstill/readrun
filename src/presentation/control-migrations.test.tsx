@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { CodePanelActions } from "./markdown/components/CodePanel.tsx";
+import { CodeBlock } from "./markdown/components/CodeBlock.tsx";
 import { CsvViewer } from "./viewers/CsvViewer.tsx";
 
 test("code panel actions retain client hook classes on shared buttons", () => {
@@ -21,6 +22,25 @@ test("code panel actions retain client hook classes on shared buttons", () => {
 	expect(html).toContain("code-copy-btn");
 	expect(html).toContain("exec-toggle-btn");
 	expect(html).toContain('data-block-id="example"');
+});
+
+test("code blocks use the canonical shadcn Card composition", () => {
+	const html = renderToStaticMarkup(
+		<CodeBlock code="const answer = 42;" language="typescript" />,
+	);
+
+	expect(html).toContain('data-slot="card"');
+	expect(html).toContain('data-slot="card-header"');
+	expect(html).toContain('data-slot="card-title"');
+	expect(html).toContain('data-slot="card-action"');
+	expect(html).toContain('data-slot="button-group"');
+	expect(html).toContain('data-slot="card-content"');
+	expect(html).toContain("gap-0");
+	expect(html).toContain("overflow-hidden");
+	expect(html).toContain("py-0");
+	expect(html).toContain("bg-muted");
+	expect(html).toContain("p-0");
+	expect(html).toContain("w-full");
 });
 
 test("CSV controls retain client data hooks and expose an input label", () => {

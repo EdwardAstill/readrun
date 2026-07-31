@@ -1,7 +1,9 @@
 import type React from "react";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef } from "react";
 
 import { Button } from "../ui/Button.tsx";
+import { ButtonGroup } from "../ui/ButtonGroup.tsx";
 import { Input } from "../ui/Input.tsx";
 
 export interface SearchBarProps {
@@ -26,6 +28,9 @@ export interface SearchBarProps {
 	ariaControls?: string;
 	ariaExpanded?: boolean;
 	ariaActiveDescendant?: string;
+	grouped?: boolean;
+	groupAriaLabel?: string;
+	trailingActions?: ReactNode;
 }
 
 /**
@@ -59,8 +64,8 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 	const total = props.matchCount?.total ?? 0;
 	const current = props.matchCount?.current ?? 0;
 
-	return (
-		<div className={props.className}>
+	const content = (
+		<>
 			<Input
 				id={props.id}
 				ref={inputRef}
@@ -121,6 +126,23 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 					×
 				</Button>
 			)}
-		</div>
+			{props.trailingActions}
+		</>
 	);
+
+	if (props.grouped) {
+		return (
+			<ButtonGroup
+				className={props.className}
+				aria-label={
+					props.groupAriaLabel ??
+					`${props.ariaLabel ?? props.placeholder ?? "Search"} controls`
+				}
+			>
+				{content}
+			</ButtonGroup>
+		);
+	}
+
+	return <div className={props.className}>{content}</div>;
 }

@@ -11,7 +11,7 @@ import {
 	SidebarInset,
 	SidebarProvider,
 } from "../components/ui/Sidebar.tsx";
-import { LeftSidebar, MobileSidebarTrigger } from "./LeftSidebar.tsx";
+import { LeftSidebar, MobileSidebarHeader } from "./LeftSidebar.tsx";
 import { RightSidebar } from "./RightSidebar.tsx";
 
 export interface ReadrunShellProps {
@@ -45,7 +45,7 @@ export function ReadrunShell(props: ReadrunShellProps): React.JSX.Element {
 				/>
 
 				<SidebarInset className="h-full min-h-0 overflow-hidden">
-					<MobileSidebarTrigger />
+					<MobileSidebarHeader />
 					<div className="readrun-content flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4">
 						<div className="readrun-layout mx-auto w-full max-w-(--readrun-content-width)">
 							<section className="readrun-article min-w-0">

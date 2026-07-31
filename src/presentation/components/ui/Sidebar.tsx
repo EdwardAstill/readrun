@@ -188,6 +188,12 @@ function Sidebar({
           data-slot="sidebar"
           data-mobile="true"
           className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          onClickCapture={(event) => {
+            const target = event.target
+            if (target instanceof Element && target.closest("a[href]")) {
+              setOpenMobile(false)
+            }
+          }}
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,

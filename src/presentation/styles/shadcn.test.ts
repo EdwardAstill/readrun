@@ -50,10 +50,11 @@ test("production shell follows the shadcn sidebar and resizable composition", as
 	expect(shell).toContain("<SidebarProvider");
 	expect(shell).toContain("<LeftSidebar");
 	expect(shell).toContain("<SidebarInset");
-	expect(shell).toContain("<MobileSidebarTrigger");
-	expect(shell).not.toContain("<header");
+	expect(shell).toContain("<MobileSidebarHeader");
 	expect(sidebar).toContain("export function MobileSidebarTrigger");
+	expect(sidebar).toContain("export function MobileSidebarHeader");
 	expect(sidebar).toContain("<SidebarTrigger");
+	expect(sidebar).toContain("<header");
 	expect(sidebar).toContain("md:hidden");
 	expect(sidebar).not.toContain("SidebarRail");
 	expect(resizable).toContain("<ResizablePanelGroup");

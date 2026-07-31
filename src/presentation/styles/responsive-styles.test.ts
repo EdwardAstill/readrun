@@ -28,10 +28,20 @@ describe("markdown style ownership", () => {
 		expect(baseStyles).not.toContain(".markdown-body");
 	});
 
-	test("keeps desktop and mobile table rules with readrun-main", () => {
+	test("scopes readrun block presentation away from shadcn utilities", () => {
+		expect(markdownStyles).not.toContain("\n.block {");
+		expect(markdownStyles).not.toContain(".readrun-main .block {");
+		expect(markdownStyles).toContain(
+			'.readrun-main .block[class*="block-"] {',
+		);
+	});
+
+	test("lets tables use their shared horizontal scroller at every width", () => {
 		expect(markdownStyles).toContain(".readrun-main .rr-table-wrap");
-		expect(markdownStyles).toContain("@media (max-width: 768px)");
-		expect(markdownStyles).toContain(".readrun-main .rr-table td::before");
+		expect(markdownStyles).toContain(".readrun-main .rr-table-scroll");
+		expect(markdownStyles).toContain("overflow-x: auto");
+		expect(markdownStyles).not.toContain("@media (max-width: 768px)");
+		expect(markdownStyles).not.toContain(".readrun-main .rr-table td::before");
 		expect(markdownStyles).not.toContain(".markdown-body");
 	});
 });

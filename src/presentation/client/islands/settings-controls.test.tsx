@@ -21,6 +21,7 @@ test("settings switch rows associate their shadcn label with the control", () =>
 	expect(html).toContain('data-slot="label"');
 	expect(html).toContain('for="example-toggle"');
 	expect(html).toContain('id="example-label"');
+	expect(html).toContain('data-slot="switch"');
 	expect(html).toContain('role="switch"');
 	expect(html).toContain('aria-checked="true"');
 	expect(html).toContain('id="example-toggle"');
@@ -57,15 +58,20 @@ test("settings panel uses the approved controls and omits sidebar visibility", (
 		</Dialog>,
 	);
 
-	expect(html).toContain("Changes apply as you go.");
+	expect(html).toContain("Changes are saved automatically.");
 	expect(html).toContain("Appearance");
 	expect(html).toContain("Reading");
 	expect(html).toContain("Behaviour");
+	expect(html).toContain('data-slot="slider-track"');
+	expect(html).toContain("bg-input");
+	expect(html).toContain("data-[orientation=horizontal]:h-1.5");
+	expect(html).toContain('data-slot="slider-thumb"');
+	expect(html).toContain("border-primary");
+	expect(html).toContain("bg-background");
 	expect(html).not.toContain("Show sidebar");
 	expect(html).not.toContain("readrun-sidebar-toggle");
 	expect(html).toContain('id="open-shortcuts-btn"');
 	expect(html).toMatch(/<button[^>]*id="open-shortcuts-btn"/);
 	expect(html).toContain("Keyboard shortcuts");
-	expect(html).toContain("Saved automatically");
 	expect(html).toContain("Done");
 });

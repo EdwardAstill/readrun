@@ -1,10 +1,11 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Modal } from "../../components/reusable/Modal.tsx";
 import { Button } from "../../components/ui/Button.tsx";
 import {
+	Dialog,
 	DialogClose,
+	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
@@ -56,7 +57,7 @@ export function SettingsSwitchRow({
 	const descriptionId = description ? `${id}-description` : undefined;
 
 	return (
-		<div className="flex items-start justify-between gap-4">
+		<div className="flex items-center justify-between gap-6">
 			<div className="grid gap-1">
 				<Label
 					className={
@@ -79,6 +80,7 @@ export function SettingsSwitchRow({
 				) : null}
 			</div>
 			<Switch
+				className="self-center"
 				id={id}
 				aria-labelledby={labelId}
 				aria-describedby={descriptionId}
@@ -127,26 +129,21 @@ export function SettingsPanel({
 			<DialogHeader className="pr-8">
 				<DialogTitle id="settings-dialog-title">Settings</DialogTitle>
 				<DialogDescription>
-					Changes apply as you go.
+					Personalise your reading experience. Changes are saved automatically.
 				</DialogDescription>
 			</DialogHeader>
 
 			<div
-				className="-mx-4 grid max-h-[calc(100svh-12rem)] overflow-y-auto px-4"
+				className="grid gap-4"
 				id="settings-panel"
 			>
 				<section
-					className="grid gap-3 border-b pb-4"
+					className="grid gap-3"
 					aria-labelledby="readrun-theme-label"
 				>
-					<div className="grid gap-1">
-						<h2 className="text-sm font-medium" id="readrun-theme-label">
-							Appearance
-						</h2>
-						<p className="text-xs text-muted-foreground">
-							Choose the colour theme used throughout ReadRun.
-						</p>
-					</div>
+					<h2 className="text-sm font-medium" id="readrun-theme-label">
+						Appearance
+					</h2>
 					<div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
 						{THEMES.map((theme) => {
 							const selected = settings.theme === theme;
@@ -167,142 +164,125 @@ export function SettingsPanel({
 					</div>
 				</section>
 
-				<div className="grid md:grid-cols-2">
-					<section
-						className="grid content-start gap-5 border-b py-4 md:border-r md:border-b-0 md:pr-4"
-						aria-labelledby="reading-settings-title"
-					>
-						<div className="grid gap-1">
-							<h2 className="text-sm font-medium" id="reading-settings-title">
-								Reading
-							</h2>
-							<p className="text-xs text-muted-foreground">
-								Adjust the document typography and measure.
-							</p>
-						</div>
+				<section
+					className="grid gap-4 border-t pt-4"
+					aria-labelledby="reading-settings-title"
+				>
+					<h2 className="text-sm font-medium" id="reading-settings-title">
+						Reading
+					</h2>
 
-						<div className="grid gap-2">
-							<Label htmlFor="readrun-font-family">Typeface</Label>
-							<NativeSelect
-								className="w-full"
-								id="readrun-font-family"
-								value={settings.fontFamily}
-								onChange={handleFontFamilyChange}
-							>
-								<option value="sans">Inter</option>
-								<option value="system">System</option>
-								<option value="serif">Serif</option>
-								<option value="mono">Mono</option>
-							</NativeSelect>
-						</div>
-
-						<div className="grid gap-2">
-							<div className="flex items-center justify-between gap-4">
-								<span className="font-medium" id="readrun-font-label">
-									Text size
-								</span>
-								<output className="text-xs text-muted-foreground">
-									{settings.fontSize}px
-								</output>
-							</div>
-							<Slider
-								id="readrun-font-range"
-								min={12}
-								max={24}
-								step={2}
-								value={[settings.fontSize]}
-								onValueChange={handleFontSizeChange}
-								aria-labelledby="readrun-font-label"
-							/>
-							<div
-								className="flex justify-between text-xs text-muted-foreground"
-								aria-hidden="true"
-							>
-								<span>12px</span>
-								<span>24px</span>
-							</div>
-						</div>
-
-						<div className="hidden gap-2 md:grid" id="width-section">
-							<div className="flex items-center justify-between gap-4">
-								<span className="font-medium" id="readrun-width-label">
-									Content width
-								</span>
-								<output className="text-xs text-muted-foreground">
-									{settings.contentWidth}px
-								</output>
-							</div>
-							<Slider
-								id="readrun-width-range"
-								min={500}
-								max={1400}
-								step={20}
-								value={[settings.contentWidth]}
-								onValueChange={(values) =>
-									onUpdate({
-										contentWidth:
-											typeof values === "number"
-												? values
-												: (values[0] ?? settings.contentWidth),
-									})
-								}
-								aria-labelledby="readrun-width-label"
-							/>
-						</div>
-					</section>
-
-					<section
-						className="grid content-start gap-5 py-4 md:pl-4"
-						aria-labelledby="behaviour-settings-title"
-					>
-						<div className="grid gap-1">
-							<h2 className="text-sm font-medium" id="behaviour-settings-title">
-								Behaviour
-							</h2>
-							<p className="text-xs text-muted-foreground">
-								Choose how executable content runs.
-							</p>
-						</div>
-
-						<SettingsSwitchRow
-							id="readrun-local-python-toggle"
-							label="Run Python locally"
-							labelId="readrun-local-python-label"
-							description={
-								localPythonAvailable
-									? "Use the local Python runtime for executable code."
-									: "Requires uv to be installed on this device."
-							}
-							checked={localPythonEnabled}
-							disabled={!localPythonAvailable}
-							title={
-								localPythonAvailable
-									? undefined
-									: "Local Python execution requires uv to be installed."
-							}
-							onCheckedChange={(checked) =>
-								onUpdate({ useLocalPython: checked })
-							}
-						/>
-
-						<Button
-							type="button"
-							variant="outline"
-							className="w-full justify-between"
-							id="open-shortcuts-btn"
-							onClick={onOpenShortcuts}
+					<div className="flex items-center justify-between gap-4">
+						<Label htmlFor="readrun-font-family">Typeface</Label>
+						<NativeSelect
+							className="w-40"
+							id="readrun-font-family"
+							value={settings.fontFamily}
+							onChange={handleFontFamilyChange}
 						>
-							<span>Keyboard shortcuts</span>
-							<Kbd>?</Kbd>
-						</Button>
-					</section>
-				</div>
+							<option value="sans">Inter</option>
+							<option value="system">System</option>
+							<option value="serif">Serif</option>
+							<option value="mono">Mono</option>
+						</NativeSelect>
+					</div>
+
+					<div className="grid gap-2">
+						<div className="flex items-center justify-between gap-4">
+							<span className="font-medium" id="readrun-font-label">
+								Text size
+							</span>
+							<output className="text-xs text-muted-foreground">
+								{settings.fontSize}px
+							</output>
+						</div>
+						<Slider
+							id="readrun-font-range"
+							min={12}
+							max={24}
+							step={2}
+							value={[settings.fontSize]}
+							onValueChange={handleFontSizeChange}
+							aria-labelledby="readrun-font-label"
+						/>
+						<div
+							className="flex justify-between text-xs text-muted-foreground"
+							aria-hidden="true"
+						>
+							<span>12px</span>
+							<span>24px</span>
+						</div>
+					</div>
+
+					<div className="hidden gap-2 md:grid" id="width-section">
+						<div className="flex items-center justify-between gap-4">
+							<span className="font-medium" id="readrun-width-label">
+								Content width
+							</span>
+							<output className="text-xs text-muted-foreground">
+								{settings.contentWidth}px
+							</output>
+						</div>
+						<Slider
+							id="readrun-width-range"
+							min={500}
+							max={1400}
+							step={20}
+							value={[settings.contentWidth]}
+							onValueChange={(values) =>
+								onUpdate({
+									contentWidth:
+										typeof values === "number"
+											? values
+											: (values[0] ?? settings.contentWidth),
+								})
+							}
+							aria-labelledby="readrun-width-label"
+						/>
+					</div>
+				</section>
+
+				<section
+					className="grid gap-3 border-t pt-4"
+					aria-labelledby="behaviour-settings-title"
+				>
+					<h2 className="text-sm font-medium" id="behaviour-settings-title">
+						Behaviour
+					</h2>
+
+					<SettingsSwitchRow
+						id="readrun-local-python-toggle"
+						label="Run Python locally"
+						labelId="readrun-local-python-label"
+						description={
+							localPythonAvailable
+								? "Use the local Python runtime for executable code."
+								: "Requires uv to be installed on this device."
+						}
+						checked={localPythonEnabled}
+						disabled={!localPythonAvailable}
+						title={
+							localPythonAvailable
+								? undefined
+								: "Local Python execution requires uv to be installed."
+						}
+						onCheckedChange={(checked) =>
+							onUpdate({ useLocalPython: checked })
+						}
+					/>
+				</section>
 			</div>
 
-			<DialogFooter className="sm:justify-between">
-				<p className="self-center text-xs text-muted-foreground">
-					Saved automatically
-				</p>
+			<DialogFooter className="border-t pt-4 sm:justify-between">
+				<Button
+					type="button"
+					variant="outline"
+					id="open-shortcuts-btn"
+					onClick={onOpenShortcuts}
+				>
+					Keyboard shortcuts
+					<Kbd>?</Kbd>
+				</Button>
 				<DialogClose render={<Button />}>
 					Done
 				</DialogClose>
@@ -327,21 +307,27 @@ export function SettingsIsland(props: SettingsIslandProps): React.JSX.Element {
 	const closeSettings = useCallback(() => closeOverlay("settings-overlay"), []);
 
 	return (
-		<Modal
-			id="settings-overlay"
+		<Dialog
 			open={props.open}
-			onClose={closeSettings}
-			contentClassName="max-h-[calc(100svh-2rem)] sm:max-w-2xl"
-			ariaLabelledBy="settings-dialog-title"
-			initialFocusRef={initialFocusRef}
+			onOpenChange={(open) => {
+				if (!open) closeSettings();
+			}}
 		>
-			<SettingsPanel
-				settings={settings}
-				localPythonAvailable={localPythonAvailable}
-				initialFocusRef={initialFocusRef}
-				onOpenShortcuts={() => openOverlay("shortcuts-overlay")}
-				onUpdate={update}
-			/>
-		</Modal>
+			<DialogContent
+				id="settings-overlay"
+				className="max-h-[calc(100svh-2rem)] overflow-y-auto sm:max-w-md"
+				aria-modal="true"
+				aria-labelledby="settings-dialog-title"
+				initialFocus={initialFocusRef}
+			>
+				<SettingsPanel
+					settings={settings}
+					localPythonAvailable={localPythonAvailable}
+					initialFocusRef={initialFocusRef}
+					onOpenShortcuts={() => openOverlay("shortcuts-overlay")}
+					onUpdate={update}
+				/>
+			</DialogContent>
+		</Dialog>
 	);
 }

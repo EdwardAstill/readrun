@@ -19,9 +19,10 @@ test("renders the shadcn sidebar shell and client dialog islands", () => {
 	expect(html).toContain('data-slot="sidebar-inset"');
 	expect(html).toContain('data-slot="sidebar-trigger"');
 	expect(html).toContain("md:hidden");
+	expect(html).toContain("<header");
+	expect(html).toContain("h-12 shrink-0 items-center border-b");
 	expect(html).not.toContain('data-slot="separator"');
 	expect(html).not.toContain('data-slot="breadcrumb"');
-	expect(html).not.toContain("<header");
 	expect(html).toContain('data-island="resizable-shell"');
 	expect(html).not.toContain('id="mobile-menu-btn"');
 	expect(html).not.toContain('id="desktop-search-btn"');

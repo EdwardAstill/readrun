@@ -2,6 +2,7 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "../../components/ui/Button.tsx";
+import { Card, CardContent } from "../../components/ui/Card.tsx";
 import {
 	DialogHeader,
 	DialogTitle,
@@ -68,6 +69,7 @@ export function CodeModalIsland(): React.JSX.Element {
 			id="code-modal"
 			open={block !== null}
 			onClose={close}
+			contentClassName="sm:max-w-2xl"
 			ariaLabelledBy="code-modal-title"
 			finalFocusRef={returnFocusRef}
 		>
@@ -78,6 +80,7 @@ export function CodeModalIsland(): React.JSX.Element {
 			</DialogHeader>
 			{canRun ? (
 				<Button
+					className="justify-self-start"
 					id="code-modal-run"
 					size="sm"
 					onClick={() =>
@@ -87,18 +90,18 @@ export function CodeModalIsland(): React.JSX.Element {
 					Run
 				</Button>
 			) : null}
-			<div className="code-modal__body">
-				<div id="code-modal-code" className="code-modal__code">
-					<pre>
+			<Card className="gap-0 overflow-hidden py-0">
+				<CardContent className="p-0" id="code-modal-code">
+					<pre className="m-0 w-full overflow-x-auto bg-muted p-4">
 						<code>{block ? readCodeText(block) : ""}</code>
 					</pre>
-				</div>
-				<div
+				</CardContent>
+				<CardContent
+					className="p-0"
 					id="code-modal-output"
-					className="code-modal__output"
 					ref={outputRef}
 				/>
-			</div>
+			</Card>
 		</Modal>
 	);
 }

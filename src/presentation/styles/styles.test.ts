@@ -7,17 +7,17 @@ import { viewerStyles } from "./viewers";
 
 test("execBlockStyles includes key selectors", () => {
 	expect(execBlockStyles).toContain(".exec-block");
-	expect(execBlockStyles).toContain(".code-panel");
-	expect(execBlockStyles).toContain(".code-panel__header");
-	expect(execBlockStyles).toContain(".code-panel__actions");
-	expect(execBlockStyles).toContain(".exec-block-header");
 	expect(execBlockStyles).toContain(".exec-output");
 	expect(execBlockStyles).toContain(".exec-editable");
 	expect(execBlockStyles).toContain(".upload-block");
 	expect(execBlockStyles).toContain(".upload-file-tag");
 	expect(execBlockStyles).toContain(".upload-error");
-	expect(execBlockStyles).toContain(".code-modal__code");
-	expect(execBlockStyles).toContain(".code-modal__output");
+	expect(execBlockStyles).not.toContain(".code-panel {");
+	expect(execBlockStyles).not.toContain(".code-panel__header");
+	expect(execBlockStyles).not.toContain(".code-panel__actions");
+	expect(execBlockStyles).not.toContain(".exec-block-header");
+	expect(execBlockStyles).not.toContain(".code-modal__code");
+	expect(execBlockStyles).not.toContain(".code-modal__output");
 	expect(execBlockStyles).not.toContain(".code-modal__card");
 	expect(execBlockStyles).not.toContain(".code-modal__header");
 	expect(execBlockStyles).not.toContain(".code-copy-btn");

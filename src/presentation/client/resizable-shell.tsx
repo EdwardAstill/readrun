@@ -20,7 +20,7 @@ import {
 	SidebarInset,
 	SidebarProvider,
 } from "../components/ui/Sidebar.tsx";
-import { MobileSidebarTrigger } from "../shell/LeftSidebar.tsx";
+import { MobileSidebarHeader } from "../shell/LeftSidebar.tsx";
 import {
 	commitSettings,
 	loadSettings,
@@ -248,7 +248,7 @@ function AppSidebar(props: {
 function MainPane(props: { content: HTMLElement }): React.JSX.Element {
 	return (
 		<SidebarInset className="h-full min-h-0 overflow-hidden">
-			<MobileSidebarTrigger />
+			<MobileSidebarHeader />
 			<DomNodeMount node={props.content} />
 		</SidebarInset>
 	);

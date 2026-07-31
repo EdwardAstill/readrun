@@ -185,64 +185,6 @@ export const markdownStyles = `
   min-width: 34px;
   text-align: right;
 }
-@media (max-width: 768px) {
-  .readrun-main table { font-size: 14px; }
-
-  .readrun-main .rr-table-wrap {
-    width: auto !important;
-    max-width: none;
-    overflow: visible;
-    margin: 0 0 16px;
-    border: none;
-  }
-
-  .readrun-main .rr-table-scroll { overflow: visible; }
-
-  .readrun-main .rr-table,
-  .readrun-main .rr-table thead,
-  .readrun-main .rr-table tbody,
-  .readrun-main .rr-table tr,
-  .readrun-main .rr-table th,
-  .readrun-main .rr-table td {
-    display: block;
-    width: auto !important;
-  }
-
-  .readrun-main .rr-table-toolbar { display: none; }
-  .readrun-main .rr-table thead { display: none; }
-
-  .readrun-main .rr-table tr {
-    border: 1px solid var(--color-border);
-    margin-bottom: 12px;
-    background: var(--color-bg);
-  }
-
-  .readrun-main .rr-table td {
-    display: grid;
-    grid-template-columns: minmax(7rem, 34%) minmax(0, 1fr);
-    gap: 10px;
-    border: none;
-    border-top: 1px solid var(--color-border);
-    white-space: normal;
-    max-width: none !important;
-  }
-
-  .readrun-main .rr-table td:first-child {
-    position: static;
-    background: transparent;
-    box-shadow: none;
-    font-weight: 600;
-  }
-
-  .readrun-main .rr-table td::before {
-    content: attr(data-label);
-    color: var(--color-text-muted);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 500;
-    min-width: 0;
-  }
-}
 
 /* --- KaTeX --- */
 .readrun-main .katex-display {
@@ -254,7 +196,7 @@ export const markdownStyles = `
 .readrun-main .katex-display > .katex { overflow: visible; }
 
 /* --- Blocks (custom readrun block wrappers) --- */
-.block { margin: 1rem 0; padding: 0.75rem; border: 1px solid var(--rr-border); background: var(--rr-surface); }
+.readrun-main .block[class*="block-"] { margin: 1rem 0; padding: 0.75rem; border: 1px solid var(--rr-border); background: var(--rr-surface); }
 
 /* --- Viewers --- */
 .viewer iframe { width: 100%; min-height: 24rem; border: 1px solid var(--rr-border); }

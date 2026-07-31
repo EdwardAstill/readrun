@@ -244,7 +244,12 @@ function renderBlock(
 				React.createElement(QuizBlock, { quiz: parseQuiz(block) }),
 			);
 		case "raw":
-			return `<pre class="block block-raw"><code>${escapeHtml(block.body)}</code></pre>`;
+			return renderToStaticMarkup(
+				React.createElement(CodeBlock, {
+					code: block.body,
+					language: "raw",
+				}),
+			);
 		case "include":
 			return `<p class="block block-include" data-src="${escapeHtml(
 				stringAttr(attrs, "src") ?? "",

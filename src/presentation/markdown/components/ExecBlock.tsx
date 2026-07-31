@@ -1,5 +1,6 @@
 import type React from "react";
 
+import { Textarea } from "../../components/ui/Textarea.tsx";
 import { CodePanel, CodePanelActions } from "./CodePanel.tsx";
 
 export interface ExecBlockProps {
@@ -33,7 +34,7 @@ export function ExecBlock(props: ExecBlockProps): React.JSX.Element {
 	return (
 		<CodePanel
 			blockId={blockId}
-			className={`block block-exec exec-block${collapsedClass}`}
+			className={`block-exec exec-block${collapsedClass}`}
 			language={lang}
 			source={props.source}
 			actions={
@@ -47,7 +48,7 @@ export function ExecBlock(props: ExecBlockProps): React.JSX.Element {
 			}
 		>
 			{editable ? (
-				<textarea
+				<Textarea
 					className="exec-editable"
 					data-editable-source={blockId}
 					defaultValue={props.source}

@@ -44,28 +44,34 @@ export function Panel(props: PanelProps): React.JSX.Element {
 					<SearchBar
 						id={props.searchId}
 						className="min-w-0 flex-1"
+						grouped
+						groupAriaLabel={`${props.searchAriaLabel ?? props.searchPlaceholder} controls`}
 						value={props.searchValue ?? ""}
 						onChange={(value) => props.onSearchChange?.(value)}
 						placeholder={props.searchPlaceholder}
 						ariaLabel={props.searchAriaLabel ?? props.searchPlaceholder}
+						trailingActions={
+							props.collapseButton ? (
+								<Button
+									id={props.collapseButton.id}
+									variant="outline"
+									size="icon"
+									aria-label={props.collapseButton.label}
+									title={
+										props.collapseButton.title ?? props.collapseButton.label
+									}
+									aria-expanded={props.collapseButton.expanded}
+									aria-controls={props.collapseButton.controls}
+									disabled={props.collapseButton.disabled}
+									onClick={props.collapseButton.onClick}
+								>
+									{props.collapseButton.icon ?? "-"}
+								</Button>
+							) : null
+						}
 					/>
 					{props.count ? (
 						<span className="text-xs text-muted-foreground">{props.count}</span>
-					) : null}
-					{props.collapseButton ? (
-						<Button
-							id={props.collapseButton.id}
-							variant="ghost"
-							size="icon-sm"
-							aria-label={props.collapseButton.label}
-							title={props.collapseButton.title ?? props.collapseButton.label}
-							aria-expanded={props.collapseButton.expanded}
-							aria-controls={props.collapseButton.controls}
-							disabled={props.collapseButton.disabled}
-							onClick={props.collapseButton.onClick}
-						>
-							{props.collapseButton.icon ?? "-"}
-						</Button>
 					) : null}
 				</div>
 			</div>

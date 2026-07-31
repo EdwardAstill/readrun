@@ -22,6 +22,14 @@ export function MobileSidebarTrigger(): React.JSX.Element {
 	return <SidebarTrigger className="md:hidden" />;
 }
 
+export function MobileSidebarHeader(): React.JSX.Element {
+	return (
+		<header className="flex h-12 shrink-0 items-center border-b px-4 md:hidden">
+			<MobileSidebarTrigger />
+		</header>
+	);
+}
+
 export function LeftSidebar(props: LeftSidebarProps): React.JSX.Element {
 	return (
 		<Sidebar

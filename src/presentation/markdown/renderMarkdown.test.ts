@@ -80,10 +80,12 @@ test("renderMarkdown renders readrun blocks and leaves code fences display-only"
 	});
 
 	expect(result.html).toContain("language-python");
-	expect(result.html).toContain('class="code-panel markdown-code-block"');
-	expect(result.html).toContain(
-		'class="code-panel block block-exec exec-block"',
-	);
+	expect(result.html).toContain('data-slot="card"');
+	expect(result.html).toContain('data-slot="card-header"');
+	expect(result.html).toContain('data-slot="card-content"');
+	expect(result.html).toContain("code-panel markdown-code-block");
+	expect(result.html).toContain("code-panel block-exec exec-block");
+	expect(result.html).not.toContain("code-panel block block-exec");
 	expect(result.html.indexOf("exec-run-btn")).toBeGreaterThan(
 		result.html.indexOf("block-exec"),
 	);

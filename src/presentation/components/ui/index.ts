@@ -1,4 +1,6 @@
 export * from "./Button.tsx";
+export * from "./ButtonGroup.tsx";
+export * from "./Card.tsx";
 export * from "./Breadcrumb.tsx";
 export * from "./Collapsible.tsx";
 export * from "./Dialog.tsx";
