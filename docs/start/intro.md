@@ -57,12 +57,17 @@ rr docs-wiki
 From a git repo, build the static site and write the deploy config in one command:
 
 ```bash
-rr deploy github docs/   # builds docs/ → dist/, writes .github/workflows/deploy.yml
-rr deploy vercel .         # builds . → dist/, writes vercel.json
-rr deploy netlify notes/  # builds notes/ → dist/, writes netlify.toml
+rr deploy github docs/   # builds docs/ → site/dist/, writes .github/workflows/deploy.yml
+rr deploy vercel .       # builds . → site/dist/, writes vercel.json
+rr deploy netlify notes/ # builds notes/ → site/dist/, writes netlify.toml
 ```
 
-The output goes to `dist/` at the git repo root. Everything runs in the browser — no server needed.
+Each deployment gets a `site/` folder at the git repo root. `rr deploy`
+generates its `package.json`, installs dependencies (creating `bun.lock` and
+ignored `node_modules/`), and writes static output to ignored `site/dist/`.
+Host configuration such as `vercel.json` stays at the repository root; hosts
+install from `site/` with the frozen lockfile. Everything runs in the browser
+— no server needed.
 
 For simple private sharing on Vercel, add a repository-local password file before deploying:
 

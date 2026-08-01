@@ -52,8 +52,11 @@ fresh random file for you.
 
 ## Generated output
 
-The normal static output folder is still written, usually `dist/`. When password
-protection is enabled for Vercel, ReadRun also writes:
+For `rr deploy`, the normal static output folder is written to `site/dist/`;
+the generated `site/` package and lockfile are used for both local and frozen
+host installs.
+When password protection is enabled for Vercel, ReadRun also writes the
+prebuilt Vercel output at the repository root:
 
 ```text
 .vercel/output/

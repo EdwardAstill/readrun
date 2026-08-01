@@ -72,10 +72,15 @@ Infrastructure modules connect application/domain work to delivery:
 - Shared client bundle assets
 - Search index output
 
-This layer is where serve mode and build mode share output behavior. Site
-artifacts belong to the build path; repository host configuration such as
-`.github/workflows/deploy.yml`, `vercel.json`, and `netlify.toml` belongs to
-deployment setup.
+This layer is where serve mode and build mode share output behavior. `rr build`
+writes its default output to `dist/`; `rr deploy` creates a `site/` deployment
+workspace containing its generated package manifest, lockfile, locally
+installed dependencies, and static output at `site/dist/`. Its `.gitignore`
+excludes `node_modules/` and `dist/`; generated hosts install with the frozen
+lockfile. Repository host configuration such as
+`.github/workflows/deploy.yml`, `vercel.json`, and `netlify.toml` stays at the
+repository root. Password-protected Vercel builds additionally write
+`.vercel/output/` at the root.
 
 ## `src/widgets/`
 

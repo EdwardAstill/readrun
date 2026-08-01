@@ -13,6 +13,7 @@ export interface BuildCommandArgs {
   platform?: string | null;
   out?: string | null;
   output?: string | null;
+  "project-root"?: string | null;
 }
 
 export async function runBuildCommand(args: BuildCommandArgs): Promise<void> {
@@ -20,11 +21,14 @@ export async function runBuildCommand(args: BuildCommandArgs): Promise<void> {
   const outArg = args.out ?? args.output;
   const outDir = outArg ? resolvePath(outArg) : path.resolve(process.cwd(), "dist");
   const platform = parseBuildPlatform(args.platform);
+  const projectDir = args["project-root"]
+    ? resolvePath(args["project-root"])
+    : process.cwd();
   const result = await buildStaticProject({
     contentDir,
     outDir,
     platform,
-    projectDir: process.cwd(),
+    projectDir,
   });
 
   for (const warning of result.warnings) {
@@ -68,6 +72,11 @@ export const buildCommand = defineCommand({
       type: "string",
       required: false,
       description: "Output folder (alias for --out)",
+    },
+    "project-root": {
+      type: "string",
+      required: false,
+      description: "Project root for repository-level config and platform metadata",
     },
   },
   async run({ args }) {

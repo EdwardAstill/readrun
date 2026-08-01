@@ -56,7 +56,9 @@ export async function runDeployCommand(args: DeployCommandArgs): Promise<void> {
     console.log("  created      .vercel/output (password-protected Vercel build output)");
   }
 
-  console.log(`\n${platformNextSteps(result.platform)}`);
+  console.log(
+    `\n${platformNextSteps(result.platform, result.authOutputWritten)}`,
+  );
 }
 
 export const deployCommand = defineCommand({

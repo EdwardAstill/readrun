@@ -126,7 +126,7 @@ Checks for:
 
 ---
 
-## `rr build <folder> [--platform=<target>] [--out=<folder>]`
+## `rr build <folder> [--platform=<target>] [--out=<folder>] [--project-root=<folder>]`
 
 Build a static site from a content folder. The content folder is required.
 
@@ -135,6 +135,7 @@ rr build my-notes/
 rr build docs/ --platform=github
 rr build my-notes/ --out=site
 rr build my-notes/ --output=site    # alias for --out
+rr build docs/ --project-root=..    # use a parent repo for platform metadata
 ```
 
 `--platform` may be `github`, `vercel`, or `netlify`; omit it for plain static
@@ -147,31 +148,48 @@ the current working directory.
 If `.readrun/pw.txt` exists and `--platform=vercel` is used, `rr build` also
 writes `.vercel/output/` for password-protected prebuilt Vercel deploys.
 
+`--project-root=<folder>` sets the repository root used for repository-level
+configuration and platform metadata. It does not change the default output
+folder. Deploy-generated `site/package.json` scripts run from `site/` with
+`--project-root=..`, so GitHub base-path detection, password lookup, and Vercel
+auth output continue to use the repository root.
+
 ---
 
 ## `rr deploy <github|vercel|netlify> [folder]`
 
-Build the static site from a folder and write deployment config at the
-git repository root. Must be run from inside a git repo. The folder defaults
-to the current directory.
+Build the static site from a folder in a repository-root `site/` deployment
+workspace and write host configuration at the git repository root. Must be
+run from inside a git repo. The folder defaults to the current directory.
+
+`rr deploy` generates `site/package.json` and `site/.gitignore`, installs its
+dependencies locally, and writes the static site to `site/dist/`. The install
+creates `site/bun.lock` and `site/node_modules/`; the latter and `site/dist/`
+are ignored by `site/.gitignore`. Generated host configuration installs from
+this lockfile with `--frozen-lockfile`. This layout is specific to `rr deploy`;
+`rr build` still defaults to `./dist`.
 
 **`rr deploy` only prepares local build output and config — it does not
 publish your site.** You must push the generated files to your host
 separately (see platform notes below).
 
 ```bash
-rr deploy github docs/    # builds docs/ → dist/, writes .github/workflows/deploy.yml
-rr deploy vercel .          # builds . → dist/, writes vercel.json
-rr deploy netlify notes/   # builds notes/ → dist/, writes netlify.toml
+rr deploy github docs/    # builds docs/ → site/dist/, writes .github/workflows/deploy.yml
+rr deploy vercel .        # builds . → site/dist/, writes vercel.json
+rr deploy netlify notes/  # builds notes/ → site/dist/, writes netlify.toml
 rr deploy github --force   # overwrite existing config files
 ```
+
+The content folder must be inside the git repository. Before changing files,
+`rr deploy` checks for conflicting host config and deployment output; use
+`--force` only when you intend to replace that generated deployment scaffold.
 
 For GitHub Pages, commit the generated workflow, push to `main`, and configure
 Pages to use **GitHub Actions** as the source if the repository is not already
 set that way.
 
-For Vercel, `rr deploy` writes `vercel.json` configured with the correct build
-command. To push live after building:
+For Vercel, `rr deploy` writes the repository-root `vercel.json` configured
+to build from `site/`. To push live after building:
 
 - **Manual CLI:** run `vercel deploy --prebuilt --prod` from the repo root
   (uploads the generated `.vercel/output/` directory, including auth middleware)

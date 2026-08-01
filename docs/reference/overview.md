@@ -71,7 +71,9 @@ change.
 
 Use `rr build` or `rr deploy` when you want static output. The build writes
 HTML, CSS, JavaScript, search data, and copied assets into a generated output
-folder. The deployed site does not need a readrun server.
+folder. `rr build` defaults to `dist/`; `rr deploy` uses `site/dist/` alongside
+its generated deploy package, lockfile, and installed dependencies in `site/`.
+The deployed site does not need a readrun server.
 
 ## Where to go next
 

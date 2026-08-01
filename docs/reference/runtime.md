@@ -40,12 +40,21 @@ content folder
 ```
 
 The output folder is static. It can be served by GitHub Pages, Vercel, Netlify,
-or any server that can host HTML, CSS, JavaScript, and assets.
+or any server that can host HTML, CSS, JavaScript, and assets. `rr build`
+defaults to `dist/`; `rr deploy` writes the static output to `site/dist/` in
+its repository-root deployment workspace after installing that workspace's
+dependencies locally.
 
 Build output owns site artifacts, including GitHub Pages' `.nojekyll` file.
 `rr deploy` reuses the same build orchestration, then separately creates or
-updates repository configuration such as the GitHub Actions workflow,
-`vercel.json`, or `netlify.toml`.
+updates repository-root configuration such as the GitHub Actions workflow,
+`vercel.json`, or `netlify.toml`. Password-protected Vercel deployments also
+write their prebuilt output to repository-root `.vercel/output/`.
+
+`rr build --project-root=<folder>` can set the repository root independently
+of the current directory. The scripts generated in `site/package.json` use
+`--project-root=..`, preserving repository-root platform metadata and auth
+behavior while they run from `site/`.
 
 ## Browser runtime
 

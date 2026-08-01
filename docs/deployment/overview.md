@@ -19,6 +19,23 @@ Run `rr build <folder>` to generate static HTML, or `rr deploy <platform> <folde
 
 The output is a self-contained directory of HTML files — no server runtime needed. Each markdown page becomes `path/index.html`, and a root `index.html` redirects to the first page.
 
+`rr deploy` keeps its generated deployment workspace separate from repository
+host configuration:
+
+```text
+repository/
+  site/
+    package.json
+    bun.lock
+    .gitignore              # ignores node_modules/ and dist/
+    node_modules/           # local install, ignored
+    dist/                   # static site, ignored
+  vercel.json               # Vercel only
+  netlify.toml              # Netlify only
+  .github/workflows/deploy.yml  # GitHub Pages only
+  .vercel/output/           # password-protected Vercel only
+```
+
 Useful build options:
 
 ```bash
@@ -37,21 +54,31 @@ Run this once from the repository root:
 rr deploy github my-notes/
 ```
 
-This builds the site from `my-notes/` into `dist/`, adds `.nojekyll`, auto-detects the base path from the git remote, and writes `.github/workflows/deploy.yml` — a GitHub Actions workflow that builds the site on push to `main` and deploys `dist/` to Pages. In GitHub repository settings, set Pages to use **GitHub Actions** as the source if it is not already configured that way.
+This creates `site/` at the repository root, including its generated
+`package.json`, lockfile, and local dependencies, then builds `my-notes/` into
+`site/dist/`. `site/.gitignore` ignores its `node_modules/` and `dist/`
+directories. It also adds `.nojekyll`, auto-detects the base path from the git
+remote, and writes the repository-root `.github/workflows/deploy.yml`. The
+workflow uses a frozen install from `site/`, builds there, and deploys
+`site/dist/` to Pages. In GitHub repository settings, set Pages to use
+**GitHub Actions** as the source if it is not already configured that way.
 
 ### Vercel
 
-`rr deploy vercel my-notes/` builds the site from `my-notes/` into `dist/`,
-writes a repository-root `vercel.json`, and — if a password is configured —
-also writes Vercel Build Output API files to `.vercel/output/`.
+`rr deploy vercel my-notes/` creates a repository-root `site/` deployment
+workspace, builds the site from `my-notes/` into `site/dist/`, and writes a
+repository-root `vercel.json`. The workspace contains the generated
+`package.json`, lockfile, and installed dependencies. Vercel uses a frozen
+install from this workspace. If a password is configured, it also writes Vercel
+Build Output API files to `.vercel/output/`.
 
 **`rr deploy` does not publish to Vercel.** It only prepares local build
 output and deploy config. To actually push the site live, use one of these
 methods:
 
-- **Git integration** — commit and push the content folder, `vercel.json`,
-  and `.readrun/pw.txt` (if used). If Vercel is connected to your repo,
-  it rebuilds from the commit automatically.
+- **Git integration** — commit and push the content folder, `site/`,
+  `vercel.json`, and `.readrun/pw.txt` (if used). If Vercel is connected to
+  your repo, it rebuilds from the commit automatically.
 - **Manual CLI** — run `vercel deploy --prebuilt --prod` from the repo
   root. This uploads the prebuilt `.vercel/output/` directory generated
   by `rr deploy`, which includes the auth middleware.
@@ -70,8 +97,8 @@ vercel deploy --prebuilt --prod
 
 When `rr deploy` finds `.readrun/pw.txt` in the repository root or content
 root, it treats the Vercel deploy as password-protected. It still writes the
-normal static output folder to `dist/`, and also writes Vercel Build Output
-API files to `.vercel/output/`:
+normal static output folder to `site/dist/`, and also writes Vercel Build
+Output API files to `.vercel/output/`:
 
 ```text
 .vercel/output/
@@ -97,7 +124,10 @@ they do not run middleware.
 
 ### Netlify
 
-Run `rr deploy netlify my-notes/` once to build the site from `my-notes/` into `dist/` and write a repository-root `netlify.toml` with the build command and publish directory configured.
+Run `rr deploy netlify my-notes/` once to create the repository-root `site/`
+deployment workspace, build the site from `my-notes/` into `site/dist/`, and
+write a repository-root `netlify.toml` with a frozen install, build command,
+and publish directory configured.
 
 ## Ignore patterns
 
