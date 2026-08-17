@@ -4,7 +4,6 @@ import { markdownStyles } from "./markdown.ts";
 import { shellStyles } from "./shell.ts";
 import { uiStyles } from "./ui.ts";
 import { execBlockStyles } from "./exec-blocks.ts";
-import { quizStyles } from "./quiz.ts";
 import { viewerStyles } from "./viewers.ts";
 
 export const presentationStyles = [
@@ -14,6 +13,5 @@ export const presentationStyles = [
 	shellStyles,
 	uiStyles,
 	execBlockStyles,
-	quizStyles,
 	viewerStyles,
 ].join("\n");

@@ -1,7 +1,6 @@
 import { test, expect } from "bun:test";
 import { execBlockStyles } from "./exec-blocks";
 import { presentationStyles } from "./index";
-import { quizStyles } from "./quiz";
 import { uiStyles } from "./ui";
 import { viewerStyles } from "./viewers";
 
@@ -22,67 +21,6 @@ test("execBlockStyles includes key selectors", () => {
 	expect(execBlockStyles).not.toContain(".code-modal__header");
 	expect(execBlockStyles).not.toContain(".code-copy-btn");
 	expect(execBlockStyles).not.toContain(".exec-run-btn");
-});
-
-test("quizStyles includes all quiz component selectors", () => {
-	expect(quizStyles).toContain(".quiz");
-	expect(quizStyles).toContain(".quiz__header");
-	expect(quizStyles).toContain(".quiz__title");
-	expect(quizStyles).toContain(".quiz__section");
-	expect(quizStyles).toContain(".quiz__progress");
-	expect(quizStyles).toContain(".quiz__question");
-	expect(quizStyles).toContain(".quiz__question-text");
-	expect(quizStyles).toContain(".quiz__options");
-	expect(quizStyles).toContain(".quiz__option");
-	expect(quizStyles).toContain(".quiz__option--selected");
-	expect(quizStyles).toContain(".quiz__option--correct");
-	expect(quizStyles).toContain(".quiz__option--wrong");
-	expect(quizStyles).toContain(".quiz__option-marker");
-	expect(quizStyles).toContain(".quiz__option-check");
-	expect(quizStyles).toContain(".quiz__option-text");
-	expect(quizStyles).toContain(".quiz__tf-options");
-	expect(quizStyles).toContain(".quiz__tf-btn");
-	expect(quizStyles).toContain(".quiz__tf-btn--correct");
-	expect(quizStyles).toContain(".quiz__tf-btn--wrong");
-	expect(quizStyles).toContain(".quiz__freetext");
-	expect(quizStyles).toContain(".quiz__freetext-answer");
-	expect(quizStyles).toContain(".quiz__hint");
-	expect(quizStyles).toContain(".quiz__hint-text");
-	expect(quizStyles).toContain(".quiz__feedback");
-	expect(quizStyles).toContain(".quiz__feedback-result");
-	expect(quizStyles).toContain(".quiz__feedback-result--correct");
-	expect(quizStyles).toContain(".quiz__correct-answer");
-	expect(quizStyles).toContain(".quiz__explanation");
-	expect(quizStyles).toContain(".quiz__nav");
-	expect(quizStyles).toContain(".quiz__group-prompt");
-	expect(quizStyles).toContain(".quiz__group-part");
-	expect(quizStyles).toContain(".quiz__group-part-label");
-	expect(quizStyles).toContain(".quiz__info-label");
-	expect(quizStyles).toContain(".quiz__info");
-	expect(quizStyles).toContain(".quiz__results-header");
-	expect(quizStyles).toContain(".quiz__results-score");
-	expect(quizStyles).toContain(".quiz__results-detail");
-	expect(quizStyles).toContain(".quiz__results-list");
-	expect(quizStyles).toContain(".quiz__result-item");
-	expect(quizStyles).toContain(".quiz__result-item--correct");
-	expect(quizStyles).toContain(".quiz__result-item--wrong");
-	expect(quizStyles).toContain(".quiz__result-marker");
-	expect(quizStyles).toContain(".quiz__result-num");
-	expect(quizStyles).toContain(".quiz__result-text");
-	expect(quizStyles).toContain(".quiz__results-actions");
-	// Internal markdown styles within quiz__info
-	expect(quizStyles).toContain(".quiz__info p");
-	expect(quizStyles).toContain(".quiz__info h2");
-	expect(quizStyles).toContain(".quiz__info h3");
-	expect(quizStyles).toContain(".quiz__info ul");
-	expect(quizStyles).toContain(".quiz__info table");
-	expect(quizStyles).toContain(".quiz__info code");
-	expect(quizStyles).toContain(".quiz__info pre");
-	expect(quizStyles).toContain(".quiz__info blockquote");
-	expect(quizStyles).not.toContain(".quiz__submit-btn {");
-	expect(quizStyles).not.toContain(".quiz__hint-btn {");
-	expect(quizStyles).not.toContain(".quiz__nav-btn {");
-	expect(quizStyles).not.toContain(".quiz__freetext-input {");
 });
 
 test("viewerStyles includes key viewer selectors", () => {
@@ -125,8 +63,6 @@ test("all exports are non-empty strings", () => {
 	expect(presentationStyles.length).toBeGreaterThan(0);
 	expect(typeof execBlockStyles).toBe("string");
 	expect(execBlockStyles.length).toBeGreaterThan(0);
-	expect(typeof quizStyles).toBe("string");
-	expect(quizStyles.length).toBeGreaterThan(0);
 	expect(typeof viewerStyles).toBe("string");
 	expect(viewerStyles.length).toBeGreaterThan(0);
 });

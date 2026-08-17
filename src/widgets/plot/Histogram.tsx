@@ -79,7 +79,7 @@ export function Histogram({
   fillOut = "var(--text-muted)",
   maxCount,
   gap = 1,
-}: HistogramProps): JSX.Element {
+}: HistogramProps): React.JSX.Element {
   const { counts, lo, binW } = binCounts(values, bins, domain);
   if (counts.length === 0) return <g />;
   const cap = maxCount ?? Math.max(...counts, 1);

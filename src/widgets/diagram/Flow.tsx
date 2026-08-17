@@ -97,7 +97,7 @@ export function Flow({
   onNodeClick,
   onNodeHover,
   draggable = true,
-}: FlowProps): JSX.Element {
+}: FlowProps): React.JSX.Element {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
   const innerDx = width * INNER_DX_FACTOR;
   const innerDy = INNER_DY;

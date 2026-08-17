@@ -181,12 +181,18 @@ function tokenise(source: string): { tokens: BlockToken[]; issues: ValidationIss
     }
 
     if (/^\s*\\\[/.test(line)) {
-      tokens.push({
-        kind: "text",
-        content: line.replace(/\\(\[)/, "$1"),
-        line: lineNumber,
-      });
-      continue;
+      const unescapedBlockLine = line.replace(/\\(\[)/, "$1");
+      if (
+        !line.includes("\\]") &&
+        BLOCK_LINE_PATTERN.test(unescapedBlockLine)
+      ) {
+        tokens.push({
+          kind: "text",
+          content: unescapedBlockLine,
+          line: lineNumber,
+        });
+        continue;
+      }
     }
 
     const blockMatch = BLOCK_LINE_PATTERN.exec(line);

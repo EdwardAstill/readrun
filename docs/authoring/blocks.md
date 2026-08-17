@@ -83,36 +83,27 @@ External file reference:
 
 ### Quiz (`[quiz]`)
 
-Interactive quiz system. Contains `[question]`, `[group]`, and `[info]` sub-blocks.
+Embeds an interactive quiz directly in the note. Use `[info]` reading steps and
+explicitly typed `[question]` blocks. See [Quizzes in notes](./quiz-format.md)
+for the complete format, feedback behavior, math support, and migration guide.
 
 ```md
 [quiz]
-
 [question type=single]
 What is the capital of France?
-- London
-- Paris *
-- Berlin
-[/question]
 
-[question type=multi]
-Which of these are prime numbers?
-- 2 *
-- 3 *
-- 4
-- 5 *
-[/question]
+- [ ] London
+- [x] Paris
+- [ ] Berlin
 
-[question type=truefalse]
-The earth orbits the sun.
-true *
-[/question]
+[hint]
+Think of the Eiffel Tower.
+[/hint]
 
-[question type=freetext]
-What is 2 + 2?
-= 4
+[explain]
+Paris is the capital of France.
+[/explain]
 [/question]
-
 [/quiz]
 ```
 
@@ -120,16 +111,15 @@ Question types:
 
 | Type | Correct answer syntax | Matching |
 |------|----------------------|----------|
-| `single` | `- Answer *` | Exactly one correct option |
-| `multi` | `- Answer *` | One or more correct options |
-| `truefalse` | `true *` or `false *` | Boolean |
-| `freetext` | `= answer` | Text or numeric match |
+| `single` | `- [x] Answer` | Exactly one checked choice |
+| `multi` | `- [x] Answer` | Exact set of checked choices |
+| `truefalse` | Checked `True` or `False` task-list choice | Boolean |
+| `freetext` | `= answer` | Normalized exact text |
 
 Sub-blocks:
 
 - `[hint]...[/hint]` — shown before answering
 - `[explain]...[/explain]` — shown after answering
-- `[group]...[/group]` — wraps related questions under shared context
 - `[info]...[/info]` — reading-only content block
 
 ### File upload (`[upload]`)

@@ -1,32 +1,29 @@
-import MarkdownIt from "markdown-it";
-import markdownItKatex from "@vscode/markdown-it-katex";
-import hljs from "highlight.js";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { assetUrlFromRelPath } from "../../domain/assets/model.ts";
 import type { Block, BlockNode } from "../../domain/blocks/model.ts";
 import { parseBlockTree } from "../../domain/blocks/parser.ts";
-import { assetUrlFromRelPath } from "../../domain/assets/model.ts";
-import type {
-	MarkdownPage,
-	OutboundWikilink,
-} from "../../domain/pages/page.ts";
+import type { MarkdownPage } from "../../domain/pages/page.ts";
 import {
 	resolvePageWikilinks,
 	type ResolvedWikilink,
 } from "../../domain/pages/wikilinks.ts";
 import { parseQuiz } from "../../domain/quiz/parser.ts";
+import { validateQuiz } from "../../domain/quiz/validation.ts";
 import { escapeHtml, joinHtml } from "../../shared/html.ts";
 import { buttonVariants } from "../components/ui/Button.tsx";
+import { QuizBlock } from "../quiz/QuizBlock.tsx";
+import { renderQuizDefinition } from "../quiz/render.ts";
 import { CodeBlock } from "./components/CodeBlock.tsx";
 import { ExecBlock } from "./components/ExecBlock.tsx";
 import { QueryBlock } from "./components/QueryBlock.tsx";
-import { QuizBlock } from "./components/QuizBlock.tsx";
 import { ViewerBlock } from "./components/ViewerBlock.tsx";
 import {
-	processTableTokens,
-	resetReadrunTableCounter,
-} from "./table.ts";
+	renderMarkdownFragment,
+	resetMarkdownEngineState,
+	type MarkdownRenderEnvironment,
+} from "./markdownEngine.ts";
 
 export interface RenderMarkdownInput {
 	page: MarkdownPage;
@@ -39,133 +36,12 @@ export interface RenderMarkdownResult {
 	plainText: string;
 }
 
-interface MarkdownEnv {
-	toc: RenderMarkdownResult["toc"];
-	wikilinks: ResolvedWikilink[];
+interface PageRenderEnvironment extends MarkdownRenderEnvironment {
+	relPath: string;
 }
 
-const markdown = new MarkdownIt({
-	html: true,
-	linkify: true,
-	typographer: true,
-});
-
-markdown.use(markdownItKatex);
-
-markdown.renderer.rules.fence = (tokens, index) => {
-	const token = tokens[index]!;
-	const language = token.info.trim().split(/\s+/)[0] ?? "";
-	const highlightedHtml =
-		language && hljs.getLanguage(language)
-			? hljs.highlight(token.content, { language }).value
-			: undefined;
-
-	return renderToStaticMarkup(
-		React.createElement(CodeBlock, {
-			code: token.content,
-			language: language || undefined,
-			highlightedHtml,
-		}),
-	);
-};
-
-markdown.core.ruler.push("readrun_tables", (state: any) => {
-	processTableTokens(state.tokens, (token: any) =>
-		state.md.renderer.renderInline(
-			token?.children ?? [],
-			state.md.options,
-			state.env,
-		),
-	);
-});
-
-// --- Heading enhancement ---
-
-const defaultHeadingOpen =
-	markdown.renderer.rules.heading_open ??
-	((tokens, index, options, _env, self) =>
-		self.renderToken(tokens, index, options));
-
-markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
-	const token = tokens[index]!;
-	const inline = tokens[index + 1];
-	const text =
-		inline?.children
-			?.filter((child) => child.type === "text" || child.type === "code_inline")
-			.map((child) => child.content)
-			.join("")
-			.trim() ?? "";
-	const level = Number.parseInt(token.tag.slice(1), 10);
-	const toc = (env as MarkdownEnv).toc;
-	const id = uniqueHeadingId(slugifyHeading(text), toc);
-	token.attrSet("id", id);
-	if (text) {
-		toc.push({ id, label: text, level });
-	}
-	return defaultHeadingOpen(tokens, index, options, env, self);
-};
-
-const defaultLinkOpen =
-	markdown.renderer.rules.link_open ??
-	((tokens, index, options, _env, self) =>
-		self.renderToken(tokens, index, options));
-
-markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
-	const hrefIndex = tokens[index]!.attrIndex("href");
-	if (hrefIndex >= 0) {
-		const href = tokens[index]!.attrs?.[hrefIndex]?.[1];
-		if (
-			href &&
-			href.endsWith(".md") &&
-			!href.startsWith("http://") &&
-			!href.startsWith("https://")
-		) {
-			tokens[index]!.attrs![hrefIndex]![1] = href.replace(/\.md$/, "");
-		}
-	}
-	return defaultLinkOpen(tokens, index, options, env, self);
-};
-
-markdown.inline.ruler.before(
-	"emphasis",
-	"readrun_wikilinks",
-	(state, silent) => {
-		if (
-			state.src.charCodeAt(state.pos) !== 0x5b ||
-			state.src.charCodeAt(state.pos + 1) !== 0x5b
-		) {
-			return false;
-		}
-
-		const end = state.src.indexOf("]]", state.pos + 2);
-		if (end < 0) {
-			return false;
-		}
-
-		if (!silent) {
-			const raw = state.src.slice(state.pos, end + 2);
-			const token = state.push("readrun_wikilink", "", 0);
-			token.content = raw;
-		}
-
-		state.pos = end + 2;
-		return true;
-	},
-);
-
-markdown.renderer.rules.readrun_wikilink = (tokens, index, _options, env) => {
-	const raw = tokens[index]?.content ?? "";
-	const inner = raw.slice(2, -2);
-	const match = findWikilinkMatch(inner, (env as MarkdownEnv).wikilinks);
-	const label = match?.label ?? inner;
-	if (!match?.url) {
-		return escapeHtml(raw);
-	}
-
-	return `<a href="${escapeHtml(match.url)}">${escapeHtml(label)}</a>`;
-};
-
 let execBlockCounter = 0;
+let quizBlockCounter = 0;
 
 export function renderMarkdown(
 	input: RenderMarkdownInput,
@@ -181,8 +57,14 @@ export function renderMarkdown(
 	const toc: RenderMarkdownResult["toc"] = [];
 	const pageSlug = slugifyPageUrl(input.page.url);
 	execBlockCounter = 0;
-	resetReadrunTableCounter();
-	const env: MarkdownEnv = { toc, wikilinks };
+	quizBlockCounter = 0;
+	resetMarkdownEngineState();
+	const env: PageRenderEnvironment = {
+		toc,
+		wikilinks,
+		collectHeadings: true,
+		relPath: input.page.relPath,
+	};
 	const html = renderNodes(parsed.tree, env, pageSlug);
 
 	return {
@@ -194,22 +76,20 @@ export function renderMarkdown(
 
 function renderNodes(
 	nodes: readonly BlockNode[],
-	env: MarkdownEnv,
+	env: PageRenderEnvironment,
 	pageSlug?: string,
 ): string {
 	return joinHtml(
 		nodes.map((node) => {
-			if (node.type === "block") {
-				return renderBlock(node, env, pageSlug);
-			}
-			return markdown.render(node.text, env);
+			if (node.type === "block") return renderBlock(node, env, pageSlug);
+			return renderMarkdownFragment(node.text, env, { mode: "block" });
 		}),
 	);
 }
 
 function renderBlock(
 	block: Block,
-	env: MarkdownEnv,
+	env: PageRenderEnvironment,
 	pageSlug?: string,
 ): string {
 	const attrs = attrsToMap(block.attrs);
@@ -227,7 +107,8 @@ function renderBlock(
 					blockId: execId,
 					language: name === "py" ? "python" : name,
 					source: block.body || stringAttr(attrs, "src") || "",
-					collapsed: booleanAttr(attrs, "collapsed") || booleanAttr(attrs, "hidden"),
+					collapsed:
+						booleanAttr(attrs, "collapsed") || booleanAttr(attrs, "hidden"),
 					editable: booleanAttr(attrs, "editable"),
 				}),
 			);
@@ -239,16 +120,41 @@ function renderBlock(
 					source: block.body,
 				}),
 			);
-		case "quiz":
-			return renderToStaticMarkup(
-				React.createElement(QuizBlock, { quiz: parseQuiz(block) }),
+		case "quiz": {
+			const quizIndex = quizBlockCounter++;
+			const parsed = parseQuiz(block, { relPath: env.relPath, quizIndex });
+			const diagnostics = [
+				...parsed.diagnostics,
+				...(parsed.definition ? validateQuiz(parsed.definition) : []),
+			];
+			const hasErrors = diagnostics.some(
+				(diagnostic) => diagnostic.severity === "error",
 			);
+			const definition =
+				parsed.definition && !hasErrors
+					? renderQuizDefinition(parsed.definition, {
+							instanceId: `${pageSlug ?? "page"}-${parsed.definition.id}-${quizIndex + 1}`,
+							richText: {
+								block: (source) =>
+									renderMarkdownFragment(source, env, {
+										mode: "block",
+										collectHeadings: false,
+									}),
+								inline: (source) =>
+									renderMarkdownFragment(source, env, {
+										mode: "inline",
+										collectHeadings: false,
+									}),
+							},
+						})
+					: undefined;
+			return renderToStaticMarkup(
+				React.createElement(QuizBlock, { definition, diagnostics }),
+			);
+		}
 		case "raw":
 			return renderToStaticMarkup(
-				React.createElement(CodeBlock, {
-					code: block.body,
-					language: "raw",
-				}),
+				React.createElement(CodeBlock, { code: block.body, language: "raw" }),
 			);
 		case "include":
 			return `<p class="block block-include" data-src="${escapeHtml(
@@ -302,21 +208,10 @@ function renderBlock(
 function viewerKindFromName(
 	name: string,
 ): "csv" | "image" | "audio" | "video" | "file" | "model" | "pdf" {
-	if (
-		name === "csv" ||
-		name === "image" ||
-		name === "audio" ||
-		name === "video" ||
-		name === "file" ||
-		name === "pdf"
-	) {
-		return name;
+	if (["csv", "image", "audio", "video", "file", "pdf"].includes(name)) {
+		return name as "csv" | "image" | "audio" | "video" | "file" | "pdf";
 	}
-
-	if (name === "stl" || name === "model") {
-		return "model";
-	}
-
+	if (name === "stl" || name === "model") return "model";
 	return "file";
 }
 
@@ -324,30 +219,6 @@ function queryFromAttrs(attrs: Map<string, string | true>): string {
 	return [...attrs.entries()]
 		.map(([key, value]) => (value === true ? key : `${key}=${value}`))
 		.join(" ");
-}
-
-function findWikilinkMatch(
-	rawTarget: string,
-	wikilinks: readonly ResolvedWikilink[],
-): (Pick<OutboundWikilink, "label"> & { url?: string }) | null {
-	const separator = rawTarget.indexOf("|");
-	const targetText = separator >= 0 ? rawTarget.slice(0, separator) : rawTarget;
-	const explicitLabel =
-		separator >= 0 ? rawTarget.slice(separator + 1).trim() : undefined;
-	const target = targetText.trim().toLowerCase();
-
-	for (const link of wikilinks) {
-		if (
-			link.raw.toLowerCase() === `[[${rawTarget.toLowerCase()}]]` ||
-			link.target.toLowerCase() === target
-		) {
-			return {
-				label: explicitLabel || link.label || targetText.trim(),
-				url: link.page?.url,
-			};
-		}
-	}
-	return null;
 }
 
 function slugifyPageUrl(url: string): string {
@@ -358,31 +229,6 @@ function slugifyPageUrl(url: string): string {
 			.replace(/\/+/g, "-")
 			.replace(/^-+|-+$/g, "") || "page"
 	);
-}
-
-function slugifyHeading(label: string): string {
-	return (
-		label
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "-")
-			.replace(/^-+|-+$/g, "") || "section"
-	);
-}
-
-function uniqueHeadingId(
-	base: string,
-	existing: readonly { id: string }[],
-): string {
-	const used = new Set(existing.map((entry) => entry.id));
-	if (!used.has(base)) {
-		return base;
-	}
-
-	let index = 2;
-	while (used.has(`${base}-${index}`)) {
-		index += 1;
-	}
-	return `${base}-${index}`;
 }
 
 function attrsToMap(

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { parseBlocks } from "./parser.ts";
+import { parseBlocks, parseBlockTree } from "./parser.ts";
 
 test("parseBlocks ignores regular fenced code languages", () => {
   const parsed = parseBlocks("```python\nprint('display only')\n```\n");
@@ -41,4 +41,25 @@ test("parseBlocks treats executable source as opaque text", () => {
   expect(parsed.issues).toHaveLength(0);
   expect(parsed.blocks.map((block) => block.name)).toEqual(["jsx"]);
   expect(parsed.blocks[0]?.body).toContain("items[focusedId]");
+});
+
+test("parseBlockTree preserves LaTeX display math delimiters", () => {
+  const source = String.raw`\[
+x + y
+\]`;
+  const parsed = parseBlockTree(source);
+
+  expect(parsed.tree).toEqual([
+    { text: source, position: { relPath: "", line: 1 } },
+  ]);
+  expect(parsed.issues).toHaveLength(0);
+});
+
+test("parseBlockTree still unescapes literal block openers", () => {
+  const parsed = parseBlockTree(String.raw`\[jsx]`);
+
+  expect(parsed.tree).toEqual([
+    { text: "[jsx]", position: { relPath: "", line: 1 } },
+  ]);
+  expect(parsed.issues).toHaveLength(0);
 });

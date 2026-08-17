@@ -21,9 +21,10 @@ pages:
     pages:
       Frontmatter: authoring/frontmatter.md
       Navigation: authoring/nav.md
+      Math: authoring/math.md
       Tables: authoring/tables.md
       File Viewers: authoring/file-viewers.md
-      Quiz Format: authoring/quiz-format.md
+      Quizzes in Notes: authoring/quiz-format.md
       Code: authoring/code.md
       Widgets: authoring/widgets.md
 

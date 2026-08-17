@@ -1,4 +1,5 @@
 import {
+	CheckIcon,
 	ChevronRightIcon,
 	CircleIcon,
 	MoreHorizontalIcon,
@@ -9,6 +10,7 @@ import {
 import type React from "react";
 
 const icons: Record<string, LucideIcon> = {
+	CheckIcon,
 	ChevronRightIcon,
 	MoreHorizontalIcon,
 	PanelLeftIcon,

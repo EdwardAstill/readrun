@@ -22,7 +22,7 @@ export function Axis({
   label,
   tickFormat = String,
   numTicks = 5,
-}: AxisProps): JSX.Element {
+}: AxisProps): React.JSX.Element {
   const isHorizontal = side === "bottom" || side === "top";
   const tickValues = ticks(scale, numTicks);
 

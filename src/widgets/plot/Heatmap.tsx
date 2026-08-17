@@ -77,7 +77,7 @@ export function Heatmap({
   invalid = defaultInvalid,
   flipY = true,
   onCellClick,
-}: HeatmapProps): JSX.Element {
+}: HeatmapProps): React.JSX.Element {
   const nx = data.length;
   const ny = nx > 0 ? data[0]!.length : 0;
 

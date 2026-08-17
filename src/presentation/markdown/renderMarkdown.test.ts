@@ -112,6 +112,16 @@ test("renderMarkdown renders inline KaTeX math", () => {
 	expect(result.html).toContain("Pythagorean");
 });
 
+test("renderMarkdown renders parenthesized inline KaTeX math", () => {
+	const result = renderMarkdown({
+		page: page(String.raw`The formula \(x^2 + y^2 = z^2\) is Pythagorean.`),
+	});
+
+	expect(result.html).toContain('class="katex"');
+	expect(result.html).not.toContain(String.raw`\(x^2`);
+	expect(result.html).toContain("Pythagorean");
+});
+
 test("renderMarkdown renders display KaTeX math", () => {
 	const result = renderMarkdown({
 		page: page("$$\\int_0^1 x\\,dx = \\frac{1}{2}$$"),
@@ -119,6 +129,30 @@ test("renderMarkdown renders display KaTeX math", () => {
 
 	expect(result.html).toContain('class="katex"');
 	expect(result.html).toContain('class="katex-display"');
+});
+
+test("renderMarkdown renders bracketed display KaTeX math", () => {
+	const result = renderMarkdown({
+		page: page(String.raw`\[
+\sum_{i=1}^n i = \frac{n(n+1)}{2}
+\]`),
+	});
+
+	expect(result.html).toContain('class="katex"');
+	expect(result.html).toContain('class="katex-display"');
+	expect(result.html).not.toContain(String.raw`\[`);
+});
+
+test("renderMarkdown leaves LaTeX delimiters inside code untouched", () => {
+	const result = renderMarkdown({
+		page: page(
+			"Inline code: `\\(x + y\\)`.\n\n```latex\n\\[\nx + y\n\\]\n```",
+		),
+	});
+
+	expect(result.html).not.toContain('class="katex"');
+	expect(result.html).toContain(String.raw`\(x + y\)`);
+	expect(result.html).toContain(String.raw`\[`);
 });
 
 test("renderMarkdown renders mixed math and text", () => {
@@ -132,4 +166,65 @@ test("renderMarkdown renders mixed math and text", () => {
 	expect(result.html).toContain('class="katex"');
 	expect(result.html).toContain('class="katex-display"');
 	expect(result.html).toContain("More text.");
+});
+
+test("renderMarkdown places rich quiz islands inline without polluting the TOC", () => {
+	const result = renderMarkdown({
+		page: page(String.raw`# Before
+
+Introductory prose.
+
+[quiz id=math title="Math check"]
+[info]
+## Internal heading
+
+Remember \(x + x = 2x\).
+[/info]
+[question type=single]
+Which expression equals \(2x\)?
+- [x] \(x + x\)
+- [ ] \(x^2\)
+[explain]
+\[
+x + x = 2x
+\]
+[/explain]
+[/question]
+[/quiz]
+
+Middle prose.
+
+[quiz id=words]
+[question type=freetext]
+Type **yes**.
+= yes
+[/question]
+[/quiz]
+
+Closing prose.`),
+	});
+
+	expect(result.html.match(/data-island="quiz"/g)?.length).toBe(2);
+	expect(result.html).toContain('data-quiz-instance="index-math-1"');
+	expect(result.html).toContain('data-quiz-instance="index-words-2"');
+	expect(result.html).toContain("Introductory prose.");
+	expect(result.html).toContain("Middle prose.");
+	expect(result.html).toContain("Closing prose.");
+	expect(result.html).toContain("katex");
+	expect(result.html).toContain("katex-display");
+	expect(result.toc).toEqual([{ id: "before", label: "Before", level: 1 }]);
+});
+
+test("renderMarkdown shows a safe fallback for an invalid canonical quiz", () => {
+	const result = renderMarkdown({
+		page: page(`[quiz]
+[question]
+Missing type
+[/question]
+[/quiz]`),
+	});
+
+	expect(result.html).toContain('data-quiz-invalid="true"');
+	expect(result.html).toContain("requires type=single");
+	expect(result.html).not.toContain('data-island="quiz"');
 });

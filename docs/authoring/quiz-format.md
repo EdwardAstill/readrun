@@ -1,211 +1,179 @@
-# Quiz Format
+# Quizzes in notes
 
-ReadRun supports two file formats: **Markdown** (`.quiz.md`) and **JSON** (`.quiz`). Markdown is recommended for hand-authored and AI-generated quizzes — no escaping, no index arithmetic, and LaTeX works naturally.
+Put a `[quiz]...[/quiz]` block directly in an ordinary Markdown note. The quiz
+stays at that point in the page and works in both the development server and a
+static build.
 
-Quiz files go in `.readrun/quizzes/` inside your content directory. Run `rr <dir>` and open the **Quizzes** tab.
+A quiz can contain reading steps plus single-choice, multiple-choice,
+true/false, and free-text questions. Readers answer deliberately, see feedback,
+move backward without losing answers, receive a score, and can restart.
 
-All text fields support **Markdown** with **LaTeX math** (`$...$` inline, `$$...$$` display).
+## Live example
 
----
+[quiz id=mechanics-check title="Mechanics check"]
 
-## Markdown Format (`.quiz.md`)
+[info id=setup]
+Use the relationship \(F = ma\). In component form:
 
-### Structure
+\[
+F_x = m a_x
+\]
+[/info]
 
-```
----                              ← YAML frontmatter (required)
-title: Quiz Title
-description: Optional subtitle
----
+[question id=force-unit type=single]
+Which SI unit measures **force**?
 
-## [info] Heading                ← info page
-:::                              ← extended body block (optional)
-Markdown content...
-:::
+- [ ] Joule
+- [x] Newton
+- [ ] Watt
 
-# Section Title                  ← section (groups items in sidebar)
+[hint]
+The unit is named after the scientist associated with the laws of motion.
+[/hint]
 
-## [single] Question text        ← single-choice question
-- Wrong option
-- Correct option *               ← trailing * marks the correct answer
-- Another wrong option
-?> Hint text                     ← hint (shown before answering)
-> Explanation text               ← explanation (shown after answering)
+[explain]
+A newton is \(1\,\mathrm{kg\,m\,s^{-2}}\).
+[/explain]
+[/question]
 
-## [multi] Question text         ← multiple-choice question
-- Wrong
-- Correct *                      ← multiple * for multiple correct
-- Also correct *
+[question id=equal-four type=multi]
+Which expressions equal \(4\)?
 
-## [truefalse] Statement text    ← true/false question
-true *                           ← * marks which value is correct
+- [x] \(2 + 2\)
+- [x] \(2^2\)
+- [ ] \(2 \times 4\)
+[/question]
 
-## [freetext] Question text      ← free-text question
-= Expected answer                ← exact-match answer (see "Free-text Answer Spec" below)
+[question id=constant-velocity type=truefalse]
+An object moving at constant velocity has zero acceleration.
 
-## [group] Shared prompt         ← question group
-### [truefalse] Sub-question 1   ← sub-questions use ###
-true *
-### [freetext] Sub-question 2
-= Answer
-```
+- [x] True
+- [ ] False
+[/question]
 
-### Element Reference
+[question id=complete-law type=freetext case-sensitive=false]
+Complete the relationship: force equals mass times ____.
 
-| Element | Syntax |
-|---------|--------|
-| Frontmatter | `---` / `title:` / `description:` / `---` |
-| Section | `# Section Title` |
-| Item | `## [type] Text` — type is `single`, `multi`, `truefalse`, `freetext`, `info`, or `group` |
-| Group sub-question | `### [type] Text` |
-| Extended body | `:::` block after heading (supports code fences inside) |
-| Options | `- Option text` (append ` *` for correct) |
-| True/false answer | `true *` or `false *` on its own line |
-| Free text answer | `= <spec>` — string, number, range, or list (see [Free-text Answer Spec](#free-text-answer-spec)) |
-| Hint | `?> hint text` |
-| Explanation | `> text` (multiline: each line starts with `> `) |
-| Local image | `:::filename.png` on its own line inside a `:::` body block — loads from `.readrun/quizzes/.images/` |
+= acceleration
+[/question]
 
-### Free-text Answer Spec
+[/quiz]
 
-The line following a `[freetext]` heading starts with `=` and then describes what counts as a correct answer. The parser supports four forms plus a bareword fallback for backwards compatibility.
+This second quiz demonstrates that several quizzes in one note keep separate
+progress and answers.
 
-| Form | Syntax | Example | Matches |
-|------|--------|---------|---------|
-| Bareword string | `= word1 word2 ...` | `= Simple Storage Service` | `"Simple Storage Service"` (case-insensitive by default) |
-| Quoted string | `= "text"` | `= "hello world"` | Exact string (use when bareword would be ambiguous) |
-| Number | `= N` | `= 3.14` | Exact numeric value (input parsed as number) |
-| Range | `= range:<open><min>,<max><close>` | `= range:[0, 1)` | Number in the interval. `[`/`]` = inclusive, `(`/`)` = exclusive. Any combination allowed. |
-| List (any-of) | `= [item1, item2, ...]` | `= ["yen", "JPY"]` | Any item matches. Items can be any of the forms above, including nested ranges or quoted strings. |
+[quiz id=second-check title="Independent check"]
+[question type=truefalse]
+This quiz has its own state.
 
-**Examples:**
+- [x] True
+- [ ] False
+[/question]
+[/quiz]
+
+## Canonical syntax
+
+Use nested, explicitly typed blocks:
 
 ```markdown
-## [freetext] What does S3 stand for?
-= Simple Storage Service
+[quiz id=derivatives title="Derivative check"]
 
-## [freetext] Value of π to 2dp?
-= range:[3.13, 3.15]
+[info]
+Use the power rule \(\frac{d}{dx}x^n = nx^{n-1}\).
+[/info]
 
-## [freetext] Currency of Japan (accept code or name)?
-= ["yen", "JPY"]
+[question id=power-rule type=single]
+What is the derivative of \(x^3\)?
 
-## [freetext] Pi, by numeric tolerance or exact decimal?
-= [range:[3.13, 3.15], 3.14159]
+- [ ] \(x^2\)
+- [x] \(3x^2\)
+- [ ] \(3x\)
 
-## [freetext] Dimensionless ratio strictly between 0 and 1?
-= range:(0, 1)
+[hint]
+Substitute \(n=3\) into the power rule.
+[/hint]
+
+[explain]
+\[
+\frac{d}{dx}x^3 = 3x^2
+\]
+[/explain]
+[/question]
+
+[/quiz]
 ```
 
-**Semantics:**
+Only `[info]` and `[question]` are valid directly inside `[quiz]`. A question
+may contain one `[hint]` and one `[explain]` block.
 
-- **Strings** are compared case-insensitively by default; whitespace is trimmed on both sides.
-- **Numbers** are matched by numeric equality after `Number()` parse (`3.14 == 3.140`).
-- **Ranges** parse the user's input as a number; non-numeric input is rejected. `[a, b]` accepts both endpoints; `(a, b)` rejects both.
-- **Lists** short-circuit: the first matching item wins. Useful for numeric tolerance + alternative phrasings in the same question.
-- Bare strings outside `[...]` remain supported so existing `= some answer` lines keep working.
+## Question types
 
-### Extended Body Blocks (`:::`)
+Choice answers use Markdown task-list markers. A checked item (`[x]`) is
+correct and an unchecked item (`[ ]`) is a distractor.
 
-For question text that's longer than a heading allows — code snippets, multi-paragraph prompts, etc.:
+| Type | Answer rules |
+| --- | --- |
+| `single` | At least two choices and exactly one checked answer. |
+| `multi` | At least two choices and one or more checked answers. Readers must select the exact correct set. |
+| `truefalse` | Exactly the choices `True` and `False`, with one checked. Either order is allowed. |
+| `freetext` | Exactly one `= expected answer` line. |
+
+Free-text answers are trimmed, internal whitespace is collapsed, and matching
+is case-insensitive by default. Add `case-sensitive=true` to a `freetext`
+question when capitalization matters. Matching is exact after that
+normalization.
+
+## IDs and titles
+
+`[quiz]` accepts optional `id` and `title` attributes. `[question]` and `[info]`
+accept optional `id` attributes. IDs must start with a letter and then use only
+letters, numbers, `_`, or `-`.
+
+ReadRun generates deterministic IDs when they are omitted. Explicit IDs are
+useful when source changes frequently, but every quiz ID must be unique on its
+page and every item ID must be unique within its quiz.
+
+## Markdown and math
+
+Information, prompts, choices, hints, and explanations use the same Markdown
+engine as the surrounding note. That includes links, wikilinks, code, raw HTML
+under the normal trusted-author policy, and all supported math delimiters:
+
+- `$...$` and `\(...\)` for inline math;
+- `$$...$$` and `\[...\]` for display math.
+
+Headings inside quiz content do not appear in the page table of contents.
+
+## Validation and legacy quizzes
+
+Run `rr validate <content>` to catch missing types, malformed answer markers,
+duplicate IDs, misplaced blocks, empty prompts, and invalid correct-answer
+counts. Diagnostics include the note and source line.
+
+The earlier compact blank-line format still renders temporarily and reports a
+`quiz.syntax.legacy` migration warning. Move each reading section into `[info]`
+and each question into an explicitly typed `[question]` block.
+
+Trailing-star answers were never a working quiz-in-notes format. Replace:
 
 ```markdown
-## [single] Consider the following code:
-:::
-```python
-def foo(x):
-    return x * 2
+- Correct answer *
 ```
 
-What does `foo(3)` return?
-:::
-- 3
-- 6 *
-- 9
-```
-
-The `:::` content is appended to the heading text. Code fences inside are handled correctly.
-
-### Images
-
-**Local image** (file in `.readrun/quizzes/.images/`):
+with:
 
 ```markdown
-:::diagram.png
+- [x] Correct answer
 ```
 
-**Web image** (standard Markdown, fetched by the browser):
+## Static-site limitation
 
-```markdown
-![alt text](https://example.com/image.png)
-```
+ReadRun grades in the browser without a server, so correct answers are included
+in the generated HTML payload and can be inspected. Quizzes are intended for
+self-study and knowledge checks, not secure examinations.
 
-### Markdown and Math
+## Not yet supported
 
-All text fields support Markdown and LaTeX:
-
-- **Inline math:** `$E = mc^2$`
-- **Display math:** `$$\int_0^\infty e^{-x}\,dx = 1$$`
-
-**Warning: `$` as currency.** The parser treats `$` as a math delimiter. Write `500 USD` or `US$500` — never bare `$500`. Inside math blocks, use `\text{\textdollar}` not `\$`.
-
----
-
-## Complete Example
-
-```markdown
----
-title: AWS Solutions Architect
-description: Practice exam for SAA-C03
----
-
-## [info] AWS Solutions Architect
-:::
-This quiz covers key topics for the **SAA-C03** exam.
-
-$$C = \sum_{i=1}^{n} r_i \cdot t_i \cdot p_i$$
-
-where $r_i$ is the resource count, $t_i$ is duration in hours, $p_i$ is per-unit price.
-:::
-
-# S3 Storage
-
-## [single] Which S3 storage class is cheapest for infrequent access?
-- S3 Standard
-- S3 Glacier
-- S3 Standard-IA
-- S3 One Zone-IA *
-?> Think about which class trades redundancy for lower cost.
-> One Zone-IA is cheapest but lacks multi-AZ redundancy.
-
-## [group] Answer the following questions about S3:
-
-### [truefalse] S3 bucket names must be globally unique.
-true *
-> Bucket names share a global namespace across all AWS accounts.
-
-### [freetext] What does S3 stand for?
-= Simple Storage Service
-
-# Serverless & IAM
-
-## [multi] Which services are serverless? (select all that apply)
-- EC2
-- Lambda *
-- DynamoDB *
-- RDS
-> Lambda and DynamoDB require no server management.
-
-## [freetext] What does IAM stand for?
-= Identity and Access Management
-?> Three words: **I**___ **A**___ **M**___
-> IAM controls who can do what in your AWS account.
-```
-
----
-
-## AI Generation
-
-Use `/make-quiz` in Claude Code to generate `.quiz.md` files from codebases, notes, PDFs, URLs, or topics. The skill handles source ingestion, question design, and output to `.readrun/quizzes/`.
-
-See the `make-quiz` skill in agentfiles for the full spec, including `.quizspec` recipe files for repeatable quiz generation.
+Standalone quiz files, a global Quizzes tab, grouped or multipart questions,
+randomization, saved progress, analytics, remote submission, answer ranges,
+regular expressions, and alternative-answer lists are not currently supported.

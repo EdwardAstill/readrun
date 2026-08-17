@@ -5,7 +5,7 @@ import { initShortcuts } from "./shortcuts.ts";
 import { applySettings, loadSettings } from "./settings.ts";
 import { initModelViewers } from "./model-viewer.ts";
 import { initUploadBlocks } from "./upload.ts";
-import { initQuizzes } from "./quiz.ts";
+import { mountQuizIslands } from "../quiz/mount.tsx";
 import { initExecBlocks } from "./execution/python.ts";
 import { mountResizableShell } from "./resizable-shell.tsx";
 import { initNavCollapse, initNavFocus } from "./nav-focus.ts";
@@ -59,7 +59,7 @@ function clientFeatures(): ClientFeature[] {
 		}),
 		applicationFeature("shortcuts", initShortcuts),
 		applicationFeature("uploads", initUploadBlocks),
-		pageFeature("quizzes", initQuizzes),
+		pageFeature("quizzes", mountQuizIslands),
 		pageFeature("page-islands", () => {
 			const handle = mountPageShellIslands();
 			return () => handle.teardown();

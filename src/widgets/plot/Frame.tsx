@@ -48,7 +48,7 @@ export function Frame<XS extends Scale, YS extends Scale>({
   xNumTicks,
   yNumTicks,
   children,
-}: FrameProps<XS, YS>): JSX.Element {
+}: FrameProps<XS, YS>): React.JSX.Element {
   const margin = {
     top: marginProp?.top ?? DEFAULT_MARGIN.top,
     right: marginProp?.right ?? DEFAULT_MARGIN.right,

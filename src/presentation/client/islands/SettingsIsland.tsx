@@ -93,7 +93,7 @@ export function SettingsSwitchRow({
 export interface SettingsPanelProps {
 	settings: Settings;
 	localPythonAvailable: boolean;
-	initialFocusRef: React.RefObject<HTMLButtonElement>;
+	initialFocusRef: React.RefObject<HTMLButtonElement | null>;
 	onOpenShortcuts: () => void;
 	onUpdate: (patch: Partial<Settings>) => void;
 }

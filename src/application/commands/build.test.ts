@@ -237,3 +237,59 @@ test("runBuildCommand emits Pyodide data aliases from the discovered asset index
     ).exists(),
   ).toBe(false);
 });
+
+test("static builds emit independent embedded quiz islands and no standalone quiz route", async () => {
+  const project = await makeProject();
+  await mkdir(path.join(project.root, ".readrun", "quizzes"), { recursive: true });
+  await Bun.write(
+    path.join(project.root, ".readrun", "quizzes", "ignored.quiz.md"),
+    "# This is not a page\n",
+  );
+  await Bun.write(
+    path.join(project.root, "index.md"),
+    `# Embedded quizzes
+
+Before the first quiz.
+
+[quiz id=first]
+[question type=single]
+Choose <em>A</em>.
+- [x] A
+- [ ] B
+[/question]
+[/quiz]
+
+Between the quizzes.
+
+[quiz id=second]
+[question type=freetext]
+Type yes.
+= yes
+[/question]
+[/quiz]
+
+After the second quiz.
+`,
+  );
+
+  await runBuildCommand({
+    path: project.root,
+    output: project.out,
+    platform: "plain",
+  });
+
+  const html = await Bun.file(path.join(project.out, "index.html")).text();
+  expect(html.match(/data-island="quiz"/g)).toHaveLength(2);
+  expect(html).toContain('data-quiz-instance="page-first-1"');
+  expect(html).toContain('data-quiz-instance="page-second-2"');
+  expect(html).toContain("Before the first quiz.");
+  expect(html).toContain("Between the quizzes.");
+  expect(html).toContain("After the second quiz.");
+  expect(html).toContain("\\u003cem>A\\u003c/em>");
+  expect(html).toContain('src="/_readrun/client.js"');
+  expect(
+    await Bun.file(
+      path.join(project.out, ".readrun", "quizzes", "ignored.quiz", "index.html"),
+    ).exists(),
+  ).toBe(false);
+});

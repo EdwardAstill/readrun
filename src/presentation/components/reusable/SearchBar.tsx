@@ -8,7 +8,7 @@ import { Input } from "../ui/Input.tsx";
 
 export interface SearchBarProps {
 	id?: string;
-	inputRef?: React.RefObject<HTMLInputElement>;
+	inputRef?: React.RefObject<HTMLInputElement | null>;
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;

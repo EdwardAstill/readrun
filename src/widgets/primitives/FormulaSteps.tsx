@@ -16,7 +16,10 @@ export interface FormulaStepsProps {
   title?: ReactNode;
 }
 
-export function FormulaSteps({ steps, title }: FormulaStepsProps): JSX.Element {
+export function FormulaSteps({
+  steps,
+  title,
+}: FormulaStepsProps): React.JSX.Element {
   return (
     <div className="viz-formula-steps">
       {title && <div className="viz-formula-steps-title">{title}</div>}

@@ -4,6 +4,7 @@
 @source "../components/**/*.{ts,tsx}";
 @source "../client/**/*.{ts,tsx}";
 @source "../markdown/**/*.{ts,tsx}";
+@source "../quiz/**/*.{ts,tsx}";
 @source "../shell/**/*.{ts,tsx}";
 @source "../viewers/**/*.{ts,tsx}";
 

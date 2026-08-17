@@ -22,11 +22,6 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
   { name: "video", category: "asset" },
   { name: "file", category: "asset" },
   { name: "quiz", category: "quiz" },
-  { name: "question", category: "quiz" },
-  { name: "group", category: "quiz" },
-  { name: "info", category: "quiz" },
-  { name: "hint", category: "quiz" },
-  { name: "explain", category: "quiz" },
 ];
 
 const VOID_BLOCK_NAMES = new Set([
