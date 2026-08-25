@@ -81,6 +81,25 @@ $$`);
 	expect(html).not.toContain("$a<em>b</em>$");
 });
 
+test("renderMarkdownFragment leaves dollar text in indented code untouched", () => {
+	const html = renderMarkdownFragment("    $not*math*$", environment(), {
+		mode: "block",
+	});
+
+	expect(html).toContain("<pre><code>$not*math*$");
+});
+
+test("renderMarkdownFragment leaves dollar text in destinations and HTML attributes untouched", () => {
+	const html = renderMarkdownFragment(
+		'<span title="$x*y*$">ok</span> [link](/$x*y*$)',
+		environment(),
+		{ mode: "block" },
+	);
+
+	expect(html).toContain('<span title="$x*y*$">ok</span>');
+	expect(html).toContain('<a href="/$x*y*$">link</a>');
+});
+
 test("renderMarkdownFragment keeps math text in heading IDs and TOC labels", () => {
 	const env = environment();
 	const html = renderMarkdownFragment("# Formula $a*b*$", env, {

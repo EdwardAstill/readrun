@@ -46,12 +46,10 @@ function createMarkdownRewriter(
 ): HTMLRewriter {
 	const rewriter = new HTMLRewriter();
 
-	if (math.values.length > 0) {
-		rewriter.on(math.tagName, {
+	if (math.escapedDollarTag) {
+		rewriter.on(math.escapedDollarTag, {
 			element(element) {
-				const index = Number(element.getAttribute("data-index"));
-				const source = math.values[index];
-				if (source !== undefined) element.replace(source, { html: false });
+				element.tagName = "span";
 			},
 		});
 	}
@@ -112,15 +110,14 @@ function createMarkdownRewriter(
 
 interface ProtectedDollarMath {
 	source: string;
-	tagName: string;
-	values: string[];
+	escapedDollarTag?: string;
 }
 
 function protectDollarMath(source: string): ProtectedDollarMath {
-	let tagName = "x-readrun-math";
-	while (source.includes(`<${tagName}`)) tagName += "-x";
+	let escapedDollarTag = "x-readrun-escaped-dollar";
+	while (source.includes(`<${escapedDollarTag}`)) escapedDollarTag += "-x";
 
-	const values: string[] = [];
+	let hasEscapedDollar = false;
 	let protectedSource = "";
 	let index = 0;
 	while (index < source.length) {
@@ -129,6 +126,12 @@ function protectDollarMath(source: string): ProtectedDollarMath {
 			if (fenceEnd !== null) {
 				protectedSource += source.slice(index, fenceEnd);
 				index = fenceEnd;
+				continue;
+			}
+			const indentedEnd = findIndentedCodeLineEnd(source, index);
+			if (indentedEnd !== null) {
+				protectedSource += source.slice(index, indentedEnd);
+				index = indentedEnd;
 				continue;
 			}
 		}
@@ -142,14 +145,42 @@ function protectDollarMath(source: string): ProtectedDollarMath {
 			}
 		}
 
+		if (source[index] === "<") {
+			const htmlEnd = findHtmlTagEnd(source, index);
+			if (htmlEnd !== null) {
+				protectedSource += source.slice(index, htmlEnd);
+				index = htmlEnd;
+				continue;
+			}
+		}
+
+		if (source[index] === "]" && source[index + 1] === "(") {
+			const destinationEnd = findLinkDestinationEnd(source, index);
+			if (destinationEnd !== null) {
+				protectedSource += source.slice(index, destinationEnd);
+				index = destinationEnd;
+				continue;
+			}
+		}
+
+		if (
+			source[index] === "\\" &&
+			source[index + 1] === "$" &&
+			!isEscaped(source, index)
+		) {
+			protectedSource += `<${escapedDollarTag}>&#36;</${escapedDollarTag}>`;
+			hasEscapedDollar = true;
+			index += 2;
+			continue;
+		}
+
 		if (source[index] === "$" && !isEscaped(source, index)) {
 			const delimiter = source[index + 1] === "$" ? "$$" : "$";
 			const mathEnd = findMathEnd(source, index + delimiter.length, delimiter);
 			if (mathEnd >= 0) {
 				const end = mathEnd + delimiter.length;
 				const value = source.slice(index, end);
-				const valueIndex = values.push(value) - 1;
-				protectedSource += `<${tagName} data-index="${valueIndex}">${encodeHtmlText(value)}</${tagName}>`;
+				protectedSource += encodeHtmlText(value);
 				index = end;
 				continue;
 			}
@@ -159,7 +190,52 @@ function protectDollarMath(source: string): ProtectedDollarMath {
 		index += 1;
 	}
 
-	return { source: protectedSource, tagName, values };
+	return {
+		source: protectedSource,
+		escapedDollarTag: hasEscapedDollar ? escapedDollarTag : undefined,
+	};
+}
+
+function findIndentedCodeLineEnd(source: string, start: number): number | null {
+	if (!source.startsWith("    ", start) && source[start] !== "\t") return null;
+	const end = lineEnd(source, start);
+	return end < source.length ? end + 1 : end;
+}
+
+function findHtmlTagEnd(source: string, start: number): number | null {
+	if (source.startsWith("<!--", start)) {
+		const end = source.indexOf("-->", start + 4);
+		return end >= 0 ? end + 3 : source.length;
+	}
+	if (!/^<\/?[a-z]|^<![a-z]|^<\?/i.test(source.slice(start))) return null;
+
+	let quote = "";
+	for (let index = start + 1; index < source.length; index += 1) {
+		const character = source[index]!;
+		if (quote) {
+			if (character === quote) quote = "";
+		} else if (character === '"' || character === "'") {
+			quote = character;
+		} else if (character === ">") {
+			return index + 1;
+		}
+	}
+	return null;
+}
+
+function findLinkDestinationEnd(source: string, start: number): number | null {
+	let depth = 0;
+	for (let index = start + 1; index < source.length; index += 1) {
+		if (source[index] === "\\") {
+			index += 1;
+		} else if (source[index] === "(") {
+			depth += 1;
+		} else if (source[index] === ")") {
+			depth -= 1;
+			if (depth === 0) return index + 1;
+		}
+	}
+	return null;
 }
 
 function findFencedCodeEnd(source: string, start: number): number | null {
