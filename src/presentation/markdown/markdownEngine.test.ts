@@ -48,6 +48,50 @@ test("renderMarkdownFragment renders native inline Markdown and trusted HTML", (
 	expect(html).not.toMatch(/^<p>|<\/p>\n?$/);
 });
 
+test("renderMarkdownFragment preserves dollar math through Markdown parsing", () => {
+	const html = renderMarkdownFragment(
+		[
+			String.raw`Inline $\left\{ x \right\}$, spacing $x\,y$, and $a*b*$.`,
+			"",
+			"Display:",
+			"",
+			"$$",
+			String.raw`\sum_{i=1}^{n} i`,
+			"$$",
+			"",
+			"Code: `$not*math*$`.",
+			"",
+			"```text",
+			"$also_not*math*$",
+			"```",
+		].join("\n"),
+		environment(),
+		{ mode: "block" },
+	);
+
+	expect(html).toContain(String.raw`$\left\{ x \right\}$`);
+	expect(html).toContain(String.raw`$x\,y$`);
+	expect(html).toContain("$a*b*$");
+	expect(html).toContain(String.raw`$$
+\sum_{i=1}^{n} i
+$$`);
+	expect(html).toContain("<code>$not*math*$</code>");
+	expect(html).toContain('<pre><code class="language-text">$also_not*math*$');
+	expect(html).not.toContain("$a<em>b</em>$");
+});
+
+test("renderMarkdownFragment keeps math text in heading IDs and TOC labels", () => {
+	const env = environment();
+	const html = renderMarkdownFragment("# Formula $a*b*$", env, {
+		mode: "block",
+	});
+
+	expect(html).toContain('<h1 id="formula-ab">Formula $a*b*$</h1>');
+	expect(env.toc).toEqual([
+		{ id: "formula-ab", label: "Formula $a*b*$", level: 1 },
+	]);
+});
+
 test("renderMarkdownFragment resolves known wiki links and neutralizes unknown ones", () => {
 	const html = renderMarkdownFragment("[[Other|Label]] [[Missing]]", environment(), {
 		mode: "inline",
