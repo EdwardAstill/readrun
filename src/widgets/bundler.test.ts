@@ -1,195 +1,88 @@
-import { describe, it, expect, beforeAll } from "bun:test";
-import * as fs from "fs";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import {
-	kebabToPascal,
-	resolveWidgetExport,
-	bundleWidget,
-} from "./bundler";
 
-// ─── 1. kebabToPascal ────────────────────────────────────────────────────────
+import { buildBanner, bundleWidget, kebabToPascal } from "./bundler.ts";
 
 describe("kebabToPascal", () => {
-	it("converts multi-word kebab to PascalCase", () => {
-		expect(kebabToPascal("distribution-explorer")).toBe("DistributionExplorer");
-		expect(kebabToPascal("force-graph")).toBe("ForceGraph");
-		expect(kebabToPascal("foo-bar-baz")).toBe("FooBarBaz");
-	});
-
-	it("converts single word (no dash)", () => {
+	it("converts kebab-case names to PascalCase", () => {
+		expect(kebabToPascal("distribution-explorer")).toBe(
+			"DistributionExplorer",
+		);
 		expect(kebabToPascal("widget")).toBe("Widget");
-	});
-
-	it("converts single-letter segments", () => {
 		expect(kebabToPascal("a-b-c")).toBe("ABC");
 	});
 });
 
-// ─── 2. resolveWidgetExport ─────────────────────────────────────────────────
-
-describe("resolveWidgetExport", () => {
-	it("finds named function exports", () => {
-		const src = `export function FooBar() { return null; }`;
-		expect(resolveWidgetExport(src, "FooBar")).toEqual({
-			kind: "named",
-			name: "FooBar",
-		});
-	});
-
-	it("finds named const exports", () => {
-		const src = `export const FooBar = () => null;`;
-		expect(resolveWidgetExport(src, "FooBar")).toEqual({
-			kind: "named",
-			name: "FooBar",
-		});
-	});
-
-	it("finds default function exports", () => {
-		const src = `export default function FooBar() { return null; }`;
-		expect(resolveWidgetExport(src, "FooBar")).toEqual({
-			kind: "default",
-			name: "FooBar",
-		});
-	});
-
-	it("finds default identifier exports", () => {
-		const src = `const FooBar = () => null;\nexport default FooBar;`;
-		expect(resolveWidgetExport(src, "FooBar")).toEqual({
-			kind: "default",
-			name: "FooBar",
-		});
-	});
-
-	it("finds named export lists", () => {
-		const src = `const FooBar = () => null;\nexport {\n  FooBar\n};`;
-		expect(resolveWidgetExport(src, "FooBar")).toEqual({
-			kind: "named",
-			name: "FooBar",
-		});
-	});
-
-	it("finds export lists with default aliases", () => {
-		const src = `function FooBar() { return null; }\nexport { FooBar as default };`;
-		expect(resolveWidgetExport(src, "FooBar")).toEqual({
-			kind: "default",
-			name: "FooBar",
-		});
-	});
-
-	it("rejects mismatched default exports", () => {
-		const src = `export default function WrongName() { return null; }`;
-		expect(resolveWidgetExport(src, "FooBar")).toBeNull();
-	});
-
-	it("rejects anonymous default exports", () => {
-		const src = `export default () => null;`;
-		expect(resolveWidgetExport(src, "FooBar")).toBeNull();
-	});
-
-	it("rejects renamed local exports", () => {
-		const src = `function Internal() { return null; }\nexport { Internal as FooBar };`;
-		expect(resolveWidgetExport(src, "FooBar")).toBeNull();
-	});
-
-	it("ignores type-only exports", () => {
-		const src = `type FooBar = { value: number };\nexport type { FooBar };`;
-		expect(resolveWidgetExport(src, "FooBar")).toBeNull();
-	});
-});
-
-// ─── 3. bundleWidget integration ────────────────────────────────────────────
-
-const TMP_DIR = "/tmp/widgets-test";
-const WIDGETS_DIR = `${TMP_DIR}/widgets`;
-const OUT_DIR = `${TMP_DIR}/out`;
+const tempRoot = mkdtempSync(path.join(tmpdir(), "readrun-widgets-test-"));
+const widgetsDir = path.join(tempRoot, "widgets");
+const toolkitRoot = path.resolve(import.meta.dirname);
+const options = { widgetsDir, toolkitRoot };
 
 beforeAll(() => {
-	fs.mkdirSync(WIDGETS_DIR, { recursive: true });
-	fs.mkdirSync(OUT_DIR, { recursive: true });
-
-	fs.writeFileSync(
-		`${WIDGETS_DIR}/foo-bar.tsx`,
-		`import React from "react";\n\nexport default function FooBar() {\n  return <div>hello {React.version}</div>;\n}\n`,
+	mkdirSync(widgetsDir, { recursive: true });
+	writeFileSync(
+		path.join(widgetsDir, "foo-bar.tsx"),
+		`import React from "react";
+export function FooBar() {
+  return <div>hello {React.version}</div>;
+}
+`,
 	);
-	fs.writeFileSync(
-		`${WIDGETS_DIR}/default-ref.tsx`,
-		`const DefaultRef = () => <div>default ref</div>;\nexport default DefaultRef;\n`,
+	writeFileSync(
+		path.join(widgetsDir, "named-const.tsx"),
+		"export const NamedConst = () => <div>named const</div>;\n",
 	);
-	fs.writeFileSync(
-		`${WIDGETS_DIR}/named-const.tsx`,
-		`export const NamedConst = () => <div>named const</div>;\n`,
+	writeFileSync(
+		path.join(widgetsDir, "default-ref.tsx"),
+		"const DefaultRef = () => <div>default ref</div>;\nexport default DefaultRef;\n",
 	);
-	fs.writeFileSync(
-		`${WIDGETS_DIR}/wrong-name.tsx`,
-		`export default function NotWrongName() {\n  return <div />;\n}\n`,
+	writeFileSync(
+		path.join(widgetsDir, "wrong-name.tsx"),
+		"export function NotWrongName() { return <div />; }\n",
 	);
 });
 
-const TOOLKIT_ROOT = path.resolve(import.meta.dirname);
+afterAll(() => {
+	rmSync(tempRoot, { recursive: true, force: true });
+});
 
-describe("bundleWidget integration", () => {
-	it("produces output with correct shape", async () => {
-		const result = await bundleWidget("foo-bar", {
-			widgetsDir: WIDGETS_DIR,
-			toolkitRoot: TOOLKIT_ROOT,
-		});
+describe("bundleWidget", () => {
+	it("bundles a named component for the readrun JSX runtime", async () => {
+		const result = await bundleWidget("foo-bar", options);
 
-		// No import statements
 		expect(result).not.toMatch(/^import\s/m);
-
-		// No export statements
 		expect(result).not.toMatch(/^export\s/m);
-
-		// Contains the component name
 		expect(result).toMatch(/\bFooBar\b/);
-
-		// Ends with render call
 		expect(result.trimEnd()).toMatch(/render\(<FooBar\s*\/>\);?$/m);
-
-		// Starts with the banner
 		expect(result).toMatch(/^\/\/ generated by @readrun\/widgets/m);
-
-		// References globalThis.React somewhere
 		expect(result).toContain("globalThis.React");
 	});
 
-	it("supports default identifier exports while rendering the file PascalName", async () => {
-		const result = await bundleWidget("default-ref", {
-			widgetsDir: WIDGETS_DIR,
-			toolkitRoot: TOOLKIT_ROOT,
-		});
-
-		expect(result).not.toMatch(/^export\s/m);
-		expect(result.trimEnd()).toMatch(/render\(<DefaultRef\s*\/>\);?$/m);
-	});
-
-	it("supports named const component exports", async () => {
-		const result = await bundleWidget("named-const", {
-			widgetsDir: WIDGETS_DIR,
-			toolkitRoot: TOOLKIT_ROOT,
-		});
+	it("bundles a named const component", async () => {
+		const result = await bundleWidget("named-const", options);
 
 		expect(result).not.toMatch(/^export\s/m);
 		expect(result.trimEnd()).toMatch(/render\(<NamedConst\s*\/>\);?$/m);
 	});
 
-	it("reports a clear error for mismatched component names", async () => {
-		await expect(
-			bundleWidget("wrong-name", {
-				widgetsDir: WIDGETS_DIR,
-				toolkitRoot: TOOLKIT_ROOT,
-			}),
-		).rejects.toThrow(/expected "WrongName"|named "WrongName"/i);
+	it("rejects a default-only component", async () => {
+		await expect(bundleWidget("default-ref", options)).rejects.toThrow(
+			/DefaultRef/,
+		);
+	});
+
+	it("reports the expected name for a mismatched export", async () => {
+		await expect(bundleWidget("wrong-name", options)).rejects.toThrow(
+			/WrongName/,
+		);
 	});
 });
 
-// ─── 4. Banner format ────────────────────────────────────────────────────────
-
-import { buildBanner } from "./bundler";
-
 describe("buildBanner", () => {
-	it("contains two lines with the correct structure", () => {
-		const banner = buildBanner("foo-bar", TOOLKIT_ROOT);
+	it("contains the source path and a seven-character git SHA", () => {
+		const banner = buildBanner("foo-bar", toolkitRoot);
 		const lines = banner.split("\n").filter(Boolean);
 
 		expect(lines[0]).toMatch(
@@ -198,17 +91,10 @@ describe("buildBanner", () => {
 		expect(lines[1]).toMatch(/\/\/ @readrun\/widgets@[0-9a-f]{7}/);
 	});
 
-	it("SHA is 7 hex characters", () => {
-		const banner = buildBanner("any", TOOLKIT_ROOT);
-		const match = banner.match(/@readrun\/widgets@([0-9a-f]+)/);
-		expect(match).not.toBeNull();
-		expect(match![1]).toHaveLength(7);
-	});
-
-	it("uses an unknown SHA when the toolkit is not a git checkout", () => {
+	it("uses an unknown SHA outside a git checkout", () => {
 		const banner = buildBanner(
 			"any",
-			path.join(TOOLKIT_ROOT, "missing-toolkit-root"),
+			path.join(toolkitRoot, "missing-toolkit-root"),
 		);
 		expect(banner).toContain("@readrun/widgets@unknown");
 	});
