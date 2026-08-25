@@ -214,6 +214,23 @@ test("startServer serves the runtime client assets", async () => {
 	expect(styles.headers.get("content-type")).toContain("text/css");
 });
 
+test("startServer serves project asset byte ranges through Bun.file", async () => {
+	const root = await makeProjectWithFiles({
+		"index.md": "# Range\n",
+		".readrun/assets/files/range.txt": "0123456789",
+	});
+	const server = await startTestServer({ root });
+
+	const response = await fetch(
+		`${server.baseUrl}/_readrun/assets/files/range.txt`,
+		{ headers: { Range: "bytes=2-5" } },
+	);
+
+	expect(response.status).toBe(206);
+	expect(response.headers.get("content-range")).toBe("bytes 2-5/10");
+	expect(await response.text()).toBe("2345");
+});
+
 test("startServer moves to the next available port when the requested port is occupied", async () => {
 	const occupied = occupyTestPort();
 	servers.push(occupied);
