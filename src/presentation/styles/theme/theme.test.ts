@@ -1,11 +1,7 @@
 import { expect, test } from "bun:test";
 
 import { themeStyles } from "../themes.ts";
-import {
-	hljsPalette,
-	themePalette,
-	type ThemeName,
-} from "../tokens.ts";
+import { themePalette, type ThemeName } from "../tokens.ts";
 import { rootThemeStyles } from "./root.ts";
 
 const themeNames = Object.keys(themePalette) as ThemeName[];
@@ -43,15 +39,6 @@ test("theme CSS is generated from every non-default palette entry", () => {
 	expect(themeStyles).not.toContain("--color-bg:");
 });
 
-test("highlight CSS is generated from each syntax palette", () => {
-	for (const name of themeNames) {
-		const colors = hljsPalette[name];
-		const prefix = name === "light" ? "" : `[data-theme="${name}"] `;
-		expect(themeStyles).toContain(
-			`${prefix}.hljs-comment, ${prefix}.hljs-quote { color: ${colors.comment}; }`,
-		);
-		expect(themeStyles).toContain(
-			`${prefix}.hljs-deletion { color: ${colors.deletion}; background: ${colors.deletionBg}; }`,
-		);
-	}
+test("theme CSS omits server-side syntax highlighter selectors", () => {
+	expect(themeStyles).not.toContain(".hljs");
 });

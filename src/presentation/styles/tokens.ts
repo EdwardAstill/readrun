@@ -14,28 +14,14 @@ export interface ThemeColors {
 	highlightBackground: string;
 }
 
-export interface HljsColors {
-	comment: string;
-	keyword: string;
-	string: string;
-	number: string;
-	builtIn: string;
-	title: string;
-	attr: string;
-	name: string;
-	deletion: string;
-	deletionBg: string;
-}
-
 export interface ThemeDefinition {
 	label: string;
 	colors: ThemeColors;
-	syntax: HljsColors;
 }
 
 /**
  * Canonical theme catalog. Theme selectors, settings labels, UI variables,
- * syntax highlighting, and picker swatches are all generated from this data.
+ * and picker swatches are all generated from this data.
  */
 export const themeCatalog = {
 	light: {
@@ -55,18 +41,6 @@ export const themeCatalog = {
 			codeBackground: "#f4f4f5",
 			highlightBackground: "#dbeafe",
 		},
-		syntax: {
-			comment: "#6e7781",
-			keyword: "#cf222e",
-			string: "#0a3069",
-			number: "#0550ae",
-			builtIn: "#8250df",
-			title: "#8250df",
-			attr: "#0550ae",
-			name: "#116329",
-			deletion: "#82071e",
-			deletionBg: "#ffebe9",
-		},
 	},
 	dark: {
 		label: "Dark",
@@ -84,18 +58,6 @@ export const themeCatalog = {
 			activeBackground: "#1f2a38",
 			codeBackground: "#161b22",
 			highlightBackground: "rgba(88, 166, 255, 0.25)",
-		},
-		syntax: {
-			comment: "#8b949e",
-			keyword: "#ff7b72",
-			string: "#a5d6ff",
-			number: "#79c0ff",
-			builtIn: "#d2a8ff",
-			title: "#d2a8ff",
-			attr: "#79c0ff",
-			name: "#7ee787",
-			deletion: "#ffa198",
-			deletionBg: "#490202",
 		},
 	},
 	solarized: {
@@ -115,18 +77,6 @@ export const themeCatalog = {
 			codeBackground: "#eee8d5",
 			highlightBackground: "rgba(38, 139, 210, 0.20)",
 		},
-		syntax: {
-			comment: "#93a1a1",
-			keyword: "#859900",
-			string: "#2aa198",
-			number: "#d33682",
-			builtIn: "#b58900",
-			title: "#268bd2",
-			attr: "#b58900",
-			name: "#268bd2",
-			deletion: "#dc322f",
-			deletionBg: "#fdf6e3",
-		},
 	},
 	nord: {
 		label: "Nord",
@@ -144,18 +94,6 @@ export const themeCatalog = {
 			activeBackground: "#434c5e",
 			codeBackground: "#3b4252",
 			highlightBackground: "rgba(136, 192, 208, 0.25)",
-		},
-		syntax: {
-			comment: "#616e88",
-			keyword: "#81a1c1",
-			string: "#a3be8c",
-			number: "#b48ead",
-			builtIn: "#88c0d0",
-			title: "#8fbcbb",
-			attr: "#8fbcbb",
-			name: "#81a1c1",
-			deletion: "#bf616a",
-			deletionBg: "#3b4252",
 		},
 	},
 	dracula: {
@@ -175,18 +113,6 @@ export const themeCatalog = {
 			codeBackground: "#21222c",
 			highlightBackground: "rgba(139, 233, 253, 0.22)",
 		},
-		syntax: {
-			comment: "#6272a4",
-			keyword: "#ff79c6",
-			string: "#f1fa8c",
-			number: "#bd93f9",
-			builtIn: "#50fa7b",
-			title: "#50fa7b",
-			attr: "#50fa7b",
-			name: "#ff79c6",
-			deletion: "#ff5555",
-			deletionBg: "#44475a",
-		},
 	},
 	monokai: {
 		label: "Monokai",
@@ -204,18 +130,6 @@ export const themeCatalog = {
 			activeBackground: "#3e3d32",
 			codeBackground: "#1e1f1c",
 			highlightBackground: "rgba(102, 217, 239, 0.22)",
-		},
-		syntax: {
-			comment: "#75715e",
-			keyword: "#f92672",
-			string: "#e6db74",
-			number: "#ae81ff",
-			builtIn: "#a6e22e",
-			title: "#a6e22e",
-			attr: "#a6e22e",
-			name: "#f92672",
-			deletion: "#f92672",
-			deletionBg: "#3e3d32",
 		},
 	},
 	gruvbox: {
@@ -235,18 +149,6 @@ export const themeCatalog = {
 			codeBackground: "#3c3836",
 			highlightBackground: "rgba(131, 165, 152, 0.25)",
 		},
-		syntax: {
-			comment: "#928374",
-			keyword: "#fb4934",
-			string: "#b8bb26",
-			number: "#d3869b",
-			builtIn: "#fabd2f",
-			title: "#83a598",
-			attr: "#fabd2f",
-			name: "#fb4934",
-			deletion: "#fb4934",
-			deletionBg: "#3c3836",
-		},
 	},
 	catppuccin: {
 		label: "Catppuccin",
@@ -265,18 +167,6 @@ export const themeCatalog = {
 			codeBackground: "#181825",
 			highlightBackground: "rgba(137, 180, 250, 0.25)",
 		},
-		syntax: {
-			comment: "#6c7086",
-			keyword: "#cba6f7",
-			string: "#a6e3a1",
-			number: "#fab387",
-			builtIn: "#94e2d5",
-			title: "#89b4fa",
-			attr: "#94e2d5",
-			name: "#cba6f7",
-			deletion: "#f38ba8",
-			deletionBg: "#313244",
-		},
 	},
 } as const satisfies Record<string, ThemeDefinition>;
 
@@ -292,7 +182,3 @@ export const themeLabels = Object.fromEntries(
 export const themePalette = Object.fromEntries(
 	themeNames.map((name) => [name, themeCatalog[name].colors]),
 ) as Record<ThemeName, ThemeColors>;
-
-export const hljsPalette = Object.fromEntries(
-	themeNames.map((name) => [name, themeCatalog[name].syntax]),
-) as Record<ThemeName, HljsColors>;

@@ -18,16 +18,16 @@ test("theme CSS is generated from every catalog entry", () => {
 	expect(rootThemeStyles).toContain(`--rr-accent: ${light.accent};`);
 
 	for (const name of themeNames) {
-		const { colors, syntax } = themeCatalog[name];
+		const { colors } = themeCatalog[name];
 
 		if (name !== "light") {
 			expect(themeStyles).toContain(`[data-theme="${name}"] {`);
 			expect(themeStyles).toContain(`--rr-bg: ${colors.background};`);
 			expect(themeStyles).toContain(`--rr-accent: ${colors.accent};`);
 		}
-
-		expect(themeStyles).toContain(`color: ${syntax.keyword};`);
 	}
+
+	expect(themeStyles).not.toContain(".hljs");
 });
 
 test("theme picker presentation is not generated in static CSS", () => {

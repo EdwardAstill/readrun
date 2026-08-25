@@ -36,10 +36,12 @@ describe("markdown style ownership", () => {
 		);
 	});
 
-	test("lets tables use their shared horizontal scroller at every width", () => {
-		expect(markdownStyles).toContain(".readrun-main .rr-table-wrap");
-		expect(markdownStyles).toContain(".readrun-main .rr-table-scroll");
+	test("lets native Markdown tables scroll without client wrapper markup", () => {
+		expect(markdownStyles).toContain(".readrun-main table {");
+		expect(markdownStyles).toContain("display: block;");
 		expect(markdownStyles).toContain("overflow-x: auto");
+		expect(markdownStyles).not.toContain("rr-table-wrap");
+		expect(markdownStyles).not.toContain("rr-table-slider");
 		expect(markdownStyles).not.toContain("@media (max-width: 768px)");
 		expect(markdownStyles).not.toContain(".readrun-main .rr-table td::before");
 		expect(markdownStyles).not.toContain(".markdown-body");

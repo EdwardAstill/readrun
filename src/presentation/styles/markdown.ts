@@ -52,8 +52,11 @@ export const markdownStyles = `
 
 /* --- Tables --- */
 .readrun-main table {
+  display: block;
   border-collapse: collapse;
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
   margin-bottom: 16px;
   color: var(--color-text);
 }
@@ -68,122 +71,6 @@ export const markdownStyles = `
   background: var(--color-sidebar-bg);
   color: var(--color-text);
   font-weight: 600;
-}
-
-.readrun-main .rr-table-wrap {
-  width: max-content;
-  max-width: 100%;
-  overflow: hidden;
-  margin: 0 auto 16px;
-  box-sizing: border-box;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-}
-.readrun-main .rr-table-scroll {
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-.readrun-main .rr-table-scroll:focus-visible {
-  outline: 2px solid var(--color-link);
-  outline-offset: -2px;
-}
-
-.readrun-main .rr-table {
-  border-collapse: collapse;
-  margin-bottom: 0;
-  table-layout: fixed;
-  font-size: 0.875em;
-}
-.readrun-main .rr-table th {
-  background: var(--color-sidebar-bg);
-  color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: 0.78em;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 8px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
-  white-space: nowrap;
-}
-.readrun-main .rr-table td {
-  padding: 6px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
-  color: var(--color-text);
-  vertical-align: top;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-.readrun-main .rr-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--color-link) 4%, var(--color-bg));
-}
-
-.readrun-main .rr-table-wrap--sticky .rr-table th:first-child,
-.readrun-main .rr-table-wrap--sticky .rr-table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: var(--color-bg);
-  box-shadow: 2px 0 0 var(--color-border);
-  transition: box-shadow 0.15s ease;
-}
-.readrun-main .rr-table-wrap--sticky .rr-table th:first-child {
-  z-index: 4;
-  background: var(--color-sidebar-bg);
-}
-.readrun-main .rr-table-wrap--sticky .rr-table tbody tr:hover td:first-child {
-  background: color-mix(in srgb, var(--color-link) 6%, var(--color-bg));
-}
-
-.readrun-main .rr-table-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 38px;
-  padding: 4px 8px 4px 12px;
-  background: var(--color-sidebar-bg);
-  border-bottom: 1px solid var(--color-border);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-.readrun-main .rr-table-language {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.readrun-main .rr-table-actions {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-}
-.readrun-main .rr-table-info {
-  font-size: 11px;
-  white-space: nowrap;
-}
-.readrun-main .rr-table-slider {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  cursor: default;
-  white-space: nowrap;
-}
-.readrun-main .rr-table-slider--hidden { display: none; }
-.readrun-main .rr-table-slider-label { font-size: 11px; }
-.readrun-main .rr-table-width-slider {
-  width: 92px;
-  margin: 0;
-}
-.readrun-main .rr-table-width-value {
-  font-size: 11px;
-  min-width: 34px;
-  text-align: right;
 }
 
 /* --- KaTeX --- */

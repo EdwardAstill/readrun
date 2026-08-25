@@ -5,7 +5,6 @@ import { CodePanel, CodePanelActions } from "./CodePanel.tsx";
 export interface CodeBlockProps {
   code: string;
   language?: string;
-  highlightedHtml?: string;
 }
 
 export function CodeBlock(props: CodeBlockProps): React.JSX.Element {
@@ -16,7 +15,6 @@ export function CodeBlock(props: CodeBlockProps): React.JSX.Element {
       preClassName="markdown-code"
       codeClassName={props.language ? `language-${props.language}` : undefined}
       source={props.code}
-      highlightedHtml={props.highlightedHtml}
       actions={<CodePanelActions canEnlarge canCopy />}
     />
   );

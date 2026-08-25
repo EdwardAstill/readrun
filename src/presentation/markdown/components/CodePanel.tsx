@@ -17,7 +17,6 @@ export interface CodePanelProps {
 	preClassName?: string;
 	codeClassName?: string;
 	source?: string;
-	highlightedHtml?: string;
 	children?: React.ReactNode;
 	actions?: React.ReactNode;
 }
@@ -46,14 +45,7 @@ export function CodePanel(props: CodePanelProps): React.JSX.Element {
 						.filter(Boolean)
 						.join(" ")}
 				>
-					{props.highlightedHtml ? (
-						<code
-							className={props.codeClassName}
-							dangerouslySetInnerHTML={{ __html: props.highlightedHtml }}
-						/>
-					) : (
-						<code className={props.codeClassName}>{props.source ?? ""}</code>
-					)}
+					<code className={props.codeClassName}>{props.source ?? ""}</code>
 				</pre>
 			</CardContent>
 			{props.children ? (
