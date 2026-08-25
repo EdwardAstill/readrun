@@ -5,6 +5,7 @@ export interface MarkdownRenderEnvironment {
 	toc: Array<{ id: string; label: string; level: number }>;
 	wikilinks: ResolvedWikilink[];
 	collectHeadings: boolean;
+	headingIds: Set<string>;
 }
 
 export interface MarkdownFragmentOptions {
@@ -55,23 +56,25 @@ function createMarkdownRewriter(
 		});
 	}
 
-	if (collectHeadings) {
-		for (let level = 1; level <= 6; level += 1) {
-			let label = "";
-			rewriter.on(`h${level}`, {
-				element(element) {
-					label = "";
-					const id = element.getAttribute("id") ?? "";
-					element.onEndTag(() => {
-						const text = label.trim();
-						if (id && text) env.toc.push({ id, label: text, level });
-					});
-				},
-				text(text) {
-					label += text.text;
-				},
-			});
-		}
+	for (let level = 1; level <= 6; level += 1) {
+		let label = "";
+		rewriter.on(`h${level}`, {
+			element(element) {
+				label = "";
+				const originalId = element.getAttribute("id") ?? "";
+				const id = uniqueHeadingId(originalId, env.headingIds);
+				if (id !== originalId) element.setAttribute("id", id);
+				element.onEndTag(() => {
+					const text = decodeRenderedText(label.trim());
+					if (collectHeadings && id && text) {
+						env.toc.push({ id, label: text, level });
+					}
+				});
+			},
+			text(text) {
+				label += text.text;
+			},
+		});
 	}
 
 	rewriter.on("x-wikilink", {
@@ -237,6 +240,38 @@ function isEscaped(source: string, index: number): boolean {
 
 function encodeHtmlText(value: string): string {
 	return Array.from(value, (character) => `&#${character.codePointAt(0)};`).join("");
+}
+
+function uniqueHeadingId(id: string, used: Set<string>): string {
+	if (!id || !used.has(id)) {
+		if (id) used.add(id);
+		return id;
+	}
+
+	let base = id;
+	let match = /^(.*)-\d+$/.exec(base);
+	while (match && used.has(match[1]!)) {
+		base = match[1]!;
+		match = /^(.*)-\d+$/.exec(base);
+	}
+
+	let suffix = 1;
+	while (used.has(`${base}-${suffix}`)) suffix += 1;
+	const unique = `${base}-${suffix}`;
+	used.add(unique);
+	return unique;
+}
+
+function decodeRenderedText(value: string): string {
+	let encoded = "";
+	let cursor = 0;
+	for (const match of value.matchAll(/&(?:#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi)) {
+		encoded += encodeHtmlText(value.slice(cursor, match.index));
+		encoded += match[0];
+		cursor = match.index + match[0].length;
+	}
+	encoded += encodeHtmlText(value.slice(cursor));
+	return Bun.markdown.render(encoded, { text: (text) => text });
 }
 
 function isLocalHref(href: string): boolean {

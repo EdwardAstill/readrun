@@ -61,6 +61,7 @@ export function renderMarkdown(
 		toc,
 		wikilinks,
 		collectHeadings: true,
+		headingIds: new Set(),
 		relPath: input.page.relPath,
 	};
 	const html = renderNodes(parsed.tree, env, pageSlug);

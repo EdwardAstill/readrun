@@ -9,6 +9,7 @@ function environment(): MarkdownRenderEnvironment {
 	return {
 		toc: [],
 		collectHeadings: true,
+		headingIds: new Set(),
 		wikilinks: [
 			{
 				key: "other",
@@ -140,4 +141,13 @@ test("renderMarkdownFragment collects Bun heading IDs without polluting nested f
 	expect(nested).toContain("<h2");
 	expect(nested).toContain("$$y^2$$");
 	expect(nestedEnv.toc).toEqual([]);
+});
+
+test("renderMarkdownFragment stores decoded heading text in the TOC", () => {
+	const env = environment();
+	renderMarkdownFragment("# R&D &copy;", env, { mode: "block" });
+
+	expect(env.toc).toEqual([
+		{ id: "rd", label: "R&D ©", level: 1 },
+	]);
 });

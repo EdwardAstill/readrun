@@ -49,6 +49,23 @@ test("renderMarkdown renders headings, tables, wikilinks, and TOC", () => {
 	expect(result.toc).toEqual([{ id: "intro", label: "Intro", level: 1 }]);
 });
 
+test("renderMarkdown keeps heading IDs unique across readrun blocks", () => {
+	const result = renderMarkdown({
+		page: page(
+			"# Repeated\n\n[python]\nprint('split')\n[/python]\n\n# Repeated\n\n# Repeated\n",
+		),
+	});
+
+	expect(result.html.match(/id="repeated"/g)?.length).toBe(1);
+	expect(result.html).toContain('id="repeated-1"');
+	expect(result.html).toContain('id="repeated-2"');
+	expect(result.toc).toEqual([
+		{ id: "repeated", label: "Repeated", level: 1 },
+		{ id: "repeated-1", label: "Repeated", level: 1 },
+		{ id: "repeated-2", label: "Repeated", level: 1 },
+	]);
+});
+
 test("renderMarkdown keeps inline markup in table cells", () => {
 	const result = renderMarkdown({
 		page: page(
