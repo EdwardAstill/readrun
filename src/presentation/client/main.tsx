@@ -13,6 +13,7 @@ import { initPageNavTreeChrome } from "./page-nav-tree.ts";
 import { initResourceBrowserChrome } from "./resource-browser.ts";
 import { initTocSidebar } from "./toc.ts";
 import { initCsvViewers } from "./csv-viewer.ts";
+import { renderPageMath } from "./math.ts";
 import {
 	mountAutoJsxBlocks,
 	mountJsxPages,
@@ -63,6 +64,7 @@ function clientFeatures(): ClientFeature[] {
 			const handle = mountPageShellIslands();
 			return () => handle.teardown();
 		}),
+		pageFeature("math", renderPageMath),
 		pageFeature("execution", initExecBlocks),
 		pageFeature("jsx", mountPageJsx),
 		pageFeature("model-viewers", initModelViewers),
