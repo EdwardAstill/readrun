@@ -116,6 +116,46 @@ test("renderMarkdownFragment leaves dollar text in destinations and HTML attribu
 	expect(html).toContain('<a href="/$x*y*$">link</a>');
 });
 
+test("renderMarkdownFragment leaves dollar text in ignored raw HTML elements untouched", () => {
+	for (const tag of [
+		"script",
+		"style",
+		"textarea",
+		"title",
+		"iframe",
+		"noframes",
+	]) {
+		const html = renderMarkdownFragment(
+			`<${tag}>$a*b*$ and \\$5</${tag}>`,
+			environment(),
+			{ mode: "block" },
+		);
+
+		expect(html).toContain(`<${tag}>$a*b*$ and \\$5</${tag}>`);
+		expect(html).not.toContain("x-readrun");
+	}
+
+	for (const tag of [
+		"pre",
+		"option",
+		"noscript",
+		"code",
+		"xmp",
+		"noembed",
+		"plaintext",
+	]) {
+		const html = renderMarkdownFragment(
+			`<${tag}>$a*b*$ and \\$5</${tag}>`,
+			environment(),
+			{ mode: "block" },
+		);
+
+		expect(html).toContain(`$a*b*$`);
+		expect(html).not.toContain("<em>");
+		expect(html).not.toContain("x-readrun");
+	}
+});
+
 test("renderMarkdownFragment keeps math text in heading IDs and TOC labels", () => {
 	const env = environment();
 	const html = renderMarkdownFragment("# Formula $a*b*$", env, {

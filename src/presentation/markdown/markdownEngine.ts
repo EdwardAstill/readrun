@@ -199,10 +199,20 @@ function restoreEscapedMathMarkers(
 	for (const [index, value] of math.values.entries()) {
 		const marker = `<${math.tagName} data-index="${index}">${encodeHtmlText(value)}</${math.tagName}>`;
 		html = html.replaceAll(escapeHtml(marker), escapeHtml(value));
+		html = html.replaceAll(marker, value);
+		html = html.replaceAll(
+			`<${math.tagName} data-index="${index}">${escapeHtmlText(value)}</${math.tagName}>`,
+			value,
+		);
 	}
 	if (math.escapedDollarTag) {
 		const marker = `<${math.escapedDollarTag}>&#36;</${math.escapedDollarTag}>`;
 		html = html.replaceAll(escapeHtml(marker), "\\$");
+		html = html.replaceAll(marker, "\\$");
+		html = html.replaceAll(
+		`<${math.escapedDollarTag}>$</${math.escapedDollarTag}>`,
+		"$",
+	);
 	}
 	return html;
 }
@@ -271,6 +281,13 @@ function isEscaped(source: string, index: number): boolean {
 
 function encodeHtmlText(value: string): string {
 	return Array.from(value, (character) => `&#${character.codePointAt(0)};`).join("");
+}
+
+function escapeHtmlText(value: string): string {
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;");
 }
 
 function uniqueHeadingId(id: string, used: Set<string>): string {
