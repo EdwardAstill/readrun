@@ -4,7 +4,7 @@
 
 readrun is built around one core idea: **your existing Markdown notes should just work.**
 
-Point readrun at any folder of `.md` files and it renders a navigable website with a sidebar, syntax highlighting, and clean typography. No special syntax, no config files, no frontmatter required. If you already take notes in Markdown, readrun turns them into a website with zero changes to your files.
+Point readrun at any folder of `.md` files and it renders a navigable website with a sidebar, fenced code blocks, and clean typography. No special syntax, no config files, no frontmatter required. If you already take notes in Markdown, readrun turns them into a website with zero changes to your files.
 
 ## Optional enhancements, not requirements
 

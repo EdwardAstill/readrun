@@ -32,7 +32,7 @@ The unit is named after the scientist associated with the laws of motion.
 [/hint]
 
 [explain]
-A newton is \(1\,\mathrm{kg\,m\,s^{-2}}\).
+A newton is $1\text{ kg m s}^{-2}$.
 [/explain]
 [/question]
 
@@ -137,10 +137,10 @@ page and every item ID must be unique within its quiz.
 
 Information, prompts, choices, hints, and explanations use the same Markdown
 engine as the surrounding note. That includes links, wikilinks, code, raw HTML
-under the normal trusted-author policy, and all supported math delimiters:
+under the normal trusted-author policy, and dollar-delimited math:
 
-- `$...$` and `\(...\)` for inline math;
-- `$$...$$` and `\[...\]` for display math.
+- `$...$` for inline math;
+- `$$...$$` for display math.
 
 Headings inside quiz content do not appear in the page table of contents.
 

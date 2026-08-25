@@ -33,10 +33,14 @@ test("runBuildCommand honors --output alias and emits rendered markdown", async 
   });
 
   const html = await Bun.file(path.join(project.out, "index.html")).text();
+  const clientCss = await Bun.file(
+    path.join(project.out, "_readrun", "client.css"),
+  ).text();
   expect(html).toContain('<h1 id="hello">Hello</h1>');
   expect(html).not.toContain("# Hello");
-  expect(html).toContain("https://cdn.jsdelivr.net/npm/katex@0.16.43/dist/katex.min.css");
+  expect(html).not.toContain("cdn.jsdelivr.net/npm/katex");
   expect(html).not.toContain("fonts/KaTeX");
+  expect(clientCss).toContain(".katex");
   expect(await Bun.file(path.join(project.out, ".nojekyll")).exists()).toBe(true);
   expect(
     await Bun.file(path.join(project.out, ".github", "workflows", "deploy.yml")).exists(),

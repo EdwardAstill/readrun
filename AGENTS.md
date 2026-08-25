@@ -16,7 +16,7 @@ The public import name is `@readrun/widgets` (with subpaths `/primitives`,
 `/plot`, `/diagram`, `/interaction`, `/draw`, `/math`). When writing or
 editing widgets, do not look for a separate widgets package — it does not
 exist as an external dep. The bundler in `src/widgets/bundler.ts` resolves
-`@readrun/widgets/*` via an esbuild plugin. Widget *sources* live in
+`@readrun/widgets/*` via a Bun build plugin. Widget *sources* live in
 `<content>/.readrun/widgets/*.tsx`; bundled outputs land in
 `<content>/.readrun/.widgets-out/*.jsx` and are mounted by readrun's existing JSX
 runtime. `src/widgets/` is the toolkit implementation, not where user-authored

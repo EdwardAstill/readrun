@@ -151,7 +151,7 @@ Expected: FAIL on native table/code output, unresolved wiki-link spans, literal 
 Replace the Markdown-it singleton with explicit native options:
 
 ```ts
-const markdownOptions: Bun.MarkdownOptions = {
+const markdownOptions: Bun.markdown.Options = {
   tables: true,
   strikethrough: true,
   tasklists: true,
@@ -435,7 +435,7 @@ git commit -m "refactor: bundle widgets with Bun"
 Create a fixture asset containing `0123456789`, start the server with the existing test helper, and assert:
 
 ```ts
-const response = await fetch(`${handle.url}/_readrun/assets/files/range.txt`, {
+const response = await fetch(`${server.baseUrl}/_readrun/assets/files/range.txt`, {
   headers: { Range: "bytes=2-5" },
 });
 expect(response.status).toBe(206);

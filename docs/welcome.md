@@ -18,7 +18,7 @@ readrun turns folders of Markdown into interactive websites. You're looking at o
 
 ## Examples
 
-**[Tables](./authoring/tables.md)** — content-aware Markdown tables with centred narrow tables, proportional column sizing, sticky overflow, and wide scroll examples.
+**[Tables](./authoring/tables.md)** — standard GFM Markdown tables with inline formatting and horizontal scrolling for wide content.
 
 **[Code](./authoring/code.md)** — Python basics, imports such as `numpy`, and how runnable Python executes in the browser.
 
