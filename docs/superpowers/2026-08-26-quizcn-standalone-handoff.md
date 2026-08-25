@@ -23,7 +23,7 @@ The previous read-only reviewer `/root/review_task_4` was deliberately interrupt
 
 | Repository/workspace | Branch | HEAD | Status |
 | --- | --- | --- | --- |
-| `/home/eastill/projects/quizcn` | `master` | `18cc14a` | Clean; no Git remote configured |
+| `/home/eastill/projects/quizcn` | `main` | `18cc14a` | Clean; pushed to public `git@github.com:EdwardAstill/quizcn.git` |
 | `/home/eastill/projects/readrun/.worktrees/quizcn-standalone` | `codex/quizcn-standalone` | `a0edd3c` | Clean isolated worktree |
 | `/home/eastill/projects/readrun` | `main` | `1373d43` | Intentionally dirty with the earlier requested plan/spec documentation changes |
 
@@ -192,7 +192,7 @@ Task 8 is an external checkpoint. Before renaming/releasing, obtain the user's e
 - npm publication;
 - `v0.1.0` tag creation/push.
 
-No remote exists for `/home/eastill/projects/quizcn`, and nothing has been published or pushed. Tasks 9–10 depend on that immutable public package/tag and cannot be completed truthfully before Task 8.
+The public repository now exists at `https://github.com/EdwardAstill/quizcn`, and commit `18cc14a` is pushed on its default `main` branch. No npm package or Git tag has been published. Tasks 9–10 depend on that immutable package/tag and cannot be completed truthfully before Task 8.
 
 ## Rulings already made
 
@@ -211,4 +211,3 @@ These reproduce every ledger entry containing `Ruling:` so none are lost with th
 - Do not edit ReadRun `dist/`; it is generated and ignored.
 - Use Bun commands only.
 - Do not publish, push, create a remote, or tag without the Task 8 approval checkpoint.
-
