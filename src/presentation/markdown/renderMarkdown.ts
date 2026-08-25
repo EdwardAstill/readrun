@@ -21,7 +21,6 @@ import { QueryBlock } from "./components/QueryBlock.tsx";
 import { ViewerBlock } from "./components/ViewerBlock.tsx";
 import {
 	renderMarkdownFragment,
-	resetMarkdownEngineState,
 	type MarkdownRenderEnvironment,
 } from "./markdownEngine.ts";
 
@@ -58,7 +57,6 @@ export function renderMarkdown(
 	const pageSlug = slugifyPageUrl(input.page.url);
 	execBlockCounter = 0;
 	quizBlockCounter = 0;
-	resetMarkdownEngineState();
 	const env: PageRenderEnvironment = {
 		toc,
 		wikilinks,

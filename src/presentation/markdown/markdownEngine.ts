@@ -1,18 +1,5 @@
-import markdownItKatex from "@vscode/markdown-it-katex";
-import hljs from "highlight.js";
-import MarkdownIt from "markdown-it";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-
 import type { OutboundWikilink } from "../../domain/pages/page.ts";
 import type { ResolvedWikilink } from "../../domain/pages/wikilinks.ts";
-import { escapeHtml } from "../../shared/html.ts";
-import { CodeBlock } from "./components/CodeBlock.tsx";
-import { markdownItLatexDelimiters } from "./latexDelimiters.ts";
-import {
-	processTableTokens,
-	resetReadrunTableCounter,
-} from "./table.ts";
 
 export interface MarkdownRenderEnvironment {
 	toc: Array<{ id: string; label: string; level: number }>;
@@ -25,134 +12,86 @@ export interface MarkdownFragmentOptions {
 	collectHeadings?: boolean;
 }
 
-const markdown = new MarkdownIt({
-	html: true,
-	linkify: true,
-	typographer: true,
-});
-
-markdown.use(markdownItKatex);
-markdown.use(markdownItLatexDelimiters);
-
-markdown.renderer.rules.fence = (tokens, index) => {
-	const token = tokens[index]!;
-	const language = token.info.trim().split(/\s+/)[0] ?? "";
-	const highlightedHtml =
-		language && hljs.getLanguage(language)
-			? hljs.highlight(token.content, { language }).value
-			: undefined;
-
-	return renderToStaticMarkup(
-		React.createElement(CodeBlock, {
-			code: token.content,
-			language: language || undefined,
-			highlightedHtml,
-		}),
-	);
-};
-
-markdown.core.ruler.push("readrun_tables", (state: any) => {
-	processTableTokens(state.tokens, (token: any) =>
-		state.md.renderer.renderInline(
-			token?.children ?? [],
-			state.md.options,
-			state.env,
-		),
-	);
-});
-
-const defaultHeadingOpen =
-	markdown.renderer.rules.heading_open ??
-	((tokens, index, options, _env, self) =>
-		self.renderToken(tokens, index, options));
-
-markdown.renderer.rules.heading_open = (tokens, index, options, env, self) => {
-	const renderEnvironment = env as MarkdownRenderEnvironment;
-	if (!renderEnvironment.collectHeadings) {
-		return defaultHeadingOpen(tokens, index, options, env, self);
-	}
-
-	const token = tokens[index]!;
-	const inline = tokens[index + 1];
-	const text =
-		inline?.children
-			?.filter((child) => child.type === "text" || child.type === "code_inline")
-			.map((child) => child.content)
-			.join("")
-			.trim() ?? "";
-	const level = Number.parseInt(token.tag.slice(1), 10);
-	const id = uniqueHeadingId(slugifyHeading(text), renderEnvironment.toc);
-	token.attrSet("id", id);
-	if (text) renderEnvironment.toc.push({ id, label: text, level });
-	return defaultHeadingOpen(tokens, index, options, env, self);
-};
-
-const defaultLinkOpen =
-	markdown.renderer.rules.link_open ??
-	((tokens, index, options, _env, self) =>
-		self.renderToken(tokens, index, options));
-
-markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
-	const hrefIndex = tokens[index]!.attrIndex("href");
-	if (hrefIndex >= 0) {
-		const href = tokens[index]!.attrs?.[hrefIndex]?.[1];
-		if (
-			href &&
-			href.endsWith(".md") &&
-			!href.startsWith("http://") &&
-			!href.startsWith("https://")
-		) {
-			tokens[index]!.attrs![hrefIndex]![1] = href.replace(/\.md$/, "");
-		}
-	}
-	return defaultLinkOpen(tokens, index, options, env, self);
-};
-
-markdown.inline.ruler.before("emphasis", "readrun_wikilinks", (state, silent) => {
-	if (
-		state.src.charCodeAt(state.pos) !== 0x5b ||
-		state.src.charCodeAt(state.pos + 1) !== 0x5b
-	) {
-		return false;
-	}
-	const end = state.src.indexOf("]]", state.pos + 2);
-	if (end < 0) return false;
-	if (!silent) {
-		const token = state.push("readrun_wikilink", "", 0);
-		token.content = state.src.slice(state.pos, end + 2);
-	}
-	state.pos = end + 2;
-	return true;
-});
-
-markdown.renderer.rules.readrun_wikilink = (tokens, index, _options, env) => {
-	const raw = tokens[index]?.content ?? "";
-	const inner = raw.slice(2, -2);
-	const match = findWikilinkMatch(
-		inner,
-		(env as MarkdownRenderEnvironment).wikilinks,
-	);
-	const label = match?.label ?? inner;
-	if (!match?.url) return escapeHtml(raw);
-	return `<a href="${escapeHtml(match.url)}">${escapeHtml(label)}</a>`;
-};
+const markdownOptions = {
+	tables: true,
+	strikethrough: true,
+	tasklists: true,
+	autolinks: { url: true, www: true, email: true },
+	headings: { ids: true, autolink: false },
+	wikiLinks: true,
+} satisfies Bun.markdown.Options;
 
 export function renderMarkdownFragment(
 	source: string,
 	env: MarkdownRenderEnvironment,
 	options: MarkdownFragmentOptions,
 ): string {
-	const renderEnvironment: MarkdownRenderEnvironment = {
-		...env,
-		collectHeadings: options.collectHeadings ?? env.collectHeadings,
-	};
-	return options.mode === "inline"
-		? markdown.renderInline(source, renderEnvironment)
-		: markdown.render(source, renderEnvironment);
+	const collectHeadings = options.collectHeadings ?? env.collectHeadings;
+	const rewriter = createMarkdownRewriter(env, collectHeadings, options.mode);
+	return rewriter.transform(Bun.markdown.html(source, markdownOptions));
 }
 
-export function resetMarkdownEngineState(): void {
-	resetReadrunTableCounter();
+function createMarkdownRewriter(
+	env: MarkdownRenderEnvironment,
+	collectHeadings: boolean,
+	mode: MarkdownFragmentOptions["mode"],
+): HTMLRewriter {
+	const rewriter = new HTMLRewriter();
+
+	if (collectHeadings) {
+		for (let level = 1; level <= 6; level += 1) {
+			let label = "";
+			rewriter.on(`h${level}`, {
+				element(element) {
+					label = "";
+					const id = element.getAttribute("id") ?? "";
+					element.onEndTag(() => {
+						const text = label.trim();
+						if (id && text) env.toc.push({ id, label: text, level });
+					});
+				},
+				text(text) {
+					label += text.text;
+				},
+			});
+		}
+	}
+
+	rewriter.on("x-wikilink", {
+		element(element) {
+			const target = element.getAttribute("data-target") ?? "";
+			const match = findWikilinkMatch(target, env.wikilinks);
+			element.removeAttribute("data-target");
+			if (match?.url) {
+				element.tagName = "a";
+				element.setAttribute("href", match.url);
+				return;
+			}
+			element.tagName = "span";
+		},
+	});
+
+	rewriter.on("a[href]", {
+		element(element) {
+			const href = element.getAttribute("href");
+			if (!href || !isLocalHref(href)) return;
+			element.setAttribute("href", href.replace(/\.md(?=$|[?#])/, ""));
+		},
+	});
+
+	if (mode === "inline") {
+		rewriter.on("p", {
+			element(element) {
+				element.removeAndKeepContent();
+			},
+		});
+	}
+
+	return rewriter;
+}
+
+function isLocalHref(href: string): boolean {
+	return !/^[a-z][a-z\d+.-]*:/i.test(href) && !href.startsWith("//");
 }
 
 function findWikilinkMatch(
@@ -176,24 +115,4 @@ function findWikilinkMatch(
 		}
 	}
 	return null;
-}
-
-function slugifyHeading(label: string): string {
-	return (
-		label
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "-")
-			.replace(/^-+|-+$/g, "") || "section"
-	);
-}
-
-function uniqueHeadingId(
-	base: string,
-	existing: readonly { id: string }[],
-): string {
-	const used = new Set(existing.map((entry) => entry.id));
-	if (!used.has(base)) return base;
-	let index = 2;
-	while (used.has(`${base}-${index}`)) index += 1;
-	return `${base}-${index}`;
 }
