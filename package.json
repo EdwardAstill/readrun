@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Turn Markdown folders into interactive sites with runnable Python and React widgets.",
   "type": "module",
-  "packageManager": "bun@1.3.14",
+  "packageManager": "bun@1.4.0",
   "bin": {
     "rr": "src/cli.ts"
   },
@@ -17,7 +17,7 @@
     "dev": "bun --hot src/cli.ts serve docs --no-open",
     "build:docs": "bun src/cli.ts build docs",
     "check": "bun run typecheck && bun run test && bun run validate:docs",
-    "test": "bun test ./src",
+    "test": "bun test ./src --parallel",
     "typecheck": "tsc --noEmit",
     "validate:docs": "bun src/cli.ts validate docs --strict"
   },

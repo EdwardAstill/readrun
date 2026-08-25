@@ -187,7 +187,7 @@ function sitePackageJson(contentPath: string, readrunDependency: string): string
     {
       name: "readrun-site",
       private: true,
-      packageManager: "bun@1.3.14",
+      packageManager: "bun@1.4.0",
       scripts: {
         build: command,
         "build:github": `${command} --platform=github`,
@@ -244,7 +244,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - run: bun install --cwd site --frozen-lockfile
 

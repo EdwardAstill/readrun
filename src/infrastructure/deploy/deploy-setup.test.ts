@@ -186,7 +186,7 @@ test("deploy writes artifacts to site/dist and config to the repository root", a
       const sitePackage = JSON.parse(
         await readFile(path.join(root, "site", "package.json"), "utf8"),
       );
-      expect(sitePackage.packageManager).toBe("bun@1.3.14");
+      expect(sitePackage.packageManager).toBe("bun@1.4.0");
       expect(sitePackage.dependencies.readrun).toBe(testReadrunDependency);
       expect(sitePackage.scripts.build).toBe(
         "rr build ../docs --project-root=..",
@@ -205,6 +205,15 @@ test("deploy writes artifacts to site/dist and config to the repository root", a
           path.join(root, "site", "node_modules", ".installed"),
         ).exists(),
       ).toBe(true);
+      if (platform === "github") {
+        const workflow = await readFile(
+          path.join(root, ".github", "workflows", "deploy.yml"),
+          "utf8",
+        );
+        expect(workflow).toContain("oven-sh/setup-bun@v2");
+        expect(workflow).toContain("bun-version: 1.4.0");
+        expect(workflow).not.toContain("setup-bun@v1");
+      }
       expect(result.authOutputWritten).toBe(platform === "vercel");
       expect(
         await Bun.file(path.join(root, ".vercel", "output", "config.json")).exists(),
