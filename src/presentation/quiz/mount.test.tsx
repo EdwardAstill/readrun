@@ -3,6 +3,7 @@ import { act } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { installHappyDom } from "../../test/happy-dom.ts";
+import "../client/math.ts";
 import type { RenderedQuizDefinition, RenderedRichText } from "./model.ts";
 import { QuizBlock } from "./QuizBlock.tsx";
 
@@ -86,4 +87,56 @@ test("mountQuizIslands isolates roots and payload errors, then disposes every mo
 			(host) => host.querySelector<HTMLElement>("[data-quiz-root]")?.textContent === "",
 		),
 	).toBe(true);
+});
+
+test("quiz rich text renders math when content is mounted and revealed", async () => {
+	const mathQuiz: RenderedQuizDefinition = {
+		schemaVersion: 1,
+		instanceId: "page-math-1",
+		id: "math",
+		title: "Math quiz",
+		items: [
+			{
+				type: "single",
+				id: "q-1",
+				prompt: rich("<p>Choose $x^2$.</p>"),
+				hint: rich("<p>Hint: $x$.</p>"),
+				explanation: rich("<p>Because $$x \\cdot x = x^2$$.</p>"),
+				choices: [
+					{ id: "a", content: rich("$x^2$"), correct: true },
+					{ id: "b", content: rich("$2x$"), correct: false },
+				],
+			},
+		],
+	};
+	document.body.innerHTML = renderToStaticMarkup(
+		<QuizBlock definition={mathQuiz} />,
+	);
+
+	const { mountQuizIslands } = await import("./mount.tsx");
+	let dispose: (() => void) | undefined;
+	await act(async () => {
+		dispose = mountQuizIslands(document);
+	});
+
+	expect(document.querySelectorAll(".katex").length).toBe(3);
+	await act(async () => {
+		document.querySelector<HTMLButtonElement>("button[aria-expanded='false']")?.click();
+	});
+	expect(document.body.textContent).toContain("Hint:");
+	expect(document.querySelectorAll(".katex").length).toBe(4);
+
+	await act(async () => {
+		document.querySelector<HTMLInputElement>('input[value="a"]')?.click();
+	});
+	const checkAnswer = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+		(button) => button.textContent === "Check answer",
+	);
+	await act(async () => checkAnswer?.click());
+	expect(document.querySelector("[data-quiz-root]")?.textContent).toContain(
+		"Because",
+	);
+	expect(document.querySelectorAll(".katex-display").length).toBe(1);
+
+	await act(async () => dispose?.());
 });

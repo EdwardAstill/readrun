@@ -1,7 +1,8 @@
-import type React from "react";
+import * as React from "react";
 
 import type { GradeResult, SubmittedAnswer } from "../../domain/quiz/model.ts";
 import { Button } from "../components/ui/Button.tsx";
+import { renderPageMath } from "../client/math.ts";
 import {
 	QuestionnaireChoice,
 	QuestionnaireChoices,
@@ -214,5 +215,10 @@ export function expectedAnswerText(question: RenderedQuizQuestion): string {
 export function RichText(props: {
 	value: RenderedRichText;
 }): React.JSX.Element {
-	return <div dangerouslySetInnerHTML={{ __html: props.value.html }} />;
+	const root = React.useRef<HTMLDivElement>(null);
+	React.useEffect(() => {
+		if (root.current) renderPageMath(root.current);
+	});
+
+	return <div ref={root} dangerouslySetInnerHTML={{ __html: props.value.html }} />;
 }
