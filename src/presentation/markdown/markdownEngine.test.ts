@@ -60,7 +60,7 @@ test("renderMarkdownFragment preserves dollar math through Markdown parsing", ()
 			String.raw`\sum_{i=1}^{n} i`,
 			"$$",
 			"",
-			"Code: `$not*math*$`.",
+			"Code: `$not*math*$` and `\\$5`.",
 			"",
 			"```text",
 			"$also_not*math*$",
@@ -77,16 +77,32 @@ test("renderMarkdownFragment preserves dollar math through Markdown parsing", ()
 \sum_{i=1}^{n} i
 $$`);
 	expect(html).toContain("<code>$not*math*$</code>");
+	expect(html).toContain(String.raw`<code>\$5</code>`);
 	expect(html).toContain('<pre><code class="language-text">$also_not*math*$');
 	expect(html).not.toContain("$a<em>b</em>$");
 });
 
 test("renderMarkdownFragment leaves dollar text in indented code untouched", () => {
-	const html = renderMarkdownFragment("    $not*math*$", environment(), {
-		mode: "block",
-	});
+	const html = renderMarkdownFragment(
+		[
+			"    $not*math*$",
+			"",
+			">     quoted $not*math*$",
+			"",
+			"- item",
+			"    continued $a*b*$",
+		].join("\n"),
+		environment(),
+		{
+			mode: "block",
+		},
+	);
 
 	expect(html).toContain("<pre><code>$not*math*$");
+	expect(html).toContain("<pre><code>quoted $not*math*$");
+	expect(html).toContain("continued $a*b*$");
+	expect(html).not.toContain("$a<em>b</em>$");
+	expect(html).not.toContain("&amp;#36;");
 });
 
 test("renderMarkdownFragment leaves dollar text in destinations and HTML attributes untouched", () => {

@@ -1,5 +1,6 @@
 import type { OutboundWikilink } from "../../domain/pages/page.ts";
 import type { ResolvedWikilink } from "../../domain/pages/wikilinks.ts";
+import { escapeHtml } from "../../shared/html.ts";
 
 export interface MarkdownRenderEnvironment {
 	toc: Array<{ id: string; label: string; level: number }>;
@@ -35,7 +36,8 @@ export function renderMarkdownFragment(
 		options.mode,
 		math,
 	);
-	return rewriter.transform(Bun.markdown.html(math.source, markdownOptions));
+	const html = rewriter.transform(Bun.markdown.html(math.source, markdownOptions));
+	return restoreEscapedMathMarkers(html, math);
 }
 
 function createMarkdownRewriter(
@@ -45,6 +47,16 @@ function createMarkdownRewriter(
 	math: ProtectedDollarMath,
 ): HTMLRewriter {
 	const rewriter = new HTMLRewriter();
+
+	if (math.values.length > 0) {
+		rewriter.on(math.tagName, {
+			element(element) {
+				const index = Number(element.getAttribute("data-index"));
+				const source = math.values[index];
+				if (source !== undefined) element.replace(source, { html: false });
+			},
+		});
+	}
 
 	if (math.escapedDollarTag) {
 		rewriter.on(math.escapedDollarTag, {
@@ -110,41 +122,22 @@ function createMarkdownRewriter(
 
 interface ProtectedDollarMath {
 	source: string;
+	tagName: string;
+	values: string[];
 	escapedDollarTag?: string;
 }
 
 function protectDollarMath(source: string): ProtectedDollarMath {
+	let tagName = "x-readrun-math";
+	while (source.includes(`<${tagName}`)) tagName += "-x";
 	let escapedDollarTag = "x-readrun-escaped-dollar";
 	while (source.includes(`<${escapedDollarTag}`)) escapedDollarTag += "-x";
 
+	const values: string[] = [];
 	let hasEscapedDollar = false;
 	let protectedSource = "";
 	let index = 0;
 	while (index < source.length) {
-		if (index === 0 || source[index - 1] === "\n") {
-			const fenceEnd = findFencedCodeEnd(source, index);
-			if (fenceEnd !== null) {
-				protectedSource += source.slice(index, fenceEnd);
-				index = fenceEnd;
-				continue;
-			}
-			const indentedEnd = findIndentedCodeLineEnd(source, index);
-			if (indentedEnd !== null) {
-				protectedSource += source.slice(index, indentedEnd);
-				index = indentedEnd;
-				continue;
-			}
-		}
-
-		if (source[index] === "`") {
-			const codeEnd = findInlineCodeEnd(source, index);
-			if (codeEnd !== null) {
-				protectedSource += source.slice(index, codeEnd);
-				index = codeEnd;
-				continue;
-			}
-		}
-
 		if (source[index] === "<") {
 			const htmlEnd = findHtmlTagEnd(source, index);
 			if (htmlEnd !== null) {
@@ -180,7 +173,8 @@ function protectDollarMath(source: string): ProtectedDollarMath {
 			if (mathEnd >= 0) {
 				const end = mathEnd + delimiter.length;
 				const value = source.slice(index, end);
-				protectedSource += encodeHtmlText(value);
+				const valueIndex = values.push(value) - 1;
+				protectedSource += `<${tagName} data-index="${valueIndex}">${encodeHtmlText(value)}</${tagName}>`;
 				index = end;
 				continue;
 			}
@@ -192,14 +186,25 @@ function protectDollarMath(source: string): ProtectedDollarMath {
 
 	return {
 		source: protectedSource,
+		tagName,
+		values,
 		escapedDollarTag: hasEscapedDollar ? escapedDollarTag : undefined,
 	};
 }
 
-function findIndentedCodeLineEnd(source: string, start: number): number | null {
-	if (!source.startsWith("    ", start) && source[start] !== "\t") return null;
-	const end = lineEnd(source, start);
-	return end < source.length ? end + 1 : end;
+function restoreEscapedMathMarkers(
+	html: string,
+	math: ProtectedDollarMath,
+): string {
+	for (const [index, value] of math.values.entries()) {
+		const marker = `<${math.tagName} data-index="${index}">${encodeHtmlText(value)}</${math.tagName}>`;
+		html = html.replaceAll(escapeHtml(marker), escapeHtml(value));
+	}
+	if (math.escapedDollarTag) {
+		const marker = `<${math.escapedDollarTag}>&#36;</${math.escapedDollarTag}>`;
+		html = html.replaceAll(escapeHtml(marker), "\\$");
+	}
+	return html;
 }
 
 function findHtmlTagEnd(source: string, start: number): number | null {
@@ -238,45 +243,6 @@ function findLinkDestinationEnd(source: string, start: number): number | null {
 	return null;
 }
 
-function findFencedCodeEnd(source: string, start: number): number | null {
-	const firstLineEnd = lineEnd(source, start);
-	const opening = /^ {0,3}(`{3,}|~{3,})/.exec(
-		source.slice(start, firstLineEnd),
-	);
-	if (!opening) return null;
-
-	const marker = opening[1]!;
-	let nextLine = firstLineEnd < source.length ? firstLineEnd + 1 : source.length;
-	while (nextLine < source.length) {
-		const nextLineEnd = lineEnd(source, nextLine);
-		const line = source.slice(nextLine, nextLineEnd);
-		const trimmed = line.replace(/^ {0,3}/, "");
-		const markerLength = countRun(trimmed, 0, marker[0]!);
-		if (
-			markerLength >= marker.length &&
-			trimmed.slice(markerLength).trim().length === 0
-		) {
-			return nextLineEnd < source.length ? nextLineEnd + 1 : nextLineEnd;
-		}
-		nextLine = nextLineEnd < source.length ? nextLineEnd + 1 : source.length;
-	}
-
-	return source.length;
-}
-
-function findInlineCodeEnd(source: string, start: number): number | null {
-	const length = countRun(source, start, "`");
-	const marker = "`".repeat(length);
-	let end = source.indexOf(marker, start + length);
-	while (end >= 0) {
-		if (source[end - 1] !== "`" && source[end + length] !== "`") {
-			return end + length;
-		}
-		end = source.indexOf(marker, end + length);
-	}
-	return null;
-}
-
 function findMathEnd(
 	source: string,
 	start: number,
@@ -292,17 +258,6 @@ function findMathEnd(
 		index += 1;
 	}
 	return -1;
-}
-
-function lineEnd(source: string, start: number): number {
-	const end = source.indexOf("\n", start);
-	return end >= 0 ? end : source.length;
-}
-
-function countRun(source: string, start: number, character: string): number {
-	let end = start;
-	while (source[end] === character) end += 1;
-	return end - start;
 }
 
 function isEscaped(source: string, index: number): boolean {
