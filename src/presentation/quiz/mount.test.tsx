@@ -224,17 +224,32 @@ Choose the block choice.
 		'[data-slot="questionnaire-choice"] [data-raw-block]',
 	)!;
 	expect(choiceBlock.closest("label, span, p")).toBeNull();
+	const correctChoice = choiceBlock.closest<HTMLElement>(
+		'[data-slot="questionnaire-choice"]',
+	)!;
 	const correctInput = host.querySelector<HTMLInputElement>(
 		'input[value="q-1-choice-1"]',
 	)!;
 	const labelledBy = correctInput.getAttribute("aria-labelledby");
 	expect(labelledBy?.split(/\s+/)).toHaveLength(1);
-	expect(host.querySelector(`#${CSS.escape(labelledBy!)}`)).not.toBeNull();
+	const labelTargets = [...document.querySelectorAll<HTMLElement>("[id]")].filter(
+		(element) => element.id === labelledBy,
+	);
+	expect(labelTargets).toHaveLength(1);
+	const choiceLabel = correctChoice.querySelector<HTMLElement>(
+		'[data-slot="questionnaire-choice-label"]',
+	)!;
+	expect(labelTargets[0]).toBe(choiceLabel);
+	expect(choiceLabel.contains(choiceBlock)).toBe(true);
+	await act(async () => correctInput.click());
+	expect(correctInput.checked).toBe(true);
 
 	const distractor = host.querySelector<HTMLInputElement>(
 		'input[value="q-1-choice-2"]',
 	)!;
 	await act(async () => distractor.click());
+	expect(distractor.checked).toBe(true);
+	expect(correctInput.checked).toBe(false);
 	await act(async () => button(host, "Check answer").click());
 	expect(host.textContent).toContain("Incorrect.");
 	expect(host.querySelectorAll(".katex")).toHaveLength(2);
