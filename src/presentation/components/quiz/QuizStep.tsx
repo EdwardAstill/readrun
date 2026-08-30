@@ -77,6 +77,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
         />
       ) : (
         <ChoiceAnswers
+          domId={props.domId}
           question={props.item}
           answer={props.answer}
           grade={props.grade}
@@ -115,6 +116,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
 }
 
 function ChoiceAnswers(props: {
+  domId: string;
   question: Exclude<QuizQuestion, { type: "freetext" }>;
   answer?: SubmittedAnswer;
   grade?: GradeResult;
@@ -124,7 +126,7 @@ function ChoiceAnswers(props: {
 
   return (
     <QuestionnaireChoices>
-      {props.question.choices.map((choice) => {
+      {props.question.choices.map((choice, index) => {
         const checked =
           props.question.type === "multi"
             ? Array.isArray(props.answer) && props.answer.includes(choice.id)
@@ -134,6 +136,7 @@ function ChoiceAnswers(props: {
         return (
           <QuestionnaireChoice
             key={choice.id}
+            labelId={`${props.domId}-choice-${index}-label`}
             value={choice.id}
             checked={checked}
             disabled={locked}
@@ -181,9 +184,16 @@ function Feedback(props: {
         {props.grade.correct ? "Correct." : "Incorrect."}
       </p>
       {!props.grade.correct ? (
-        <p className="mt-1 text-muted-foreground">
-          Expected answer: <ExpectedAnswer question={props.question} />
-        </p>
+        props.question.type === "freetext" ? (
+          <p className="mt-1 text-muted-foreground">
+            Expected answer: {props.question.answer.expected}
+          </p>
+        ) : (
+          <div className="mt-1 text-muted-foreground">
+            <div>Expected answer:</div>
+            <ExpectedAnswer question={props.question} />
+          </div>
+        )
       ) : null}
       {props.question.explanation !== undefined ? (
         <div className="mt-3 border-t pt-3 text-foreground">
@@ -194,22 +204,22 @@ function Feedback(props: {
   );
 }
 
-function ExpectedAnswer(props: { question: QuizQuestion }): React.JSX.Element {
-  if (props.question.type === "freetext") {
-    return <>{props.question.answer.expected}</>;
-  }
-
+function ExpectedAnswer(props: {
+  question: Exclude<QuizQuestion, { type: "freetext" }>;
+}): React.JSX.Element {
   const correctChoices = props.question.choices.filter(
     (choice) => choice.correct,
   );
   return (
-    <>
-      {correctChoices.map((choice, index) => (
-        <span key={choice.id}>
-          {index > 0 ? ", " : null}
+    <ul
+      data-slot="quiz-expected-answers"
+      className="m-0 flex list-none flex-col gap-1 p-0"
+    >
+      {correctChoices.map((choice) => (
+        <li key={choice.id} data-slot="quiz-expected-answer">
           {choice.content}
-        </span>
+        </li>
       ))}
-    </>
+    </ul>
   );
 }

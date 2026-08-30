@@ -4,7 +4,6 @@ import { renderPageMath } from "../client/math.ts";
 import type { RenderedRichText } from "./model.ts";
 
 export function ReadRunRichText(props: {
-	inline?: boolean;
 	value: RenderedRichText;
 }): React.JSX.Element {
 	const root = React.useRef<HTMLElement>(null);
@@ -15,12 +14,7 @@ export function ReadRunRichText(props: {
 		if (root.current) renderPageMath(root.current);
 	});
 
-	return props.inline ? (
-		<span
-			ref={setRoot}
-			dangerouslySetInnerHTML={{ __html: props.value.html }}
-		/>
-	) : (
+	return (
 		<div
 			ref={setRoot}
 			dangerouslySetInnerHTML={{ __html: props.value.html }}

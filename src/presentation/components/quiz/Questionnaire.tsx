@@ -98,12 +98,14 @@ export function QuestionnaireChoices({
 export function QuestionnaireChoice({
   children,
   className,
+  labelId,
   ...props
-}: React.ComponentProps<
-  typeof QuestionnairePrimitive.Choice
->): React.JSX.Element {
+}: React.ComponentProps<typeof QuestionnairePrimitive.Choice> & {
+  labelId: string;
+}): React.JSX.Element {
   return (
     <QuestionnairePrimitive.Choice
+      render={<div />}
       data-slot="questionnaire-choice"
       className={cn(
         "group/questionnaire-choice relative flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-2.5 text-start transition-colors outline-none select-none hover:bg-muted/50 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
@@ -114,6 +116,7 @@ export function QuestionnaireChoice({
       {...props}
     >
       <QuestionnairePrimitive.ChoiceInput
+        aria-labelledby={labelId}
         data-slot="questionnaire-choice-input"
         className="absolute inset-0 z-10 size-full cursor-pointer opacity-0"
       />
@@ -136,6 +139,7 @@ export function QuestionnaireChoice({
         </svg>
       </span>
       <QuestionnairePrimitive.ChoiceLabel
+        render={<div id={labelId} />}
         data-slot="questionnaire-choice-label"
         className="flex min-w-0 flex-1 flex-col leading-snug"
       >

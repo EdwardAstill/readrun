@@ -2,8 +2,10 @@ import { afterAll, afterEach, beforeAll, expect, test } from "bun:test";
 import { act } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import type { MarkdownPage } from "../../domain/pages/page.ts";
 import { installHappyDom } from "../../test/happy-dom.ts";
 import "../client/math.ts";
+import { renderMarkdown } from "../markdown/renderMarkdown.ts";
 import type { RenderedQuizDefinition, RenderedRichText } from "./model.ts";
 import { QuizBlock } from "./QuizBlock.tsx";
 
@@ -192,6 +194,83 @@ test("mounted quiz keeps block rich text out of legend and span containers", asy
 	await act(async () => dispose?.());
 });
 
+test("authored block choice payloads mount outside inline ancestors and grade safely", async () => {
+	// Catches passing inline=true to the ReadRun choice rich-text wrapper.
+	const rendered = renderMarkdown({
+		page: markdownPage(`[quiz id=raw-block title="Raw block"]
+[question type=single]
+Choose the block choice.
+- [x] <div data-raw-block>Block choice $x^2$</div>
+- [ ] Plain distractor
+[/question]
+[/quiz]`),
+	});
+	document.body.innerHTML = rendered.html;
+	const host = document.querySelector<HTMLElement>('[data-island="quiz"]')!;
+	const payload = JSON.parse(
+		host.querySelector<HTMLScriptElement>("[data-quiz-payload]")!.textContent!,
+	);
+	expect(payload.items[0].choices[0].content.html).toBe(
+		'<div data-raw-block>Block choice $x^2$</div>\n',
+	);
+
+	const { mountQuizIslands } = await import("./mount.tsx");
+	let dispose: (() => void) | undefined;
+	await act(async () => {
+		dispose = mountQuizIslands(document);
+	});
+
+	const choiceBlock = host.querySelector<HTMLElement>(
+		'[data-slot="questionnaire-choice"] [data-raw-block]',
+	)!;
+	expect(choiceBlock.closest("label, span, p")).toBeNull();
+	const correctInput = host.querySelector<HTMLInputElement>(
+		'input[value="q-1-choice-1"]',
+	)!;
+	const labelledBy = correctInput.getAttribute("aria-labelledby");
+	expect(labelledBy?.split(/\s+/)).toHaveLength(1);
+	expect(host.querySelector(`#${CSS.escape(labelledBy!)}`)).not.toBeNull();
+
+	const distractor = host.querySelector<HTMLInputElement>(
+		'input[value="q-1-choice-2"]',
+	)!;
+	await act(async () => distractor.click());
+	await act(async () => button(host, "Check answer").click());
+	expect(host.textContent).toContain("Incorrect.");
+	expect(host.querySelectorAll(".katex")).toHaveLength(2);
+	const expectedBlock = host.querySelector<HTMLElement>(
+		'[data-slot="quiz-expected-answer"] [data-raw-block]',
+	)!;
+	expect(expectedBlock.closest("label, span, p")).toBeNull();
+
+	await act(async () => dispose?.());
+});
+
+test("authored single-line choices preserve block-producing Markdown fragments", () => {
+	// Catches changing choice rendering away from ReadRun's Markdown fragment renderer.
+	for (const fixture of [
+		["heading", "### Block heading", '<h3 id="block-heading">Block heading</h3>\n'],
+		["blockquote", "> Quoted block", "<blockquote>\nQuoted block\n</blockquote>\n"],
+		["horizontal rule", "---", "<hr />\n"],
+	] as const) {
+		const [name, source, expectedHtml] = fixture;
+		const rendered = renderMarkdown({
+			page: markdownPage(`[quiz id=${name.replace(" ", "-")}]
+[question type=single]
+Choose the fragment.
+- [x] ${source}
+- [ ] Plain distractor
+[/question]
+[/quiz]`),
+		});
+		const payload = JSON.parse(
+			rendered.html.match(/<script[^>]*data-quiz-payload[^>]*>(.*?)<\/script>/)?.[1] ??
+				"",
+		);
+		expect(payload.items[0].choices[0].content.html).toBe(expectedHtml);
+	}
+});
+
 async function completeQuiz(host: HTMLElement): Promise<void> {
 	await act(async () => button(host, "Check answer").click());
 	await act(async () => button(host, "View results").click());
@@ -203,4 +282,20 @@ function button(host: HTMLElement, label: string): HTMLButtonElement {
 	);
 	if (!match) throw new Error(`Expected button "${label}"`);
 	return match;
+}
+
+function markdownPage(body: string): MarkdownPage {
+	return {
+		kind: "markdown",
+		ext: ".md",
+		url: "/quiz",
+		filePath: "quiz.md",
+		relPath: "quiz.md",
+		filename: "quiz.md",
+		title: "Quiz",
+		mtimeMs: 0,
+		body,
+		tags: [],
+		outboundLinks: [],
+	};
 }
