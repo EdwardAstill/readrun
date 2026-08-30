@@ -1,0 +1,8 @@
+@source "./*.{ts,tsx}";
+
+@layer base {
+  .cn-questionnaire,
+  .cn-questionnaire * {
+    border-color: var(--border);
+  }
+}

@@ -9,7 +9,6 @@ export * from "./Input.tsx";
 export * from "./Kbd.tsx";
 export * from "./Label.tsx";
 export * from "./NativeSelect.tsx";
-export * from "./Questionnaire.tsx";
 export * from "./Resizable.tsx";
 export * from "./Separator.tsx";
 export * from "./Sheet.tsx";

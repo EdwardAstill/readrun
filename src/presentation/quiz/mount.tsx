@@ -1,12 +1,13 @@
 import { createRoot, type Root } from "react-dom/client";
 
+import { Quiz } from "../components/quiz/Quiz.tsx";
 import {
 	Card,
 	CardContent,
 	CardHeader,
 	CardTitle,
 } from "../components/ui/Card.tsx";
-import { QuizIsland } from "./QuizIsland.tsx";
+import { toQuizDefinition } from "./adapter.tsx";
 import { parseQuizPayload } from "./runtime.ts";
 
 interface MountedQuiz {
@@ -53,7 +54,7 @@ export function mountQuizIslands(root: ParentNode = document): () => void {
 		});
 		host.dataset.quizMounted = "true";
 		mounted.push({ host, root: reactRoot });
-		reactRoot.render(<QuizIsland definition={definition} />);
+		reactRoot.render(<Quiz quiz={toQuizDefinition(definition)} />);
 	}
 
 	return () => {

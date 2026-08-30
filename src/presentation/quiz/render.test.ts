@@ -104,3 +104,34 @@ test("renderQuizDefinition keeps meaningful signs inside LaTeX fallback text", (
 	if (item?.type !== "info") throw new Error("Expected info item");
 	expect(item.content.text).toBe("A newton is 1\\,\\mathrm{kg\\,m\\,s^{-2}}.");
 });
+
+test("renderQuizDefinition represents true/false correctness only in choice flags", () => {
+	const rendered = renderQuizDefinition(
+		{
+			schemaVersion: 1,
+			id: "truth",
+			source,
+			items: [
+				{
+					type: "truefalse",
+					id: "truth-1",
+					prompt: rich("True or false?"),
+					choices: [
+						{ id: "true", content: rich("True"), correct: true },
+						{ id: "false", content: rich("False"), correct: false },
+					],
+					correctAnswer: true,
+					source,
+				},
+			],
+		},
+		{
+			instanceId: "truth-1",
+			richText: { block: (value) => value, inline: (value) => value },
+		},
+	);
+	const item = rendered.items[0];
+	if (item?.type !== "truefalse") throw new Error("Expected true/false");
+	expect(item.choices.map((choice) => choice.correct)).toEqual([true, false]);
+	expect("correctAnswer" in item).toBe(false);
+});

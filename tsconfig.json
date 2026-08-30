@@ -30,6 +30,7 @@
     // The bundler resolves these at build time; this mapping is for IDE/LSP.
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/*"],
       "@readrun/widgets": ["src/widgets/index.ts"],
       "@readrun/widgets/*": ["src/widgets/*"]
     }

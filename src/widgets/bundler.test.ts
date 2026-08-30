@@ -17,11 +17,32 @@ describe("kebabToPascal", () => {
 
 const tempRoot = mkdtempSync(path.join(tmpdir(), "readrun-widgets-test-"));
 const widgetsDir = path.join(tempRoot, "widgets");
+const gitToolkitRoot = path.join(tempRoot, "git-toolkit");
+const nonGitToolkitRoot = path.join(tempRoot, "non-git-toolkit");
 const toolkitRoot = path.resolve(import.meta.dirname);
 const options = { widgetsDir, toolkitRoot };
 
 beforeAll(() => {
 	mkdirSync(widgetsDir, { recursive: true });
+	mkdirSync(gitToolkitRoot);
+	mkdirSync(nonGitToolkitRoot);
+	writeFileSync(path.join(gitToolkitRoot, "fixture.txt"), "fixture\n");
+	runGit(gitToolkitRoot, ["init", "--quiet"]);
+	runGit(gitToolkitRoot, ["add", "fixture.txt"]);
+	runGit(gitToolkitRoot, [
+		"-c",
+		"user.name=ReadRun Tests",
+		"-c",
+		"user.email=tests@readrun.invalid",
+		"-c",
+		"commit.gpgSign=false",
+		"-c",
+		"core.hooksPath=/dev/null",
+		"commit",
+		"--quiet",
+		"-m",
+		"fixture",
+	]);
 	writeFileSync(
 		path.join(widgetsDir, "foo-bar.tsx"),
 		`import React from "react";
@@ -82,7 +103,7 @@ describe("bundleWidget", () => {
 
 describe("buildBanner", () => {
 	it("contains the source path and a seven-character git SHA", () => {
-		const banner = buildBanner("foo-bar", toolkitRoot);
+		const banner = buildBanner("foo-bar", gitToolkitRoot);
 		const lines = banner.split("\n").filter(Boolean);
 
 		expect(lines[0]).toMatch(
@@ -92,10 +113,18 @@ describe("buildBanner", () => {
 	});
 
 	it("uses an unknown SHA outside a git checkout", () => {
-		const banner = buildBanner(
-			"any",
-			path.join(toolkitRoot, "missing-toolkit-root"),
-		);
+		const banner = buildBanner("any", nonGitToolkitRoot);
 		expect(banner).toContain("@readrun/widgets@unknown");
 	});
 });
+
+function runGit(cwd: string, args: string[]): void {
+	const result = Bun.spawnSync(["git", ...args], {
+		cwd,
+		stdout: "ignore",
+		stderr: "pipe",
+	});
+	if (!result.success) {
+		throw new Error(result.stderr.toString().trim() || "Git command failed");
+	}
+}

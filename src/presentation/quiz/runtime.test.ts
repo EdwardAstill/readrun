@@ -63,3 +63,36 @@ test("parseQuizPayload rejects unknown schemas, malformed items, and duplicate I
 		"duplicate item ID",
 	);
 });
+
+test("parseQuizPayload accepts legacy true/false correctness and normalizes it away", () => {
+	const legacyTrueFalsePayload = {
+		schemaVersion: 1,
+		instanceId: "legacy-truth-1",
+		id: "legacy-truth",
+		title: "Legacy truth",
+		items: [
+			{
+				type: "truefalse",
+				id: "truth-1",
+				prompt: { html: "True or false?", text: "True or false?" },
+				choices: [
+					{
+						id: "true",
+						content: { html: "True", text: "True" },
+						correct: true,
+					},
+					{
+						id: "false",
+						content: { html: "False", text: "False" },
+						correct: false,
+					},
+				],
+				correctAnswer: true,
+			},
+		],
+	};
+	const parsed = parseQuizPayload(JSON.stringify(legacyTrueFalsePayload));
+	const item = parsed.items[0];
+	if (item?.type !== "truefalse") throw new Error("Expected true/false");
+	expect("correctAnswer" in item).toBe(false);
+});
