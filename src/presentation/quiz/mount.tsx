@@ -1,7 +1,6 @@
 import { createRoot, type Root } from "react-dom/client";
 
 import { Quiz } from "../components/quiz/Quiz.tsx";
-import "../components/quiz/styles.css";
 import {
 	Card,
 	CardContent,

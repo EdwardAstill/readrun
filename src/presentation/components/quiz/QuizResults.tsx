@@ -42,9 +42,9 @@ export function QuizResults(props: QuizResultsProps): React.JSX.Element {
               key={question.id}
               className="flex items-start justify-between gap-4 rounded-lg border p-3 text-sm"
             >
-              <span>
+              <div>
                 {index + 1}. {question.prompt}
-              </span>
+              </div>
               <span className="shrink-0 font-medium">
                 {props.grades[question.id]?.correct ? "Correct" : "Incorrect"}
               </span>

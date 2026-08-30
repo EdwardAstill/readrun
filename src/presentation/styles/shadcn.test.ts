@@ -28,9 +28,23 @@ test("the production client bundle includes preflight before shadcn utilities", 
 	);
 
 	expect(bundle.warnings).toEqual([]);
+	expect([...bundle.style.matchAll(/^@layer properties;$/gm)]).toHaveLength(1);
 	expect(bundle.style).toContain("@layer base");
 	expect(bundle.style).toContain("list-style: none");
 	expect(bundle.style).toContain(".p-2");
+	expect(bundle.style).toMatch(
+		/\.rounded-xl\s*\{[^}]*border-radius:\s*calc\(var\(--radius\)\s*\+\s*4px\)/,
+	);
+	expect(bundle.style).toMatch(
+		/\.cn-questionnaire,\s*\.cn-questionnaire \*\s*\{[^}]*border-color:/,
+	);
+	const questionnaireBlocks =
+		bundle.style.match(/\.cn-questionnaire\s*\{[^}]*\}/g) ?? [];
+	for (const block of questionnaireBlocks) {
+		expect(block).not.toMatch(
+			/--(?:background|foreground|card|primary|radius)\s*:/,
+		);
+	}
 });
 
 test("production shell follows the shadcn sidebar and resizable composition", async () => {

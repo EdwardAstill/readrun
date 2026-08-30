@@ -65,11 +65,14 @@ function toQuizItem(item: RenderedQuizItem): QuizItem {
 function toQuizChoice(choice: RenderedQuizChoice): QuizChoice {
 	return {
 		id: choice.id,
-		content: richText(choice.content),
+		content: richText(choice.content, true),
 		correct: choice.correct,
 	};
 }
 
-function richText(value: RenderedRichText): React.JSX.Element {
-	return <ReadRunRichText value={value} />;
+function richText(
+	value: RenderedRichText,
+	inline = false,
+): React.JSX.Element {
+	return <ReadRunRichText value={value} inline={inline} />;
 }

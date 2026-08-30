@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 
 import type {
@@ -67,7 +69,7 @@ export function Quiz(props: QuizProps): React.JSX.Element {
       data-quiz-root=""
     >
       <QuizSession
-        key={props.quiz.id}
+        key={quizSessionKey(props.quiz)}
         quiz={props.quiz}
         idPrefix={idPrefix}
         rootRef={rootRef}
@@ -164,13 +166,52 @@ function QuizSession(props: {
         event.preventDefault();
         dispatch({ type: "complete" });
       }}
-      onKeyDownCapture={(event) => {
-        if (!activeItem || activeItem.type === "info" || activeGrade) return;
-        if (event.key === "ArrowRight") event.preventDefault();
-        if (event.key === "Enter" && hasAnswer(activeAnswer)) {
-          event.preventDefault();
-          dispatch({ type: "submit", itemId: activeItem.id });
+      onKeyDown={(event) => {
+        if (
+          event.defaultPrevented ||
+          event.nativeEvent.isComposing ||
+          event.keyCode === 229 ||
+          event.repeat ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.altKey ||
+          event.shiftKey
+        ) {
+          return;
         }
+
+        if (
+          (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+          (isEditingControl(event.target) || isRadioInput(event.target))
+        ) {
+          return;
+        }
+
+        if (
+          event.key === "ArrowRight" &&
+          activeItem &&
+          (activeItem.type === "info" || activeGrade) &&
+          nextItem
+        ) {
+          event.preventDefault();
+          dispatch({ type: "go-to", itemId: nextItem.id });
+          return;
+        }
+
+        if (
+          event.key !== "Enter" ||
+          !activeItem ||
+          activeItem.type === "info" ||
+          activeGrade ||
+          !hasAnswer(activeAnswer) ||
+          !(event.target instanceof HTMLInputElement) ||
+          event.target.name !== formName(props.idPrefix, activeItem.id)
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+        dispatch({ type: "submit", itemId: activeItem.id });
       }}
     >
       <Card>
@@ -251,10 +292,54 @@ function isValidQuiz(quiz: QuizDefinition): boolean {
   }
 }
 
+function quizSessionKey(quiz: QuizDefinition): string {
+  return JSON.stringify([
+    quiz.id,
+    quiz.items.map((item) => {
+      if (item.type === "info") return [item.type, item.id];
+      if (item.type === "freetext") {
+        return [
+          item.type,
+          item.id,
+          item.answer.expected,
+          item.answer.caseSensitive ?? false,
+        ];
+      }
+
+      return [
+        item.type,
+        item.id,
+        item.choices.map((choice) => [choice.id, choice.correct]),
+      ];
+    }),
+  ]);
+}
+
 function hasAnswer(answer: SubmittedAnswer | undefined): boolean {
   return typeof answer === "string"
     ? answer.trim().length > 0
     : Array.isArray(answer) && answer.length > 0;
+}
+
+function isEditingControl(target: EventTarget): boolean {
+  if (
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement
+  ) {
+    return true;
+  }
+
+  if (target instanceof HTMLInputElement) {
+    return !["button", "checkbox", "radio", "reset", "submit"].includes(
+      target.type,
+    );
+  }
+
+  return target instanceof HTMLElement && target.isContentEditable;
+}
+
+function isRadioInput(target: EventTarget): boolean {
+  return target instanceof HTMLInputElement && target.type === "radio";
 }
 
 function toQuestionnaireItem(

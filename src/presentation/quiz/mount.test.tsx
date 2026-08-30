@@ -166,6 +166,32 @@ test("quiz rich text renders math when content is mounted and revealed", async (
 	await act(async () => dispose?.());
 });
 
+test("mounted quiz keeps block rich text out of legend and span containers", async () => {
+	document.body.innerHTML = renderToStaticMarkup(
+		<QuizBlock definition={definition("page-markup-1", "Markup quiz")} />,
+	);
+	const host = document.querySelector<HTMLElement>('[data-island="quiz"]')!;
+
+	const { mountQuizIslands } = await import("./mount.tsx");
+	let dispose: (() => void) | undefined;
+	await act(async () => {
+		dispose = mountQuizIslands(document);
+	});
+
+	const activeStep = host.querySelector<HTMLElement>("[data-quiz-step]")!;
+	const labelTarget = activeStep.getAttribute("aria-labelledby")!;
+	expect(host.querySelector(`#${CSS.escape(labelTarget)}`)).not.toBeNull();
+	expect(host.querySelectorAll("legend div, span div")).toHaveLength(0);
+
+	await act(async () => {
+		host.querySelector<HTMLInputElement>('input[value="a"]')?.click();
+	});
+	await completeQuiz(host);
+	expect(host.querySelectorAll("legend div, span div")).toHaveLength(0);
+
+	await act(async () => dispose?.());
+});
+
 async function completeQuiz(host: HTMLElement): Promise<void> {
 	await act(async () => button(host, "Check answer").click());
 	await act(async () => button(host, "View results").click());

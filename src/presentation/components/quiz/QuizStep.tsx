@@ -62,6 +62,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
     >
       <QuestionnaireTitle
         id={headingId}
+        render={<div />}
         className="mb-5 text-base font-medium text-foreground"
       >
         {props.item.prompt}

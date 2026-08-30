@@ -114,8 +114,16 @@ test("toQuizDefinition preserves the transport contract without leaking HTML str
 		["single-a", false],
 		["single-b", true],
 	]);
-	expectRichText(single.choices[0]!.content, sourceSingle.choices[0]!.content);
-	expectRichText(single.choices[1]!.content, sourceSingle.choices[1]!.content);
+	expectRichText(
+		single.choices[0]!.content,
+		sourceSingle.choices[0]!.content,
+		true,
+	);
+	expectRichText(
+		single.choices[1]!.content,
+		sourceSingle.choices[1]!.content,
+		true,
+	);
 
 	const multi = quiz.items[2];
 	if (multi?.type !== "multi") throw new Error("Expected multi question");
@@ -126,7 +134,7 @@ test("toQuizDefinition preserves the transport contract without leaking HTML str
 		["multi-c", true],
 	]);
 	for (const [index, choice] of multi.choices.entries()) {
-		expectRichText(choice.content, sourceMulti.choices[index]!.content);
+		expectRichText(choice.content, sourceMulti.choices[index]!.content, true);
 	}
 
 	const truth = quiz.items[3];
@@ -151,12 +159,16 @@ test("toQuizDefinition preserves the transport contract without leaking HTML str
 function expectRichText(
 	content: React.ReactNode,
 	expected: RenderedRichText,
+	inline = false,
 ): void {
 	expect(typeof content).not.toBe("string");
 	expect(React.isValidElement(content)).toBe(true);
-	if (!React.isValidElement<{ value: RenderedRichText }>(content)) {
+	if (
+		!React.isValidElement<{ inline?: boolean; value: RenderedRichText }>(content)
+	) {
 		throw new Error("Expected a ReadRun rich-text element");
 	}
 	expect(content.type).toBe(ReadRunRichText);
 	expect(content.props.value).toBe(expected);
+	expect(Boolean(content.props.inline)).toBe(inline);
 }
