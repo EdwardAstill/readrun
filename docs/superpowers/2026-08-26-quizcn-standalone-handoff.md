@@ -121,17 +121,23 @@ Deferred, non-blocking follow-ups:
 - A public repository license is advisable for wider adoption but was outside
   the requested functional scope and is not a release or merge blocker.
 
-## Branch state and integration boundary
+## Local integration result
 
 - Quizcn public and local main are complete at 725d640.
-- ReadRun remains on local branch codex/quizcn-standalone. At the reviewed
-  implementation boundary it is eight commits ahead of
-  origin/codex/quizcn-standalone; this documentation-only handoff becomes the
-  ninth commit.
-- ReadRun has not been merged to main and the feature branch has not been
-  pushed. The root ReadRun main checkout was preserved and remains clean.
-- No additional implementation work is required. The remaining decision is how
-  the user wants to integrate the ReadRun branch.
+- The user selected local integration. ReadRun branch codex/quizcn-standalone
+  was merged into local main by merge commit
+  91432783aa9fef899dc93d6e9b3114f28121c409.
+- The sole merge conflict was an otherwise-identical historical plan with a
+  trailing blank-line difference; it was resolved without changing plan text.
+- The merged tree passed a frozen install, 416 tests / 1,532 expectations,
+  strict docs validation with zero warnings, and a 30-page / 47-file docs build.
+- The clean feature worktree was removed and its fully merged local branch was
+  deleted. The older remote feature branch was not changed.
+- Local main has not been pushed and was thirteen commits ahead of origin/main
+  immediately after the merge and cleanup.
+- This post-merge handoff update is documentation-only. Its commit SHA is
+  recorded in the external handoff because this file cannot contain the SHA of
+  the commit that contains itself.
 
 ## Rulings preserved from the completion ledger
 
