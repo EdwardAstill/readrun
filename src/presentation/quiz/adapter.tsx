@@ -2,7 +2,7 @@ import type {
 	QuizChoice,
 	QuizDefinition,
 	QuizItem,
-} from "@quizcn/react";
+} from "../components/quiz/model.ts";
 
 import type {
 	RenderedQuizChoice,

@@ -97,16 +97,10 @@ function parseQuestion(
 	}
 	const choices = parseChoices(value.choices, value.id);
 	if (value.type === "truefalse") {
-		if (typeof value.correctAnswer !== "boolean") {
-			throw new Error(
-				`True/false question "${value.id}" has an invalid answer.`,
-			);
-		}
 		return {
 			...common,
 			type: "truefalse",
 			choices,
-			correctAnswer: value.correctAnswer,
 		};
 	}
 	return {

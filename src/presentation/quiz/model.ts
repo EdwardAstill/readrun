@@ -43,7 +43,6 @@ export interface RenderedMultiChoice extends RenderedQuizQuestionBase {
 export interface RenderedTrueFalse extends RenderedQuizQuestionBase {
 	type: "truefalse";
 	choices: RenderedQuizChoice[];
-	correctAnswer: boolean;
 }
 
 export interface RenderedFreeText extends RenderedQuizQuestionBase {

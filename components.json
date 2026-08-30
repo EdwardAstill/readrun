@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/presentation/components/quiz/styles.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@/presentation/components",
+    "utils": "@/presentation/components/ui/cn",
+    "ui": "@/presentation/components/ui",
+    "lib": "@/shared",
+    "hooks": "@/presentation/client"
+  }
+}

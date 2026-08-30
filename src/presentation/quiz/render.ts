@@ -68,7 +68,6 @@ function renderQuestion(
 			...common,
 			type: "truefalse",
 			choices,
-			correctAnswer: question.correctAnswer,
 		};
 	}
 	return { ...common, type: question.type, choices };

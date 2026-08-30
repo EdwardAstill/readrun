@@ -59,7 +59,6 @@ test("toQuizDefinition preserves the transport contract without leaking HTML str
 						correct: false,
 					},
 				],
-				correctAnswer: true,
 			},
 			{
 				type: "freetext",

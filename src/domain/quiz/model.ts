@@ -92,15 +92,6 @@ export interface QuizParseResult {
 	syntax: "canonical" | "legacy";
 }
 
-export type SubmittedAnswer = string | boolean | string[];
-
-export interface GradeResult {
-	correct: boolean;
-	submitted: SubmittedAnswer;
-	expected: SubmittedAnswer;
-	error?: "invalid-answer-shape" | "unknown-choice";
-}
-
 export function isQuizQuestion(
 	item: QuizItemDefinition,
 ): item is QuizQuestionDefinition {
