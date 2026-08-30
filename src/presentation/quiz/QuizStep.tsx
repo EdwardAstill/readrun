@@ -2,7 +2,6 @@ import * as React from "react";
 
 import type { GradeResult, SubmittedAnswer } from "../../domain/quiz/model.ts";
 import { Button } from "../components/ui/Button.tsx";
-import { renderPageMath } from "../client/math.ts";
 import {
 	QuestionnaireChoice,
 	QuestionnaireChoices,
@@ -15,8 +14,8 @@ import { cn } from "../components/ui/cn.ts";
 import type {
 	RenderedQuizItem,
 	RenderedQuizQuestion,
-	RenderedRichText,
 } from "./model.ts";
+import { ReadRunRichText } from "./ReadRunRichText.tsx";
 
 export interface QuizStepProps {
 	instanceId: string;
@@ -45,7 +44,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
 					render={<div />}
 					className="max-w-none text-foreground"
 				>
-					<RichText value={props.item.content} />
+					<ReadRunRichText value={props.item.content} />
 				</QuestionnaireDescription>
 			</QuestionnaireItem>
 		);
@@ -67,7 +66,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
 				render={<div />}
 				className="mb-5 max-w-none text-base font-medium text-foreground [&_p]:my-0"
 			>
-				<RichText value={props.item.prompt} />
+				<ReadRunRichText value={props.item.prompt} />
 			</QuestionnaireDescription>
 
 			{props.item.type === "freetext" ? (
@@ -103,7 +102,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
 							id={`${props.instanceId}-${props.item.id}-hint`}
 							className="mt-3 rounded-lg border bg-muted/40 p-3 text-sm"
 						>
-							<RichText value={props.item.hint} />
+							<ReadRunRichText value={props.item.hint} />
 						</div>
 					) : null}
 				</div>
@@ -161,7 +160,7 @@ function ChoiceAnswers(props: {
 							}
 						}}
 					>
-						<RichText value={choice.content} />
+						<ReadRunRichText value={choice.content} />
 					</QuestionnaireChoice>
 				);
 			})}
@@ -194,7 +193,7 @@ function Feedback(props: {
 			) : null}
 			{props.question.explanation ? (
 				<div className="mt-3 border-t pt-3 text-foreground">
-					<RichText value={props.question.explanation} />
+					<ReadRunRichText value={props.question.explanation} />
 				</div>
 			) : null}
 		</div>
@@ -210,15 +209,4 @@ export function expectedAnswerText(question: RenderedQuizQuestion): string {
 		.filter((choice) => choice.correct)
 		.map((choice) => choice.content.text)
 		.join(", ");
-}
-
-export function RichText(props: {
-	value: RenderedRichText;
-}): React.JSX.Element {
-	const root = React.useRef<HTMLDivElement>(null);
-	React.useEffect(() => {
-		if (root.current) renderPageMath(root.current);
-	});
-
-	return <div ref={root} dangerouslySetInnerHTML={{ __html: props.value.html }} />;
 }

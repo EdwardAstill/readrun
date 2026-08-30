@@ -65,6 +65,8 @@ test("mountQuizIslands isolates roots and payload errors, then disposes every mo
 	expect(hosts[1]?.textContent).toContain("Second quiz");
 	expect(hosts[2]?.textContent).toContain("Quiz could not load");
 	expect(hosts[2]?.textContent).toContain("not valid JSON");
+	expect(hosts[0]!.querySelectorAll("[data-quiz-root]")).toHaveLength(2);
+	expect(hosts[1]!.querySelectorAll("[data-quiz-root]")).toHaveLength(2);
 
 	const firstInput = hosts[0]!.querySelector<HTMLInputElement>(
 		'input[type="radio"][value="a"]',
@@ -74,9 +76,32 @@ test("mountQuizIslands isolates roots and payload errors, then disposes every mo
 	)!;
 	expect(firstInput.name).not.toBe(secondInput.name);
 	expect(firstInput.id).not.toBe(secondInput.id);
+	const firstStep = hosts[0]!.querySelector<HTMLElement>("[data-quiz-step]")!;
+	const secondStep = hosts[1]!.querySelector<HTMLElement>("[data-quiz-step]")!;
+	const firstLabelTarget = firstStep.getAttribute("aria-labelledby")!;
+	const secondLabelTarget = secondStep.getAttribute("aria-labelledby")!;
+	expect(firstLabelTarget).not.toBe(secondLabelTarget);
+	expect(hosts[0]!.querySelector(`#${CSS.escape(firstLabelTarget)}`)).not.toBeNull();
+	expect(hosts[0]!.querySelector(`#${CSS.escape(secondLabelTarget)}`)).toBeNull();
+	expect(hosts[1]!.querySelector(`#${CSS.escape(secondLabelTarget)}`)).not.toBeNull();
+	expect(hosts[1]!.querySelector(`#${CSS.escape(firstLabelTarget)}`)).toBeNull();
 	await act(async () => firstInput.click());
 	expect(firstInput.checked).toBe(true);
 	expect(secondInput.checked).toBe(false);
+	await completeQuiz(hosts[0]!);
+	expect(hosts[0]!.contains(document.activeElement)).toBe(true);
+	expect(hosts[1]!.contains(document.activeElement)).toBe(false);
+	await act(async () => button(hosts[0]!, "Restart quiz").click());
+	expect(hosts[0]!.contains(document.activeElement)).toBe(true);
+	expect(document.activeElement?.matches("[data-quiz-step='q-1']")).toBe(true);
+
+	await act(async () => secondInput.click());
+	await completeQuiz(hosts[1]!);
+	expect(hosts[1]!.contains(document.activeElement)).toBe(true);
+	expect(hosts[0]!.contains(document.activeElement)).toBe(false);
+	await act(async () => button(hosts[1]!, "Restart quiz").click());
+	expect(hosts[1]!.contains(document.activeElement)).toBe(true);
+	expect(document.activeElement?.matches("[data-quiz-step='q-1']")).toBe(true);
 
 	await act(async () => dispose?.());
 	expect(hosts.every((host) => host.dataset.quizMounted === undefined)).toBe(
@@ -140,3 +165,16 @@ test("quiz rich text renders math when content is mounted and revealed", async (
 
 	await act(async () => dispose?.());
 });
+
+async function completeQuiz(host: HTMLElement): Promise<void> {
+	await act(async () => button(host, "Check answer").click());
+	await act(async () => button(host, "View results").click());
+}
+
+function button(host: HTMLElement, label: string): HTMLButtonElement {
+	const match = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+		(candidate) => candidate.textContent === label,
+	);
+	if (!match) throw new Error(`Expected button "${label}"`);
+	return match;
+}
