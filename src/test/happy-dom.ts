@@ -23,6 +23,7 @@ export function installHappyDom(
 		MutationObserver: window.MutationObserver,
 		Event: window.Event,
 		MouseEvent: window.MouseEvent,
+		PointerEvent: window.PointerEvent,
 		KeyboardEvent: window.KeyboardEvent,
 		FocusEvent: window.FocusEvent,
 		FormData: window.FormData,
