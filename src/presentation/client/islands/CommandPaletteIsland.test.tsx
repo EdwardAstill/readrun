@@ -54,6 +54,29 @@ test("publishes and filters the four approved commands", () => {
 	).toEqual(["search-site", "search-page"]);
 });
 
+test("renders the shared palette with shadcn CommandDialog chrome", async () => {
+	await renderPalette({ onOpenToolkit: () => undefined });
+
+	const content = document.querySelector<HTMLElement>(
+		'[data-slot="dialog-content"]',
+	);
+	const close = document.querySelector<HTMLElement>('[data-slot="dialog-close"]');
+	expect(content).toBeTruthy();
+	expect(content?.id).toBe("command-palette-overlay");
+	expect(content?.className).toContain("p-0");
+	expect(close?.closest('[data-slot="dialog-content"]')).toBe(content);
+	expect(document.querySelector('[data-slot="command"]')).toBeTruthy();
+	expect(
+		document.querySelector('[data-slot="command-input-wrapper"]'),
+	).toBeTruthy();
+	expect(document.querySelector('[data-slot="command-input"]')).toBeTruthy();
+	expect(document.querySelector('[data-slot="command-list"]')).toBeTruthy();
+	expect(document.querySelector('[data-slot="command-group"]')).toBeTruthy();
+	expect(document.querySelectorAll('[data-slot="command-item"]')).toHaveLength(
+		4,
+	);
+});
+
 test("selects a filtered toolkit command with the keyboard", async () => {
 	const opened: ToolkitId[] = [];
 	await renderPalette({ onOpenToolkit: (id) => opened.push(id) });
@@ -119,9 +142,9 @@ async function keydown(element: HTMLElement, key: string): Promise<void> {
 }
 
 async function clickText(text: string): Promise<void> {
-	const item = [...document.querySelectorAll<HTMLElement>("a")].find(
-		(candidate) => candidate.textContent?.includes(text),
-	);
+	const item = [
+		...document.querySelectorAll<HTMLElement>('[data-slot="command-item"]'),
+	].find((candidate) => candidate.textContent?.includes(text));
 	if (!item) {
 		throw new Error(`Expected command "${text}"; DOM: ${document.body.innerHTML}`);
 	}

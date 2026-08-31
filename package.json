@@ -51,6 +51,7 @@
     "citty": "^0.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "katex": "^0.18.4",
     "lucide-react": "^1.27.0",
     "react": "^19",

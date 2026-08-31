@@ -3,6 +3,7 @@ export * from "./ButtonGroup.tsx";
 export * from "./Card.tsx";
 export * from "./Breadcrumb.tsx";
 export * from "./Collapsible.tsx";
+export * from "./Command.tsx";
 export * from "./Dialog.tsx";
 export * from "./DropdownMenu.tsx";
 export * from "./Input.tsx";

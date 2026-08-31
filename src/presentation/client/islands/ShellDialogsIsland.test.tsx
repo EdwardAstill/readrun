@@ -244,9 +244,9 @@ async function openCommand(title: string): Promise<void> {
 }
 
 async function clickText(text: string): Promise<void> {
-	const item = [...document.querySelectorAll<HTMLAnchorElement>("a")].find(
-		(candidate) => candidate.textContent?.includes(text),
-	);
+	const item = [
+		...document.querySelectorAll<HTMLElement>('[data-slot="command-item"]'),
+	].find((candidate) => candidate.textContent?.includes(text));
 	if (!item) throw new Error(`Expected command "${text}"`);
 	await act(async () => item.click());
 }

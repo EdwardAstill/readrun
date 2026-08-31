@@ -31,6 +31,7 @@ export function installHappyDom(
 		HTMLTextAreaElement: window.HTMLTextAreaElement,
 		HTMLSelectElement: window.HTMLSelectElement,
 		MutationObserver: window.MutationObserver,
+		ResizeObserver: window.ResizeObserver,
 		Event: window.Event,
 		MouseEvent: window.MouseEvent,
 		PointerEvent: window.PointerEvent,

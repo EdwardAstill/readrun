@@ -1,10 +1,14 @@
-import { Autocomplete } from "@base-ui/react/autocomplete";
 import type React from "react";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 
-import { Input } from "../ui/Input.tsx";
-import { cn } from "../ui/cn.ts";
-import { Modal } from "./Modal.tsx";
+import {
+	CommandDialog,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "../ui/Command.tsx";
 
 export interface SearchPaletteItem {
 	id: string;
@@ -28,7 +32,6 @@ export interface SearchPaletteProps {
 }
 
 export function SearchPalette(props: SearchPaletteProps): React.JSX.Element {
-	const inputRef = useRef<HTMLInputElement>(null);
 	const items = props.loading ? [] : props.items;
 	const ariaLabel = props.ariaLabel ?? props.placeholder ?? "Search";
 
@@ -45,80 +48,52 @@ export function SearchPalette(props: SearchPaletteProps): React.JSX.Element {
 	);
 
 	return (
-		<Modal
-			id={props.id ?? "search-palette"}
+		<CommandDialog
+			contentId={props.id}
 			open={props.open}
-			onClose={props.onClose}
-			ariaLabel={ariaLabel}
-			initialFocusRef={inputRef}
+			onOpenChange={(open) => {
+				if (!open) props.onClose();
+			}}
+			title={ariaLabel}
+			description={props.placeholder ?? "Search for an item to open."}
+			commandProps={{ shouldFilter: false }}
 		>
-			<Autocomplete.Root
-				items={items}
+			<CommandInput
 				value={props.value}
-				onValueChange={(value, eventDetails) => {
-					if (eventDetails.reason !== "item-press") props.onChange(value);
-				}}
-				itemToStringValue={(item) => item.title}
-				mode="none"
-				open
-				inline
-				autoHighlight="always"
-				keepHighlight
-			>
-				<div>
-					<Autocomplete.Input
-						ref={inputRef}
-						render={<Input />}
-						type="search"
-						placeholder={props.placeholder}
-						aria-label={ariaLabel}
-					/>
-				</div>
+				onValueChange={props.onChange}
+				placeholder={props.placeholder}
+				aria-label={ariaLabel}
+				autoFocus
+			/>
+			<CommandList>
 				{props.loading ? (
-					<div className="py-6 text-center text-sm" role="status" aria-live="polite">
+					<CommandEmpty role="status" aria-live="polite">
 						Loading...
-					</div>
+					</CommandEmpty>
 				) : props.value.trim() ? (
-					<Autocomplete.Empty
-						className="py-6 text-center text-sm"
-						role="status"
-						aria-live="polite"
-					>
+					<CommandEmpty role="status" aria-live="polite">
 						{props.emptyLabel ?? "No matches"}
-					</Autocomplete.Empty>
+					</CommandEmpty>
 				) : null}
-				<Autocomplete.List className="max-h-80 overflow-y-auto">
-					{(item: SearchPaletteItem, index: number) => (
-						<Autocomplete.Item
+				<CommandGroup>
+					{items.map((item) => (
+						<CommandItem
 							key={item.id}
-							value={item}
-							index={index}
-							render={<a href={item.href ?? "#"} />}
-						className={({ highlighted }) =>
-							cn(
-								"block rounded-md px-2 py-1.5 text-sm outline-none",
-								highlighted && "bg-accent text-accent-foreground",
-							)
-						}
-							onClick={(event) => {
-								if (!item.href || props.onSelect) {
-									event.preventDefault();
-									selectItem(item);
-								} else {
-									props.onClose();
-								}
-							}}
+							value={item.id}
+							onSelect={() => selectItem(item)}
 						>
-						<span className="font-medium">{item.title}</span>
-						{item.subtitle ? (
-							<span className="block text-muted-foreground">
-								{item.subtitle}
+							<span className="min-w-0">
+								<span className="block font-medium">{item.title}</span>
+								{item.subtitle ? (
+									<span className="block truncate text-muted-foreground">
+										{item.subtitle}
+									</span>
+								) : null}
 							</span>
-							) : null}
-						</Autocomplete.Item>
-					)}
-				</Autocomplete.List>
-			</Autocomplete.Root>
-		</Modal>
+						</CommandItem>
+					))}
+				</CommandGroup>
+			</CommandList>
+		</CommandDialog>
 	);
 }
