@@ -9,6 +9,7 @@ pages:
       Tutorial: start/intro.md
       Philosophy: start/philosophy.md
       Commands: start/commands.md
+      Toolkits: toolkits.md
 
   Reference:
     index: reference/overview.md
