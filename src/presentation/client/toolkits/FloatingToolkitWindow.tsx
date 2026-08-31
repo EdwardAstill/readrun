@@ -27,6 +27,7 @@ export interface FloatingToolkitWindowProps {
 	windowState: ToolkitWindowState;
 	compact: boolean;
 	viewport: ViewportSize;
+	stackingZIndex: number;
 	dispatch: Dispatch<ToolkitWindowAction>;
 }
 
@@ -50,6 +51,7 @@ export function FloatingToolkitWindow({
 	windowState,
 	compact,
 	viewport,
+	stackingZIndex,
 	dispatch,
 }: FloatingToolkitWindowProps) {
 	const [contextMenu, setContextMenu] =
@@ -197,7 +199,7 @@ export function FloatingToolkitWindow({
 			style={{
 				...(compact ? compactStyle : wideStyle),
 				display: windowState.minimized ? "none" : undefined,
-				zIndex: windowState.zIndex,
+				zIndex: stackingZIndex,
 			}}
 			onContextMenu={openContextMenu}
 			onPointerDown={() => {
@@ -275,7 +277,7 @@ export function FloatingToolkitWindow({
 							style={{
 								left: `${contextMenu.x}px`,
 								top: `${contextMenu.y}px`,
-								zIndex: windowState.zIndex + 1,
+								zIndex: stackingZIndex + 1,
 							}}
 						>
 							<Button
@@ -328,7 +330,6 @@ function ResizeHandle({
 			role="separator"
 			aria-label={label}
 			aria-orientation={mode === "east" ? "vertical" : "horizontal"}
-			tabIndex={0}
 			data-resize-handle={mode}
 			className={cn("absolute z-10", className)}
 			onPointerDown={(event) => onPointerDown(event, mode)}

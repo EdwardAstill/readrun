@@ -31,6 +31,22 @@ afterAll(() => {
 	}
 });
 
+test("reset before runtime initialization is a no-op", async () => {
+	const { pyodideTerminalRuntime } = await import("./pyodide.ts");
+	const resetResult = pyodideTerminalRuntime
+		.reset("terminal-never-opened")
+		.then(() => null)
+		.catch((error: unknown) => error);
+	await Promise.resolve();
+	const script = document.head.querySelector<HTMLScriptElement>("script");
+	script?.onerror?.(new Event("error"));
+	const error = await resetResult;
+	script?.remove();
+
+	expect(script).toBeNull();
+	expect(error).toBeNull();
+});
+
 test("a failed script load can retry through a fresh loader attempt", async () => {
 	const { loadPyodideRuntime } = await import("./pyodide.ts");
 	const firstLoad = loadPyodideRuntime();

@@ -32,6 +32,7 @@ let shellModule: typeof import("./ShellDialogsIsland.tsx");
 let overlayModule: typeof import("../overlay.ts");
 let registryModule: typeof import("../toolkits/registry.tsx");
 let shortcutsModule: typeof import("../shortcuts.ts");
+let shellIslandsModule: typeof import("../shell-islands.tsx");
 
 beforeAll(async () => {
 	restoreDom = installHappyDom("https://readrun.test/shell");
@@ -39,6 +40,7 @@ beforeAll(async () => {
 	shortcutsModule = await import("../shortcuts.ts");
 	registryModule = await import("../toolkits/registry.tsx");
 	shellModule = await import("./ShellDialogsIsland.tsx");
+	shellIslandsModule = await import("../shell-islands.tsx");
 });
 
 afterEach(async () => {
@@ -112,6 +114,51 @@ test("Escape closes the toolkit without opening Settings", async () => {
 		expect(overlayModule.getActiveOverlay()).toBeNull();
 	} finally {
 		teardownShortcuts();
+	}
+});
+
+test("Escape remains toolkit-owned in the production mount order", async () => {
+	const host = document.createElement("div");
+	host.dataset.island = "shell-dialogs";
+	host.dataset.searchEnabled = "true";
+	host.dataset.settingsEnabled = "true";
+	document.body.append(host);
+	const mounted: {
+		shellHandle?: ReturnType<
+			typeof shellIslandsModule.mountApplicationShellIslands
+		>;
+		teardownShortcuts?: () => void;
+	} = {};
+
+	try {
+		await act(async () => {
+			mounted.shellHandle =
+				shellIslandsModule.mountApplicationShellIslands(document);
+			mounted.teardownShortcuts = shortcutsModule.initShortcuts();
+		});
+		await nextAnimationFrame();
+		await openCommand("Open Scientific Calculator");
+		expect(
+			document.querySelector('[data-toolkit-id="scientific-calculator"]'),
+		).toBeTruthy();
+
+		await act(async () => {
+			document.body.dispatchEvent(
+				new KeyboardEvent("keydown", {
+					key: "Escape",
+					bubbles: true,
+					cancelable: true,
+				}),
+			);
+		});
+
+		expect(
+			document.querySelector('[data-toolkit-id="scientific-calculator"]'),
+		).toBeNull();
+		expect(overlayModule.getActiveOverlay()).toBeNull();
+	} finally {
+		mounted.teardownShortcuts?.();
+		await act(async () => mounted.shellHandle?.teardown());
 	}
 });
 

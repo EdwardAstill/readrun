@@ -373,9 +373,11 @@ async function runPyodideTerminal(
 }
 
 async function resetPyodideTerminal(sessionId: string): Promise<void> {
-	const py = await loadPyodideRuntime();
-	await ensureTerminalSupport();
-	py.runPython(`_readrun_terminal_reset(${JSON.stringify(sessionId)})`);
+	if (!pyodide || !terminalSupportReady) {
+		return;
+	}
+	await terminalSupportReady;
+	pyodide.runPython(`_readrun_terminal_reset(${JSON.stringify(sessionId)})`);
 }
 
 export const pyodideTerminalRuntime: TerminalPythonRuntime = {

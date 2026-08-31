@@ -76,6 +76,29 @@ test("shows a preparation failure and retries in place", async () => {
 	expect(terminalInput().disabled).toBe(false);
 });
 
+test("shows a reset failure and retries the reset in place", async () => {
+	const runtime = memoryTerminalRuntime();
+	let shouldFailReset = true;
+	await renderTerminal({
+		...runtime,
+		async reset(sessionId) {
+			if (shouldFailReset) {
+				shouldFailReset = false;
+				throw new Error("reset failed");
+			}
+			await runtime.reset(sessionId);
+		},
+	});
+
+	await clickLabel("Reset Session");
+	expect(document.querySelector('[role="alert"]')?.textContent).toContain(
+		"Unable to reset Python: Error: reset failed",
+	);
+	await clickLabel("Retry Reset Session");
+	expect(document.querySelector('[role="alert"]')).toBeNull();
+	expect(terminalInput().disabled).toBe(false);
+});
+
 test("renders submitted HTML-like source literally without creating elements", async () => {
 	await renderTerminal(memoryTerminalRuntime());
 	await submit(terminalInput(), "<img src=x onerror=alert(1)>");

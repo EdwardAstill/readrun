@@ -119,6 +119,38 @@ test("leaves Escape to an active shell overlay", async () => {
 	expect(document.querySelector('[role="dialog"]')).toBeTruthy();
 });
 
+test("keeps pointer-only toolkit chrome between shell and modal layers", async () => {
+	await renderWorkspace();
+	const dialog = getDialog();
+
+	await act(async () => {
+		for (let index = 0; index < 60; index += 1) {
+			dialog.dispatchEvent(
+				new PointerEvent("pointerdown", { bubbles: true, button: 0 }),
+			);
+		}
+	});
+
+	expect(Number(dialog.style.zIndex)).toBeGreaterThan(20);
+	expect(Number(dialog.style.zIndex)).toBeLessThan(50);
+	expect(
+		[...dialog.querySelectorAll<HTMLElement>('[role="separator"]')].every(
+			(handle) => handle.tabIndex === -1,
+		),
+	).toBe(true);
+
+	await openContextMenu(dialog);
+	const menu = document.querySelector<HTMLElement>('[role="menu"]')!;
+	expect(Number(menu.style.zIndex)).toBeLessThan(50);
+
+	await clickLabel("Minimize Python Terminal");
+	const shelf = document.querySelector<HTMLElement>(
+		'[aria-label="Minimized toolkits"]',
+	)!;
+	expect(shelf.className).toContain("z-40");
+	expect(shelf.className).not.toContain("z-50");
+});
+
 test("drags the title bar and resizes from the southeast handle", async () => {
 	await renderWorkspace();
 

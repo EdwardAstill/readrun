@@ -10,6 +10,8 @@ import type {
 } from "./types.ts";
 import type { ToolkitWindowAction } from "./window-state.ts";
 
+const TOOLKIT_WINDOW_Z_BASE = 30;
+
 export interface ToolkitWorkspaceProps {
 	definitions: readonly ToolkitDefinition[];
 	state: ToolkitWorkspaceState;
@@ -29,6 +31,18 @@ export function ToolkitWorkspace({
 	const definitionsById = useMemo(
 		() => new Map(definitions.map((definition) => [definition.id, definition])),
 		[definitions],
+	);
+	const stackingLayersById = useMemo(
+		() =>
+			new Map(
+				[...state.windows]
+					.sort((first, second) => first.zIndex - second.zIndex)
+					.map((windowState, index) => [
+						windowState.id,
+						TOOLKIT_WINDOW_Z_BASE + index,
+					]),
+			),
+		[state.windows],
 	);
 
 	useEffect(() => {
@@ -80,8 +94,9 @@ export function ToolkitWorkspace({
 			dispatch({ type: "close", id: topmost.id });
 		};
 
-		document.addEventListener("keydown", closeTopmostToolkit);
-		return () => document.removeEventListener("keydown", closeTopmostToolkit);
+		document.addEventListener("keydown", closeTopmostToolkit, true);
+		return () =>
+			document.removeEventListener("keydown", closeTopmostToolkit, true);
 	}, [definitionsById, dispatch, escapeClosesTopmost, state.windows]);
 
 	useEffect(() => {
@@ -129,6 +144,9 @@ export function ToolkitWorkspace({
 						windowState={windowState}
 						compact={compact}
 						viewport={viewport}
+						stackingZIndex={
+							stackingLayersById.get(windowState.id) ?? TOOLKIT_WINDOW_Z_BASE
+						}
 						dispatch={dispatch}
 					/>
 				);
@@ -138,7 +156,7 @@ export function ToolkitWorkspace({
 				<div
 					role="toolbar"
 					aria-label="Minimized toolkits"
-					className="fixed right-3 bottom-3 left-3 z-50 flex flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-lg backdrop-blur"
+					className="fixed right-3 bottom-3 left-3 z-40 flex flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-lg backdrop-blur"
 				>
 					{minimized.map((definition) => (
 						<Button

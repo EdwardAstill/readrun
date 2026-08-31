@@ -156,9 +156,26 @@ export function PythonTerminal({
 
 			{snapshot.status === "error" ? (
 				<div className="mx-3 mt-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2 text-sm" role="alert">
-					<p>Unable to prepare Python: {snapshot.loadError}</p>
-					<Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => void session.retry()}>
-						Retry Python runtime
+					<p>
+						{snapshot.errorAction === "reset"
+							? "Unable to reset Python"
+							: "Unable to prepare Python"}
+						: {snapshot.loadError}
+					</p>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						className="mt-2"
+						onClick={() =>
+							void (snapshot.errorAction === "reset"
+								? session.reset()
+								: session.retry())
+						}
+					>
+						{snapshot.errorAction === "reset"
+							? "Retry Reset Session"
+							: "Retry Python runtime"}
 					</Button>
 				</div>
 			) : null}

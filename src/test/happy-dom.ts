@@ -4,6 +4,14 @@ export function installHappyDom(
 	url = "https://readrun.test/",
 ): () => void {
 	const window = new Window({ url });
+	window.document.write(
+		"<!doctype html><html><head></head><body></body></html>",
+	);
+	window.document.close();
+	Object.defineProperty(window.document, "compatMode", {
+		configurable: true,
+		value: "CSS1Compat",
+	});
 	const values: Record<string, unknown> = {
 		window,
 		self: window,
@@ -12,6 +20,7 @@ export function installHappyDom(
 		location: window.location,
 		CSS: window.CSS,
 		Node: window.Node,
+		EventTarget: window.EventTarget,
 		NodeFilter: window.NodeFilter,
 		Element: window.Element,
 		HTMLElement: window.HTMLElement,

@@ -94,6 +94,41 @@ test("reports prepare failure and succeeds through retry", async () => {
 	expect(session.getSnapshot().status).toBe("ready");
 });
 
+test("reports reset failure and retries the reset in place", async () => {
+	const runtime = memoryTerminalRuntime();
+	let shouldFailReset = true;
+	const session = new TerminalSession(
+		{
+			...runtime,
+			async reset(sessionId) {
+				if (shouldFailReset) {
+					shouldFailReset = false;
+					throw new Error("reset failed");
+				}
+				await runtime.reset(sessionId);
+			},
+		},
+		"terminal-test",
+	);
+	await session.prepare();
+	await session.submit("x = 7");
+
+	await session.reset();
+	expect(session.getSnapshot()).toMatchObject({
+		status: "error",
+		errorAction: "reset",
+		loadError: expect.stringContaining("reset failed"),
+	});
+
+	await session.reset();
+	expect(session.getSnapshot()).toMatchObject({
+		status: "ready",
+		errorAction: null,
+		loadError: null,
+		entries: [],
+	});
+});
+
 test("an execution error does not poison the command queue", async () => {
 	const session = new TerminalSession(memoryTerminalRuntime(), "terminal-test");
 	await session.prepare();
@@ -179,4 +214,20 @@ test("dispose immediately blocks submissions and resets after queued work", asyn
 
 	expect(resetObserved).toBeTrue();
 	expect(notifications).toBe(notificationsAtDispose);
+});
+
+test("dispose absorbs a reset failure after listeners are removed", async () => {
+	const runtime = memoryTerminalRuntime();
+	const session = new TerminalSession(
+		{
+			...runtime,
+			async reset() {
+				throw new Error("reset failed during disposal");
+			},
+		},
+		"terminal-test",
+	);
+	await session.prepare();
+
+	await expect(session.dispose()).resolves.toBeUndefined();
 });

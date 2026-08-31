@@ -19,6 +19,7 @@ export interface TerminalTranscriptEntry extends TerminalExecution {
 export interface TerminalSessionSnapshot {
 	status: "loading" | "ready" | "running" | "error";
 	loadError: string | null;
+	errorAction: "prepare" | "reset" | null;
 	entries: readonly TerminalTranscriptEntry[];
 }
 
@@ -33,6 +34,7 @@ export class TerminalSession {
 	private snapshot: TerminalSessionSnapshot = {
 		status: "loading",
 		loadError: null,
+		errorAction: null,
 		entries: [],
 	};
 	private readonly listeners = new Set<Listener>();
@@ -65,12 +67,16 @@ export class TerminalSession {
 		if (this.disposed) {
 			return;
 		}
-		this.update({ status: "loading", loadError: null });
+		this.update({ status: "loading", loadError: null, errorAction: null });
 		try {
 			await this.runtime.prepare();
-			this.update({ status: "ready", loadError: null });
+			this.update({ status: "ready", loadError: null, errorAction: null });
 		} catch (error) {
-			this.update({ status: "error", loadError: errorText(error) });
+			this.update({
+				status: "error",
+				loadError: errorText(error),
+				errorAction: "prepare",
+			});
 		}
 	}
 
@@ -120,14 +126,28 @@ export class TerminalSession {
 
 		const historyBoundary = this.nextHistoryId - 1;
 		const reset = this.queue.then(async () => {
-			await this.runtime.reset(this.sessionId);
+			try {
+				await this.runtime.reset(this.sessionId);
+			} catch (error) {
+				this.update({
+					status: "error",
+					loadError: errorText(error),
+					errorAction: "reset",
+				});
+				return;
+			}
 			const remainingHistory = this.history.filter(
 				(entry) => entry.id > historyBoundary,
 			);
 			this.history.splice(0, this.history.length, ...remainingHistory);
 			this.historyIndex = this.history.length;
 			this.nextEntryId = 1;
-			this.update({ status: "ready", loadError: null, entries: [] });
+			this.update({
+				status: "ready",
+				loadError: null,
+				errorAction: null,
+				entries: [],
+			});
 		});
 		this.queue = reset.catch(() => {});
 		return reset;
@@ -156,7 +176,9 @@ export class TerminalSession {
 		}
 		this.disposed = true;
 		this.listeners.clear();
-		this.disposePromise = this.queue.then(() => this.runtime.reset(this.sessionId));
+		this.disposePromise = this.queue
+			.then(() => this.runtime.reset(this.sessionId))
+			.catch(() => {});
 		return this.disposePromise;
 	}
 
