@@ -16,6 +16,7 @@
         "react": "^19",
         "react-dom": "^19",
         "react-resizable-panels": "^4.12.2",
+        "sci-calc-widget": "github:EdwardAstill/sci-calc-widget#v0.1.0",
         "tailwind-merge": "^3.6.0",
         "tailwindcss": "^4.3.3",
         "three": "^0.184.0",
@@ -137,6 +138,8 @@
     "reselect": ["reselect@5.2.0", "", {}, "sha512-AgZ3UOZm3YndfrJ4OYjgrT7bmCm/1iqkjvEfH/oYjzh6PD2qw4QuT3jjnXIrpdt4MTpMXclMT3lXbmRY+XRakw=="],
 
     "scheduler": ["scheduler@0.27.0", "", {}, "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="],
+
+    "sci-calc-widget": ["sci-calc-widget@github:EdwardAstill/sci-calc-widget#a54443f", { "peerDependencies": { "react": "^19.0.0", "react-dom": "^19.0.0" } }, "EdwardAstill-sci-calc-widget-a54443f", "sha512-OMN1kBSAM9IxG1ES7MDUq3nw1vEj/qKSVLqL6rGBjAmhc5RLzQjJ/hBfl/Do74YzxFEZeQf5ECNFXJNshX7iaw=="],
 
     "tailwind-merge": ["tailwind-merge@3.6.0", "", {}, "sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w=="],
 
