@@ -87,13 +87,18 @@ export function reduceToolkitWindows(
       };
     }
 
-    case "raise":
+    case "raise": {
+      if (!state.windows.some((window) => window.id === action.id)) {
+        return state;
+      }
+
       return {
         windows: state.windows.map((window) =>
           window.id === action.id ? { ...window, zIndex: state.nextZIndex } : window,
         ),
         nextZIndex: state.nextZIndex + 1,
       };
+    }
 
     case "minimize":
       return {

@@ -40,6 +40,38 @@ describe("floating toolkit state", () => {
     });
   });
 
+  test("returns the original state when raising an absent window", () => {
+    const state = {
+      windows: [
+        {
+          id: "python-terminal" as const,
+          minimized: false,
+          rect: { x: 24, y: 24, width: 640, height: 420 },
+          zIndex: 1,
+        },
+      ],
+      nextZIndex: 2,
+    };
+
+    const next = reduceToolkitWindows(state, {
+      type: "raise",
+      id: "scientific-calculator",
+    });
+
+    expect(next).toBe(state);
+    expect(next).toEqual({
+      windows: [
+        {
+          id: "python-terminal",
+          minimized: false,
+          rect: { x: 24, y: 24, width: 640, height: 420 },
+          zIndex: 1,
+        },
+      ],
+      nextZIndex: 2,
+    });
+  });
+
   test("minimizes, restores, and removes a window", () => {
     let state = reduceToolkitWindows(createToolkitWorkspaceState(), {
       type: "open",
