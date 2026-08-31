@@ -7,7 +7,11 @@ import {
 import { Kbd, KbdGroup } from "../../components/ui/Kbd.tsx";
 import { Modal } from "../../components/reusable/Modal.tsx";
 import { closeOverlay } from "../overlay.ts";
-import { SHORTCUT_BINDINGS, SHORTCUT_GROUPS } from "../shortcuts.ts";
+import {
+	COMMAND_PALETTE_SHORTCUT,
+	SHORTCUT_BINDINGS,
+	SHORTCUT_GROUPS,
+} from "../shortcuts.ts";
 
 export interface ShortcutsIslandProps {
 	open: boolean;
@@ -41,6 +45,12 @@ export function ShortcutsIsland(
 						>
 							{group.label}
 						</h3>
+						{group.label === "Commands" ? (
+							<div className="flex items-center justify-between gap-4">
+								<span>Command palette</span>
+								<span>{formatBinding(COMMAND_PALETTE_SHORTCUT)}</span>
+							</div>
+						) : null}
 						{group.items.map(([label, action]) => (
 							<div className="flex items-center justify-between gap-4" key={action}>
 								<span>{label}</span>

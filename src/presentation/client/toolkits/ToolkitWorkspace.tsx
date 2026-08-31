@@ -14,12 +14,14 @@ export interface ToolkitWorkspaceProps {
 	definitions: readonly ToolkitDefinition[];
 	state: ToolkitWorkspaceState;
 	dispatch: Dispatch<ToolkitWindowAction>;
+	escapeClosesTopmost?: boolean;
 }
 
 export function ToolkitWorkspace({
 	definitions,
 	state,
 	dispatch,
+	escapeClosesTopmost = true,
 }: ToolkitWorkspaceProps) {
 	const [viewport, setViewport] = useState<ViewportSize>(readViewport);
 	const pendingFocusRef = useRef<ToolkitId | null>(null);
@@ -56,6 +58,8 @@ export function ToolkitWorkspace({
 	}, [definitionsById, state.windows]);
 
 	useEffect(() => {
+		if (!escapeClosesTopmost) return;
+
 		const closeTopmostToolkit = (event: KeyboardEvent): void => {
 			if (event.key !== "Escape" || event.defaultPrevented) return;
 			const topmost = state.windows
@@ -76,9 +80,9 @@ export function ToolkitWorkspace({
 			dispatch({ type: "close", id: topmost.id });
 		};
 
-		window.addEventListener("keydown", closeTopmostToolkit);
-		return () => window.removeEventListener("keydown", closeTopmostToolkit);
-	}, [definitionsById, dispatch, state.windows]);
+		document.addEventListener("keydown", closeTopmostToolkit);
+		return () => document.removeEventListener("keydown", closeTopmostToolkit);
+	}, [definitionsById, dispatch, escapeClosesTopmost, state.windows]);
 
 	useEffect(() => {
 		const toolkitId = pendingFocusRef.current;

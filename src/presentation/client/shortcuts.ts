@@ -180,6 +180,8 @@ function normalizePath(path: string): string {
 
 // --- Shortcut bindings ---
 
+export const COMMAND_PALETTE_SHORTCUT = "Ctrl/Cmd+K";
+
 export const SHORTCUT_BINDINGS: Record<keyof ShortcutActions, string> = {
 	nextPage: "j",
 	prevPage: "k",
@@ -298,6 +300,8 @@ function buildDispatchTable(): void {
 	}
 
 	const handler = (event: KeyboardEvent): void => {
+		if (event.defaultPrevented) return;
+
 		// Never fire shortcuts while editing text
 		if (isEditingInput(event.target)) {
 			// But Escape still blurs

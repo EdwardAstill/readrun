@@ -7,6 +7,7 @@ export const OVERLAY_IDS = [
 	"shortcuts-overlay",
 	"page-search-overlay",
 	"site-search-overlay",
+	"command-palette-overlay",
 ] as const;
 
 export type OverlayId = (typeof OVERLAY_IDS)[number];

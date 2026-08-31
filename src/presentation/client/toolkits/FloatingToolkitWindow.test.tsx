@@ -101,11 +101,22 @@ test("Escape closes the toolkit", async () => {
 	await renderWorkspace();
 
 	await act(async () => {
-		window.dispatchEvent(
+		document.body.dispatchEvent(
 			new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
 		);
 	});
 	expect(document.querySelector('[role="dialog"]')).toBeNull();
+});
+
+test("leaves Escape to an active shell overlay", async () => {
+	await renderWorkspace([terminal], openTerminalState(), false);
+
+	await act(async () => {
+		document.body.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+		);
+	});
+	expect(document.querySelector('[role="dialog"]')).toBeTruthy();
 });
 
 test("drags the title bar and resizes from the southeast handle", async () => {
@@ -191,13 +202,18 @@ async function openContextMenu(element: HTMLElement): Promise<void> {
 async function renderWorkspace(
 	definitions: readonly ToolkitDefinition[] = [terminal],
 	initialState = openTerminalState(),
+	escapeClosesTopmost = true,
 ): Promise<void> {
 	const container = document.createElement("div");
 	document.body.append(container);
 	root = createRoot(container);
 	await act(async () => {
 		root?.render(
-			<WorkspaceHarness definitions={definitions} initialState={initialState} />,
+			<WorkspaceHarness
+				definitions={definitions}
+				initialState={initialState}
+				escapeClosesTopmost={escapeClosesTopmost}
+			/>,
 		);
 	});
 }
@@ -205,9 +221,11 @@ async function renderWorkspace(
 function WorkspaceHarness({
 	definitions,
 	initialState,
+	escapeClosesTopmost,
 }: {
 	definitions: readonly ToolkitDefinition[];
 	initialState: ToolkitWorkspaceState;
+	escapeClosesTopmost: boolean;
 }) {
 	const [state, dispatch] = useReducer(reduceToolkitWindows, initialState);
 	return (
@@ -215,6 +233,7 @@ function WorkspaceHarness({
 			definitions={definitions}
 			state={state}
 			dispatch={dispatch}
+			escapeClosesTopmost={escapeClosesTopmost}
 		/>
 	);
 }

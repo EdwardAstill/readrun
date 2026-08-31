@@ -5,6 +5,7 @@ import {
 	closeOverlay,
 	escapeSequence,
 	getActiveOverlay,
+	isOverlayId,
 	openOverlay,
 	subscribeOverlays,
 } from "./overlay.ts";
@@ -12,6 +13,20 @@ import {
 afterEach(() => closeAllOverlays());
 
 describe("overlay coordination", () => {
+	test("recognizes and notifies for the command palette overlay", () => {
+		const snapshots: Array<string | null> = [];
+		const unsubscribe = subscribeOverlays(() => {
+			snapshots.push(getActiveOverlay());
+		});
+
+		expect(isOverlayId("command-palette-overlay")).toBe(true);
+		openOverlay("command-palette-overlay");
+		closeOverlay("command-palette-overlay");
+		unsubscribe();
+
+		expect(snapshots).toEqual(["command-palette-overlay", null]);
+	});
+
 	test("keeps exactly one active overlay and notifies subscribers", () => {
 		const snapshots: Array<string | null> = [];
 		const unsubscribe = subscribeOverlays(() => {
