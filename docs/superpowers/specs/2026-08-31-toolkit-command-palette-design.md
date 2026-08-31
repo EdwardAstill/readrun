@@ -1,6 +1,6 @@
 # Toolkit Command Palette Design
 
-**Status:** Approved in chat; pending written-spec review
+**Status:** Approved in chat; ready for implementation
 
 ## Purpose
 
@@ -79,18 +79,20 @@ state. Readrun may import only the package's public exports.
 ## Upstream source and licensing
 
 `sci-calc-widget` starts from the MIT-licensed OpenMirai Scientific Calculator
-release `v0.2.0`, Git commit
-`9c565f689e9910a1f224bdce944cd237930fd25d`:
+release `v0.2.0`. The annotated tag object is
+`9c565f689e9910a1f224bdce944cd237930fd25d`; its source commit is
+`1162e48c0bc489106d6480d1d7562597fcd48044`:
 
 ```text
 https://github.com/openmirai/mirai-scientific-calculator
 ```
 
-Create the sibling as a GitHub fork named `sci-calc-widget`. If GitHub does not
-allow that custom fork name, create `EdwardAstill/sci-calc-widget` as a public
-repository and configure OpenMirai as its `upstream` Git remote. In either
-case, its default branch is simplified into the focused package described
-here. It retains:
+Create `EdwardAstill/sci-calc-widget` as a standalone public repository. Clone
+OpenMirai locally with its history, rename that remote to `upstream`, add the
+new repository as `origin`, and push only the new project's branches and tags.
+This keeps the upstream history and comparison path without inheriting
+OpenMirai's release-tag namespace. Its default branch is simplified into the
+focused package described here. It retains:
 
 - the complete OpenMirai MIT license and copyright notice;
 - an `ORIGIN.md` recording the upstream repository, release, commit, retained
@@ -118,9 +120,11 @@ sci-calc-widget/
     index.ts
     ScientificCalculator.tsx
     calculator-engine.ts
+    calculator-statistics.ts
     calculator-keypad.tsx
     calculator-keypad-config.ts
-    calculator-history.tsx
+    calculator-key-label.tsx
+    calculator-sidebar.tsx
     calculator.css
   test/
     calculator-engine.test.ts
@@ -135,8 +139,10 @@ sci-calc-widget/
 The exact split may introduce smaller internal files when a retained upstream
 file has more than one responsibility, but the public surface remains one
 component export. The fork removes OpenMirai's web showcase, registry builder,
-graphing, statistics, tools, settings dialog, fullscreen shell, extension
-registry, pnpm workspace, and unrelated shadcn primitives.
+graphing mode, dedicated statistics mode, tools mode, settings dialog,
+fullscreen shell, extension registry, pnpm workspace, and unrelated shadcn
+primitives. The small statistics module used by the scientific keypad's
+list-statistics functions remains an internal engine dependency.
 
 The retained scientific behavior includes:
 
@@ -146,6 +152,8 @@ The retained scientific behavior includes:
   answer memory;
 - trigonometric and inverse-trigonometric functions;
 - logarithmic and exponential functions;
+- scientific-keypad list statistics such as mean, median, standard deviation,
+  and correlation, without the separate Statistics mode UI;
 - degree and radian modes;
 - variables and reusable function definitions retained by the OpenMirai
   scientific engine;
