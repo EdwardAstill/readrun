@@ -5,8 +5,7 @@ use url::{Host, Url};
 
 fn viewer_url(raw: Option<&str>) -> Result<Url, String> {
     let raw = raw.ok_or_else(|| "Desktop viewer URL is required.".to_string())?;
-    let url =
-        Url::parse(raw).map_err(|error| format!("Invalid desktop viewer URL: {error}"))?;
+    let url = Url::parse(raw).map_err(|error| format!("Invalid desktop viewer URL: {error}"))?;
 
     if url.scheme() != "http" {
         return Err("Desktop viewer URL must use http.".to_string());
@@ -42,6 +41,7 @@ fn main() -> ExitCode {
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(640.0, 480.0)
                 .resizable(true)
+                .decorations(false)
                 .build()?;
             Ok(())
         })
