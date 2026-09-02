@@ -60,6 +60,8 @@ Add a minimal Tauri v2 project under `src-tauri/` containing:
 
 - `Cargo.toml` and `build.rs`;
 - `tauri.conf.json` with no default window and no bundled frontend;
+- a transparent fallback PNG required by Tauri code generation, without adding
+  branded icon work;
 - one Rust entry point that validates the URL and builds the main window.
 
 The window uses standard decorations, is resizable, and starts at a practical

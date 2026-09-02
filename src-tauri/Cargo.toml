@@ -1,0 +1,12 @@
+[package]
+name = "readrun-desktop"
+version = "0.1.0"
+description = "Native desktop viewer for readrun"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "=2.6.3", features = [] }
+
+[dependencies]
+tauri = { version = "=2.11.5", features = [] }
+url = "=2.5.8"
