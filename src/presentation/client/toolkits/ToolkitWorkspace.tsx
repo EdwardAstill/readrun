@@ -76,6 +76,13 @@ export function ToolkitWorkspace({
 
 		const closeTopmostToolkit = (event: KeyboardEvent): void => {
 			if (event.key !== "Escape" || event.defaultPrevented) return;
+			if (
+				document.querySelector(
+					'[data-slot="context-menu-content"][data-open]',
+				)
+			) {
+				return;
+			}
 			const topmost = state.windows
 				.filter(
 					(windowState) =>

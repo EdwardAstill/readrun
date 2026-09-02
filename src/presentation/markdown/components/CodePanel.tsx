@@ -1,7 +1,7 @@
 import type React from "react";
 
-import { Button } from "../../components/reusable/Button.tsx";
 import { ButtonGroup } from "../../components/ui/ButtonGroup.tsx";
+import { Button } from "../../components/ui/Button.tsx";
 import {
 	Card,
 	CardAction,

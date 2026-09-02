@@ -22,6 +22,7 @@ export function installHappyDom(
 		Node: window.Node,
 		EventTarget: window.EventTarget,
 		NodeFilter: window.NodeFilter,
+		DOMRect: window.DOMRect,
 		Element: window.Element,
 		HTMLElement: window.HTMLElement,
 		HTMLInputElement: window.HTMLInputElement,

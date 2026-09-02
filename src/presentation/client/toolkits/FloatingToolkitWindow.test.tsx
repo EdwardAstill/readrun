@@ -97,6 +97,27 @@ test("exposes Close on right click without an action button", async () => {
 	expect(document.querySelector('[role="dialog"]')).toBeNull();
 });
 
+test("Escape dismisses the window menu before closing the toolkit", async () => {
+	await renderWorkspace();
+	await openContextMenu(getDialog());
+
+	await act(async () => {
+		document.activeElement?.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+		);
+	});
+
+	expect(document.querySelector('[role="menu"]')).toBeNull();
+	expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+
+	await act(async () => {
+		document.activeElement?.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+		);
+	});
+	expect(document.querySelector('[role="dialog"]')).toBeNull();
+});
+
 test("Escape closes the toolkit", async () => {
 	await renderWorkspace();
 
@@ -122,6 +143,7 @@ test("leaves Escape to an active shell overlay", async () => {
 test("keeps pointer-only toolkit chrome between shell and modal layers", async () => {
 	await renderWorkspace();
 	const dialog = getDialog();
+	expect(dialog.className).toContain("select-text");
 
 	await act(async () => {
 		for (let index = 0; index < 60; index += 1) {
@@ -140,8 +162,13 @@ test("keeps pointer-only toolkit chrome between shell and modal layers", async (
 	).toBe(true);
 
 	await openContextMenu(dialog);
-	const menu = document.querySelector<HTMLElement>('[role="menu"]')!;
-	expect(Number(menu.style.zIndex)).toBeLessThan(50);
+	const menuPositioner = document.querySelector<HTMLElement>(
+		'[data-slot="context-menu-positioner"]',
+	)!;
+	expect(Number(menuPositioner.style.zIndex)).toBeGreaterThan(
+		Number(dialog.style.zIndex),
+	);
+	expect(Number(menuPositioner.style.zIndex)).toBeLessThan(50);
 
 	await clickLabel("Minimize Scientific Calculator");
 	const shelf = document.querySelector<HTMLElement>(

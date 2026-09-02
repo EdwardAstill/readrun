@@ -2,7 +2,7 @@ import type React from "react";
 
 import { cn } from "./cn.ts";
 
-export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+export type TextareaProps = React.ComponentProps<"textarea">;
 
 export function Textarea({
 	className,

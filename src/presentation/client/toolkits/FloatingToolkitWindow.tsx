@@ -1,15 +1,17 @@
 import { Minus, X } from "lucide-react";
 import {
 	type Dispatch,
-	type MouseEvent as ReactMouseEvent,
 	type PointerEvent as ReactPointerEvent,
-	useEffect,
 	useRef,
-	useState,
 } from "react";
-import { createPortal } from "react-dom";
 
 import { Button } from "../../components/ui/Button.tsx";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "../../components/ui/ContextMenu.tsx";
 import { cn } from "../../components/ui/cn.ts";
 import type {
 	ToolkitDefinition,
@@ -33,11 +35,6 @@ export interface FloatingToolkitWindowProps {
 
 type PointerMode = "move" | "east" | "south" | "southeast";
 
-interface ContextMenuPosition {
-	x: number;
-	y: number;
-}
-
 interface PointerTransform {
 	mode: PointerMode;
 	pointerId: number;
@@ -54,31 +51,8 @@ export function FloatingToolkitWindow({
 	stackingZIndex,
 	dispatch,
 }: FloatingToolkitWindowProps) {
-	const [contextMenu, setContextMenu] =
-		useState<ContextMenuPosition | null>(null);
-	const contextMenuRef = useRef<HTMLDivElement>(null);
 	const pointerTransformRef = useRef<PointerTransform | null>(null);
 	const titleId = `toolkit-window-${definition.id}-title`;
-
-	useEffect(() => {
-		if (!contextMenu) return;
-
-		const frame = requestAnimationFrame(() => {
-			contextMenuRef.current
-				?.querySelector<HTMLButtonElement>('[role="menuitem"]')
-				?.focus();
-		});
-		const dismiss = (event: PointerEvent): void => {
-			if (!contextMenuRef.current?.contains(event.target as Node)) {
-				setContextMenu(null);
-			}
-		};
-		window.addEventListener("pointerdown", dismiss);
-		return () => {
-			cancelAnimationFrame(frame);
-			window.removeEventListener("pointerdown", dismiss);
-		};
-	}, [contextMenu]);
 
 	const setRect = (rect: WindowRect): void => {
 		dispatch({
@@ -150,15 +124,6 @@ export function FloatingToolkitWindow({
 		}
 	};
 
-	const openContextMenu = (event: ReactMouseEvent<HTMLElement>): void => {
-		event.preventDefault();
-		dispatch({ type: "raise", id: definition.id });
-		setContextMenu({
-			x: clampMenuCoordinate(event.clientX, viewport.width, 128),
-			y: clampMenuCoordinate(event.clientY, viewport.height, 40),
-		});
-	};
-
 	const wideStyle = {
 		top: `${windowState.rect.y}px`,
 		left: `${windowState.rect.x}px`,
@@ -180,33 +145,41 @@ export function FloatingToolkitWindow({
 	};
 
 	return (
-		<section
-			role="dialog"
-			aria-modal="false"
-			aria-labelledby={titleId}
-			data-toolkit-id={definition.id}
-			data-compact={compact ? "true" : "false"}
-			data-x={windowState.rect.x}
-			data-y={windowState.rect.y}
-			data-width={windowState.rect.width}
-			data-height={windowState.rect.height}
-			hidden={windowState.minimized}
-			inert={windowState.minimized}
-			className={cn(
-				"fixed flex flex-col overflow-hidden border bg-background text-foreground shadow-xl",
-				compact ? "rounded-t-xl rounded-b-none" : "rounded-xl",
-			)}
-			style={{
-				...(compact ? compactStyle : wideStyle),
-				display: windowState.minimized ? "none" : undefined,
-				zIndex: stackingZIndex,
-			}}
-			onContextMenu={openContextMenu}
-			onPointerDown={() => {
-				setContextMenu(null);
-				dispatch({ type: "raise", id: definition.id });
+		<ContextMenu
+			onOpenChange={(open) => {
+				if (open) dispatch({ type: "raise", id: definition.id });
 			}}
 		>
+			<ContextMenuTrigger
+				className="select-text"
+				render={
+					<section
+						role="dialog"
+						aria-modal="false"
+						aria-labelledby={titleId}
+						data-toolkit-id={definition.id}
+						data-compact={compact ? "true" : "false"}
+						data-x={windowState.rect.x}
+						data-y={windowState.rect.y}
+						data-width={windowState.rect.width}
+						data-height={windowState.rect.height}
+						hidden={windowState.minimized}
+						inert={windowState.minimized}
+						className={cn(
+							"fixed flex flex-col overflow-hidden border bg-background text-foreground shadow-xl",
+							compact ? "rounded-t-xl rounded-b-none" : "rounded-xl",
+						)}
+						style={{
+							...(compact ? compactStyle : wideStyle),
+							display: windowState.minimized ? "none" : undefined,
+							zIndex: stackingZIndex,
+						}}
+						onPointerDown={() =>
+							dispatch({ type: "raise", id: definition.id })
+						}
+					/>
+				}
+			>
 			<div
 				tabIndex={-1}
 				aria-label={`Move ${definition.title}`}
@@ -267,44 +240,19 @@ export function FloatingToolkitWindow({
 				onPointerEnd={finishPointerTransform}
 			/>
 
-			{contextMenu && typeof document !== "undefined"
-				? createPortal(
-						<div
-							ref={contextMenuRef}
-							role="menu"
-							aria-label={`Window menu for ${definition.title}`}
-							className="fixed min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
-							style={{
-								left: `${contextMenu.x}px`,
-								top: `${contextMenu.y}px`,
-								zIndex: stackingZIndex + 1,
-							}}
-						>
-							<Button
-								type="button"
-								role="menuitem"
-								variant="ghost"
-								size="sm"
-								className="w-full justify-start"
-								onClick={() => dispatch({ type: "close", id: definition.id })}
-							>
-								Close
-							</Button>
-						</div>,
-						document.body,
-					)
-				: null}
-		</section>
+			</ContextMenuTrigger>
+			<ContextMenuContent
+				aria-label={`Window menu for ${definition.title}`}
+				positionerStyle={{ zIndex: stackingZIndex + 1 }}
+			>
+				<ContextMenuItem
+					onClick={() => dispatch({ type: "close", id: definition.id })}
+				>
+					Close
+				</ContextMenuItem>
+			</ContextMenuContent>
+		</ContextMenu>
 	);
-}
-
-function clampMenuCoordinate(
-	coordinate: number,
-	viewportSize: number,
-	menuSize: number,
-): number {
-	const edge = 8;
-	return Math.max(edge, Math.min(coordinate, viewportSize - menuSize - edge));
 }
 
 function ResizeHandle({

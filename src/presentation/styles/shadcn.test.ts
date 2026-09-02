@@ -1,6 +1,20 @@
 import { expect, test } from "bun:test";
+import { resolve } from "node:path";
 
 import { bundleClient } from "../../infrastructure/runtime/client-bundle.ts";
+
+test("the shadcn CLI targets the production Tailwind entrypoint", async () => {
+	const projectRoot = resolve(import.meta.dir, "../../..");
+	const config = await Bun.file(resolve(projectRoot, "components.json")).json();
+	const cssPath = config.tailwind?.css;
+
+	expect(config.style).toBe("base-nova");
+	expect(config.iconLibrary).toBe("lucide");
+	expect(typeof cssPath).toBe("string");
+	const source = await Bun.file(resolve(projectRoot, cssPath)).text();
+	expect(source).toContain('@import "tailwindcss"');
+	expect(source).toContain('@import "../components/quiz/styles.css"');
+});
 
 test("shadcn owns preflight, base, and utility presentation", async () => {
 	const source = await Bun.file(

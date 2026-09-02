@@ -1,11 +1,12 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "base-nova",
   "rsc": false,
   "tsx": true,
+  "iconLibrary": "lucide",
   "tailwind": {
     "config": "",
-    "css": "src/presentation/components/quiz/styles.css",
+    "css": "src/presentation/styles/shadcn.css",
     "baseColor": "neutral",
     "cssVariables": true
   },

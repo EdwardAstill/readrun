@@ -2,15 +2,11 @@ import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { Button } from "./Button.tsx";
-import { TextInput } from "./TextInput.tsx";
+import { Input } from "./Input.tsx";
 
 test("Button uses the shadcn defaults and preserves native props", () => {
 	const html = renderToStaticMarkup(
-		<Button
-			className="feature-hook"
-			data-action="run"
-			disabled
-		>
+		<Button className="feature-hook" data-action="run" disabled>
 			Run
 		</Button>,
 	);
@@ -31,9 +27,9 @@ test("Button respects an explicit native type", () => {
 	expect(html).toContain("bg-primary");
 });
 
-test("TextInput supplies shared classes and preserves input attributes", () => {
+test("Input supplies shared classes and preserves input attributes", () => {
 	const html = renderToStaticMarkup(
-		<TextInput
+		<Input
 			className="csv-filter"
 			type="search"
 			size={20}
