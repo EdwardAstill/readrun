@@ -103,7 +103,7 @@ test("runServeCommand leaves no-open servers running without a viewer", async ()
 			path: contentDir,
 			host: "0.0.0.0",
 			port: "43123",
-			"no-open": true,
+			open: false,
 		},
 		{
 			viewer: "browser",

@@ -1,6 +1,18 @@
 import { expect, test } from "bun:test";
+import { parseArgs } from "citty";
 
-import { browserOpenCommand } from "./cli-helpers.ts";
+import {
+  browserOpenCommand,
+  httpOptions,
+  serverArgs,
+  type ServerArgsValues,
+} from "./cli-helpers.ts";
+
+test("--no-open disables the viewer", () => {
+  const args = parseArgs(["--no-open"], serverArgs) as ServerArgsValues;
+
+  expect(httpOptions(args).noOpen).toBe(true);
+});
 
 test("browserOpenCommand uses the native opener for macOS", () => {
   expect(browserOpenCommand("http://localhost:3001/", "darwin")).toEqual([

@@ -1,12 +1,32 @@
 import { expect, test } from "bun:test";
 
 import {
+	desktopEnvironment,
 	desktopLaunch,
 	launchDesktop,
 	type DesktopProcess,
 	type DesktopSignal,
 	type DesktopSignals,
 } from "./launcher.ts";
+
+test("desktopEnvironment disables NVIDIA explicit sync on Linux", () => {
+	expect(desktopEnvironment("linux", { PATH: "/bin" })).toEqual({
+		PATH: "/bin",
+		__NV_DISABLE_EXPLICIT_SYNC: "1",
+	});
+});
+
+test("desktopEnvironment preserves user overrides and other platforms", () => {
+	expect(
+		desktopEnvironment("linux", {
+			PATH: "/bin",
+			__NV_DISABLE_EXPLICIT_SYNC: "0",
+		}),
+	).toEqual({ PATH: "/bin", __NV_DISABLE_EXPLICIT_SYNC: "0" });
+	expect(desktopEnvironment("darwin", { PATH: "/bin" })).toEqual({
+		PATH: "/bin",
+	});
+});
 
 class FakeSignals implements DesktopSignals {
 	readonly listeners = new Map<DesktopSignal, () => void>();
@@ -41,6 +61,8 @@ test("launchDesktop resolves after one successful viewer process", async () => {
 	let spawned = 0;
 	await launchDesktop("http://127.0.0.1:3001/", {
 		packageRoot: "/repo",
+		platform: "linux",
+		environment: { PATH: "/bin" },
 		spawnDesktop(command, options) {
 			spawned += 1;
 			expect(command).toEqual([
@@ -57,6 +79,7 @@ test("launchDesktop resolves after one successful viewer process", async () => {
 				stdin: "inherit",
 				stdout: "inherit",
 				stderr: "inherit",
+				env: { PATH: "/bin", __NV_DISABLE_EXPLICIT_SYNC: "1" },
 			});
 			return { exited: Promise.resolve(0), kill() {} };
 		},

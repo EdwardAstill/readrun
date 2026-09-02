@@ -10,11 +10,14 @@ export interface DesktopProcess {
 	kill(): void;
 }
 
+export type DesktopEnvironment = Record<string, string | undefined>;
+
 export interface DesktopProcessOptions {
 	cwd: string;
 	stdin: "inherit";
 	stdout: "inherit";
 	stderr: "inherit";
+	env: DesktopEnvironment;
 }
 
 export type SpawnDesktop = (
@@ -33,6 +36,8 @@ export interface LaunchDesktopOptions {
 	packageRoot?: string;
 	spawnDesktop?: SpawnDesktop;
 	signals?: DesktopSignals;
+	platform?: typeof process.platform;
+	environment?: DesktopEnvironment;
 }
 
 const processSignals: DesktopSignals = {
@@ -53,6 +58,20 @@ const spawnDesktop: SpawnDesktop = (command, options) => {
 		},
 	};
 };
+
+export function desktopEnvironment(
+	platform: typeof process.platform = process.platform,
+	environment: DesktopEnvironment = process.env,
+): DesktopEnvironment {
+	if (
+		platform !== "linux" ||
+		environment.__NV_DISABLE_EXPLICIT_SYNC !== undefined
+	) {
+		return environment;
+	}
+
+	return { ...environment, __NV_DISABLE_EXPLICIT_SYNC: "1" };
+}
 
 export function desktopLaunch(
 	url: string,
@@ -82,6 +101,7 @@ export async function launchDesktop(
 		stdin: "inherit",
 		stdout: "inherit",
 		stderr: "inherit",
+		env: desktopEnvironment(options.platform, options.environment),
 	});
 	const signals = options.signals ?? processSignals;
 	const terminate = () => child.kill();

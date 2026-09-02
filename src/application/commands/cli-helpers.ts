@@ -9,7 +9,7 @@ export interface ServerArgsValues {
   path?: string | null;
   port?: string | number | null;
   host?: string | null;
-  "no-open"?: boolean | null;
+  open?: boolean | null;
 }
 
 export interface HttpOptions {
@@ -48,10 +48,10 @@ export function serverArgsWithPort(defaultPort: string | number) {
       default: "127.0.0.1",
       description: "Hostname (default: 127.0.0.1)",
     },
-    "no-open": {
+    open: {
       type: "boolean",
-      default: false,
-      description: "Do not open a window",
+      default: true,
+      description: "Open a viewer (disable with --no-open)",
     },
   } as const;
 }
@@ -224,7 +224,7 @@ export function httpOptions(args: ServerArgsValues): HttpOptions {
   return {
     port: parsePort(args.port),
     host: args.host ?? "127.0.0.1",
-    noOpen: Boolean(args["no-open"]),
+    noOpen: args.open === false,
   };
 }
 
