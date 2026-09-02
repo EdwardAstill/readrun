@@ -285,7 +285,7 @@ git commit -m "feat: add minimal Tauri desktop viewer"
 - Consumes: the Task 1 Cargo manifest at `<packageRoot>/src-tauri/Cargo.toml` and a validated server URL string.
 - Produces: `desktopLaunch(url: string, packageRoot?: string): DesktopLaunch`; `launchDesktop(url: string, options?: LaunchDesktopOptions): Promise<void>`; injectable `spawnDesktop` and `signals` boundaries.
 
-- [ ] **Step 1: Write failing tests for command construction, exit handling, and terminal signals**
+- [x] **Step 1: Write failing tests for command construction, exit handling, and terminal signals**
 
 Create `src/infrastructure/desktop/launcher.test.ts`:
 
@@ -387,7 +387,7 @@ test("launchDesktop forwards interruption and removes its listeners", async () =
 });
 ```
 
-- [ ] **Step 2: Run the launcher tests and confirm the module is missing**
+- [x] **Step 2: Run the launcher tests and confirm the module is missing**
 
 Run:
 
@@ -397,7 +397,7 @@ bun test src/infrastructure/desktop/launcher.test.ts
 
 Expected: FAIL because `./launcher.ts` does not exist.
 
-- [ ] **Step 3: Implement the focused process adapter**
+- [x] **Step 3: Implement the focused process adapter**
 
 Create `src/infrastructure/desktop/launcher.ts`:
 
@@ -509,7 +509,7 @@ export async function launchDesktop(
 
 The adapter must inherit standard streams so Cargo and Tauri startup errors remain visible, but it must never spawn an external browser command.
 
-- [ ] **Step 4: Run focused tests and TypeScript checking**
+- [x] **Step 4: Run focused tests and TypeScript checking**
 
 Run:
 
@@ -520,7 +520,7 @@ bun run typecheck
 
 Expected: four launcher tests pass and TypeScript reports no errors. If `Bun.spawn` exposes a wider structural type than `DesktopProcess`, keep the wrapper shown above instead of weakening the public test seam.
 
-- [ ] **Step 5: Commit the launcher adapter**
+- [x] **Step 5: Commit the launcher adapter**
 
 ```bash
 git add src/infrastructure/desktop/launcher.ts src/infrastructure/desktop/launcher.test.ts
