@@ -66,8 +66,10 @@ configuration, local assets, executable scripts, and source widgets.
 ## Development and build modes
 
 Use `rr` or `rr serve` while editing. The dev server reads the source folder,
-renders pages on request, serves assets, and reloads the browser when files
-change.
+renders pages on request, serves assets, and opens one native readrun window.
+The window displays the same browser-compatible page runtime used by static
+builds and reloads when source files change. Use `rr web <path>` for an external
+browser or `--no-open` for server-only operation.
 
 Use `rr build` or `rr deploy` when you want static output. The build writes
 HTML, CSS, JavaScript, search data, and copied assets into a generated output

@@ -12,10 +12,20 @@ content folder
   -> resolve .readrun/navigation.yaml, .readrun/entry.txt, and .readrun/ignore
   -> scan scoped pages and assets into one immutable snapshot
   -> build a route lookup from that snapshot
-  -> serve browser assets
+  -> serve page assets to one native Tauri webview
   -> watch files, rebuild, and atomically swap the route lookup
-  -> notify connected browsers
+  -> notify the connected page runtime
 ```
+
+The Bun CLI owns both processes: it starts the loopback server, waits for the
+native window, and stops the server when the window closes. `--no-open` skips
+the Tauri process and leaves the server running. The page inside the webview is
+still a browser-compatible runtime, so the browser-runtime sections below also
+describe behavior in the desktop app and in static deployments.
+
+`rr web` selects the platform browser opener instead of Tauri and also leaves
+the server running until terminal interruption, because an external browser
+does not expose a reliable tab-close lifecycle to the CLI.
 
 The server keeps the source folder as the source of truth. `Bun.serve()` starts
 once and keeps its port and live connections. File changes are rebuilt in

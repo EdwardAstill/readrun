@@ -72,7 +72,9 @@ desktop size. No plugins or JavaScript API permissions are needed.
 Add a small TypeScript adapter responsible only for locating the checked-in
 Tauri manifest, spawning Cargo with the loopback URL, and returning the child
 exit status. Process creation is injectable so command behavior can be tested
-without opening a real window.
+without opening a real window. On Linux, the adapter supplies
+`__NV_DISABLE_EXPLICIT_SYNC=1` unless the user already set it, avoiding a known
+[WebKitGTK crash on NVIDIA/Wayland](https://bugs.webkit.org/show_bug.cgi?id=280210).
 
 ### Serve command lifecycle
 
@@ -107,6 +109,8 @@ second JavaScript frontend or Vite.
   and stops the readrun server before exiting.
 - Browser mode stays alive until terminal interruption; it does not attempt to
   infer when an external browser tab closes.
+- Model viewer opening as a positive CLI boolean so Citty maps `--no-open` to
+  `open: false`; cover this parser boundary with a regression test.
 
 ## Security
 
@@ -122,6 +126,8 @@ HTTP server.
   command, successful cleanup, and cleanup after launch failure.
 - Bun unit tests cover `rr web` target selection and verify that browser mode
   opens once without immediately stopping the server.
+- A Bun parser regression test verifies that the public `--no-open` spelling
+  disables both native and browser viewers.
 - Existing server tests continue to cover page and asset responses.
 - Rust unit tests cover accepted and rejected viewer URLs.
 - `cargo check` verifies the Tauri project.

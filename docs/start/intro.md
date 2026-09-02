@@ -16,6 +16,15 @@ bun install
 bun link
 ```
 
+The source version opens a native Tauri window and therefore also needs Rust,
+Cargo, and the [Tauri system prerequisites](https://v2.tauri.app/start/prerequisites/)
+for your operating system. The first launch compiles the small desktop viewer;
+later launches reuse Cargo's build cache.
+
+On Linux, readrun defaults `__NV_DISABLE_EXPLICIT_SYNC=1` for the desktop child
+to avoid a known [WebKitGTK crash on NVIDIA/Wayland](https://bugs.webkit.org/show_bug.cgi?id=280210).
+An explicitly configured value is left unchanged.
+
 ## Start the dev server
 
 Run `rr` with no arguments to serve the current folder:
@@ -34,9 +43,17 @@ rr intro.md               # open a single file
 rr notes/lecture-1.md     # open a single file by path
 ```
 
-When given a folder, readrun serves the whole directory. When given a `.md` file, it serves that file's folder and opens the browser directly on that page.
+When given a folder, readrun serves the whole directory. When given a `.md`
+file, it serves that file's folder and opens the native window directly on that
+page. `rr docs` uses the built-in documentation folder. Closing the window also
+stops the local server.
 
-Open [http://localhost:3001](http://localhost:3001) and you'll see your notes rendered as a navigable website with a sidebar built from your folder structure.
+For a server-only session, run `rr . --no-open` and open the printed loopback
+URL yourself.
+
+To use your default external browser instead of the native window, run
+`rr web .` for the current folder or `rr web docs` for the built-in docs. The
+browser-mode server runs until you press Ctrl-C.
 
 ## Try it without your own notes
 

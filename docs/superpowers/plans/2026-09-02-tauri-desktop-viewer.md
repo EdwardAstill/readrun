@@ -1093,17 +1093,22 @@ Before committing, inspect `git diff --cached` and confirm it contains the prior
 ### Task 4: Expose Source-Build Scripts, Document the UX, and Verify End to End
 
 **Files:**
+- Modify: `.gitignore`
 - Modify: `package.json`
 - Modify: `docs/start/commands.md`
 - Modify: `docs/start/intro.md`
 - Modify: `docs/reference/overview.md`
 - Modify: `docs/reference/runtime.md`
+- Modify: `src/application/commands/cli-helpers.ts`
+- Modify: `src/application/commands/cli-helpers.test.ts`
+- Modify: `src/infrastructure/desktop/launcher.ts`
+- Modify: `src/infrastructure/desktop/launcher.test.ts`
 
 **Interfaces:**
 - Consumes: Task 1's Cargo project, Task 2's source-based launch adapter, and Task 3's user-visible command behavior.
 - Produces: npm-package inclusion for `src-tauri/`; `desktop:check`, `desktop:test`, and `desktop:build` Bun scripts; accurate source-build and shutdown documentation; final verification evidence.
 
-- [ ] **Step 1: Add packaging and Rust lifecycle scripts**
+- [x] **Step 1: Add packaging and Rust lifecycle scripts**
 
 In `package.json`, add `src-tauri` to `files` immediately after `src`:
 
@@ -1127,7 +1132,7 @@ Add these scripts without changing the existing `check` pipeline:
 
 Keeping Rust scripts separate preserves the meaning and speed of the established Bun `check` command while making every desktop verification explicit.
 
-- [ ] **Step 2: Update the command reference with exact native-window behavior**
+- [x] **Step 2: Update the command reference with exact native-window behavior**
 
 In `docs/start/commands.md`, replace the server-options block with:
 
@@ -1176,7 +1181,7 @@ Browser mode keeps serving until you press Ctrl-C. It does not stop when an
 external browser tab closes.
 ````
 
-- [ ] **Step 3: Update getting-started guidance for source-based Tauri startup**
+- [x] **Step 3: Update getting-started guidance for source-based Tauri startup**
 
 In `docs/start/intro.md`, after the source-checkout `bun link` example, add:
 
@@ -1203,7 +1208,7 @@ To use your default external browser instead of the native window, run
 browser-mode server runs until you press Ctrl-C.
 ```
 
-- [ ] **Step 4: Clarify the native shell versus the browser-compatible page runtime**
+- [x] **Step 4: Clarify the native shell versus the browser-compatible page runtime**
 
 In `docs/reference/overview.md`, replace the development-mode paragraph with:
 
@@ -1237,7 +1242,7 @@ the server running until terminal interruption, because an external browser
 does not expose a reliable tab-close lifecycle to the CLI.
 ```
 
-- [ ] **Step 5: Run all automated verification from a clean process state**
+- [x] **Step 5: Run all automated verification from a clean process state**
 
 First terminate only stale readrun/Cargo viewer processes from earlier manual runs after identifying their PIDs:
 
@@ -1255,7 +1260,7 @@ bun run check
 
 Expected: Rust URL tests pass, Cargo checking passes, TypeScript passes, every Bun test passes, and strict docs validation succeeds.
 
-- [ ] **Step 6: Smoke-test `rr docs` as a one-window app and verify port cleanup**
+- [x] **Step 6: Smoke-test `rr docs` as a one-window app and verify port cleanup**
 
 Record the baseline external-browser and port state:
 
@@ -1277,7 +1282,7 @@ Expected manual observations:
 - Closing the native window returns the command to the shell.
 - `ss -ltnp 'sport = :3001'` reports no readrun listener afterward.
 
-- [ ] **Step 7: Smoke-test `rr .` from a content folder other than the repository root**
+- [x] **Step 7: Smoke-test `rr .` from a content folder other than the repository root**
 
 Use the existing examples folder so the smoke test does not create or rewrite
 project files:
@@ -1291,7 +1296,7 @@ Expected manual observations: one native window renders the example lecture
 content from `docs/examples`; closing it returns the shell and releases port
 3001.
 
-- [ ] **Step 8: Smoke-test both explicit browser routes**
+- [x] **Step 8: Smoke-test both explicit browser routes**
 
 Run each command separately, stopping the first with Ctrl-C before starting the
 second:
@@ -1314,7 +1319,7 @@ bun src/cli.ts web docs --port 43124
 Expected: the default external browser opens the built-in docs once, no Tauri
 window opens, and the server remains reachable until Ctrl-C.
 
-- [ ] **Step 9: Verify headless mode and non-loopback protection**
+- [x] **Step 9: Verify headless mode and non-loopback protection**
 
 Run headless mode in one terminal:
 
@@ -1332,7 +1337,7 @@ bun src/cli.ts docs --host 0.0.0.0
 
 Expected: the command exits non-zero with `Desktop mode requires a loopback host; use rr web or --no-open for remote hosts.` and starts neither server nor window.
 
-- [ ] **Step 10: Inspect the final diff and commit documentation/scripts**
+- [x] **Step 10: Inspect the final diff and commit documentation/scripts**
 
 Run:
 
@@ -1350,15 +1355,21 @@ git commit -m "docs: explain native readrun launcher"
 
 ---
 
+Smoke testing exposed two platform-boundary details that were fixed before
+completion: Citty requires a positive `open` option for `--no-open` negation,
+and WebKitGTK on NVIDIA/Wayland requires the documented explicit-sync
+workaround. Both fixes have focused regressions, preserve explicit user
+settings, and were included in the final verification run.
+
 ## Completion Checklist
 
-- [ ] `rr`, `rr .`, `rr <folder>`, and `rr docs` each start one Tauri window and no external browser.
-- [ ] `rr web .` and `rr web docs` each open one external browser route, start no Tauri window, and keep serving until Ctrl-C.
-- [ ] The window receives an HTTP loopback URL and Rust rejects every other initial URL.
-- [ ] Desktop mode rejects a non-loopback binding before the server starts; explicit browser and `--no-open` modes still permit user-selected hosts.
-- [ ] Closing or failing the viewer stops both the file watcher and server through `ServerHandle.stop()`.
-- [ ] SIGINT and SIGTERM terminate the viewer child, after which the serve `finally` stops the server.
-- [ ] No default Tauri window, plugins, commands, capabilities, or second frontend exist.
-- [ ] `bun run desktop:test`, `bun run desktop:check`, and `bun run check` pass.
-- [ ] Both manual desktop smoke tests render the right folder and release their server ports after close.
-- [ ] Existing unrelated user changes remain unstaged and untouched.
+- [x] `rr`, `rr .`, `rr <folder>`, and `rr docs` each start one Tauri window and no external browser.
+- [x] `rr web .` and `rr web docs` each open one external browser route, start no Tauri window, and keep serving until Ctrl-C.
+- [x] The window receives an HTTP loopback URL and Rust rejects every other initial URL.
+- [x] Desktop mode rejects a non-loopback binding before the server starts; explicit browser and `--no-open` modes still permit user-selected hosts.
+- [x] Closing or failing the viewer stops both the file watcher and server through `ServerHandle.stop()`.
+- [x] SIGINT and SIGTERM terminate the viewer child, after which the serve `finally` stops the server.
+- [x] No default Tauri window, plugins, commands, capabilities, or second frontend exist.
+- [x] `bun run desktop:test`, `bun run desktop:check`, and `bun run check` pass.
+- [x] Both manual desktop smoke tests render the right folder and release their server ports after close.
+- [x] Existing unrelated user changes remain unstaged and untouched.

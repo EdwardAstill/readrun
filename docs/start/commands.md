@@ -1,7 +1,7 @@
 # Commands reference
 
 ```text
-rr serve|docs|docs-wiki|init|validate|build|deploy|auth rotate|widgets-build|new|today|clean|doctor
+rr serve|docs|docs-wiki|web|init|validate|build|deploy|auth rotate|widgets-build|new|today|clean|doctor
 ```
 
 ## Server options
@@ -10,8 +10,8 @@ These options apply to `rr serve`, `rr docs`, and `rr docs-wiki`.
 
 ```
 --port=<n>     Port (default: 3001)
---host=<name>  Hostname (default: localhost)
---no-open      Do not auto-open a browser
+--host=<name>  Hostname (default: 127.0.0.1)
+--no-open      Run only the HTTP server; do not open a window
 ```
 
 ---
@@ -26,6 +26,10 @@ rr
 ```
 
 Equivalent to `rr serve .`
+
+By default, normal serve-family commands open exactly one native readrun window
+and keep the local server alive until that window closes. Closing the window
+stops the server. Use `--no-open` when you want a server without a window.
 
 ---
 
@@ -43,7 +47,8 @@ rr my-notes/guide.md
 ## `rr serve [path]`
 
 Serve a folder or `.md` file with runnable blocks.
-The dev server watches the source folder and reloads the browser on changes.
+The dev server watches the source folder and reloads the open readrun window on
+changes.
 
 `rr serve` always serves source content without password gating. Password
 protection is generated only for Vercel builds that include `.readrun/pw.txt`.
@@ -63,6 +68,25 @@ Serve the built-in readrun docs project (the `docs/` folder).
 ```bash
 rr docs
 ```
+
+This opens the documentation in the same single native window used by `rr .`.
+
+---
+
+## `rr web <folder|file.md|docs>`
+
+Serve content in the default external browser instead of the native window.
+The exact `docs` token selects readrun's built-in documentation; use `./docs`
+to select a folder named `docs` relative to the current directory.
+
+```bash
+rr web .
+rr web docs
+rr web ./notes
+```
+
+Browser mode keeps serving until you press Ctrl-C. It does not stop when an
+external browser tab closes.
 
 ---
 
