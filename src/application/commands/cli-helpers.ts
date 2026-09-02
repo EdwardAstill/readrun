@@ -45,13 +45,13 @@ export function serverArgsWithPort(defaultPort: string | number) {
     },
     host: {
       type: "string",
-      default: "localhost",
-      description: "Hostname (default: localhost)",
+      default: "127.0.0.1",
+      description: "Hostname (default: 127.0.0.1)",
     },
     "no-open": {
       type: "boolean",
       default: false,
-      description: "Do not auto-open a browser",
+      description: "Do not open a window",
     },
   } as const;
 }
@@ -223,7 +223,7 @@ export function parsePositiveInt(
 export function httpOptions(args: ServerArgsValues): HttpOptions {
   return {
     port: parsePort(args.port),
-    host: args.host ?? "localhost",
+    host: args.host ?? "127.0.0.1",
     noOpen: Boolean(args["no-open"]),
   };
 }

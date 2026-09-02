@@ -543,7 +543,7 @@ git commit -m "feat: launch desktop viewer from Bun"
 - Consumes: `launchDesktop(url: string): Promise<void>` from Task 2; retained `openBrowser(url: string): void`; `ServeProjectPorts["startServer"]`; existing `ServerHandle.stop()`.
 - Produces: exported `RunServeCommandOptions` with `desktop` and `browser` modes; `rr web <path|docs>` routing; cleanup on desktop success, desktop failure, and forwarded signal; long-running browser and `--no-open` behavior.
 
-- [ ] **Step 1: Add a behavior-preserving injection seam before running lifecycle tests**
+- [x] **Step 1: Add a behavior-preserving injection seam before running lifecycle tests**
 
 The current command hard-codes both external process boundaries. Refactor only
 those boundaries first so a red test cannot start a real server or browser.
@@ -596,7 +596,7 @@ bun run typecheck
 
 Expected: the existing tests and typecheck pass.
 
-- [ ] **Step 2: Write failing serve lifecycle tests with fake ports**
+- [x] **Step 2: Write failing serve lifecycle tests with fake ports**
 
 Create `src/application/commands/serve.test.ts`:
 
@@ -761,7 +761,7 @@ test("runServeCommand formats an IPv6 loopback viewer URL", async () => {
 });
 ```
 
-- [ ] **Step 3: Run the serve tests and confirm lifecycle behavior is absent**
+- [x] **Step 3: Run the serve tests and confirm lifecycle behavior is absent**
 
 Run:
 
@@ -775,7 +775,7 @@ desktop hosts are not rejected before startup, and the IPv6 URL is not
 bracketed. Browser and headless lifecycle cases already pass through the safe
 injection seam.
 
-- [ ] **Step 4: Replace browser spawning with awaited desktop lifecycle orchestration**
+- [x] **Step 4: Replace browser spawning with awaited desktop lifecycle orchestration**
 
 Rewrite the imports, option interface, loopback helpers, and `runServeCommand` in `src/application/commands/serve.ts` to use this implementation; keep the existing `serveCommand` definition below it:
 
@@ -907,7 +907,7 @@ export async function runServeCommand(
 
 This validates the requested binding before `startServer`, so desktop mode never briefly exposes the content server on a non-loopback interface. The Rust viewer independently validates the URL as a second boundary. Explicit browser mode retains user-selected hosts and returns after one browser-open request, leaving the Bun server alive.
 
-- [ ] **Step 5: Write the failing `rr web` routing tests**
+- [x] **Step 5: Write the failing `rr web` routing tests**
 
 Create `src/application/commands/web.test.ts`:
 
@@ -976,7 +976,7 @@ bun test src/application/commands/web.test.ts
 
 Expected: FAIL because `src/application/commands/web.ts` does not exist.
 
-- [ ] **Step 6: Implement `rr web` and register it with the CLI**
+- [x] **Step 6: Implement `rr web` and register it with the CLI**
 
 Create `src/application/commands/web.ts`:
 
@@ -1058,7 +1058,7 @@ In `src/application/commands/cli-helpers.ts`, retain `browserOpenCommand` and
 description: "Do not open a window",
 ```
 
-- [ ] **Step 7: Run focused lifecycle, routing, host, launcher, and existing server tests**
+- [x] **Step 7: Run focused lifecycle, routing, host, launcher, and existing server tests**
 
 Run:
 
@@ -1069,7 +1069,7 @@ bun run typecheck
 
 Expected: all new tests pass, the retained platform-opener tests and existing IPv4 default-host regression remain green, and TypeScript reports no errors.
 
-- [ ] **Step 8: Verify browser launching is restricted to explicit browser mode**
+- [x] **Step 8: Verify browser launching is restricted to explicit browser mode**
 
 Run:
 
@@ -1079,7 +1079,7 @@ rg -n "browserOpenCommand|openBrowser|xdg-open|cmd.*start|Could not auto-open br
 
 Expected: platform opener implementations remain in `cli-helpers.ts`, their tests remain in `cli-helpers.test.ts`, and `serve.ts` calls `openBrowser` only in its explicit `viewer === "browser"` branch. The desktop launcher contains no browser opener.
 
-- [ ] **Step 9: Commit lifecycle and explicit web integration without staging unrelated UI edits**
+- [x] **Step 9: Commit lifecycle and explicit web integration without staging unrelated UI edits**
 
 ```bash
 git add src/application/commands/serve.ts src/application/commands/serve.test.ts src/application/commands/web.ts src/application/commands/web.test.ts src/application/commands/cli-helpers.ts src/cli.ts src/infrastructure/runtime/server.test.ts

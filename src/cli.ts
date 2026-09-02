@@ -15,6 +15,7 @@ import { serveCommand, runServeCommand } from "./application/commands/serve.ts";
 import { todayCommand } from "./application/commands/today.ts";
 import { validateCommand } from "./application/commands/validate.ts";
 import { deployCommand } from "./application/commands/deploy.ts";
+import { webCommand } from "./application/commands/web.ts";
 import { widgetsBuildCommand } from "./application/commands/widgets-build.ts";
 import {
 	pathExists,
@@ -35,6 +36,7 @@ const KNOWN_TOP_LEVEL_COMMANDS = new Set([
 	"doctor",
 	"auth",
 	"widgets-build",
+	"web",
 	"help",
 	"--help",
 	"-h",
@@ -82,6 +84,7 @@ const main = defineCommand({
 		doctor: doctorCommand,
 		auth: authCommand,
 		"widgets-build": widgetsBuildCommand,
+		web: webCommand,
 	},
 	async run({ args }) {
 		const trailingArgs = (args._ as string[]) ?? [];
@@ -89,7 +92,7 @@ const main = defineCommand({
 			await runServeCommand({
 				path: process.cwd(),
 				port: "3001",
-				host: "localhost",
+				host: "127.0.0.1",
 				"no-open": false,
 			});
 		}

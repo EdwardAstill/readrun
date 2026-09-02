@@ -8,6 +8,7 @@ import type {
 	LiveChannel,
 	LiveEvent,
 } from "../../application/ports/live-channel.ts";
+import { httpOptions } from "../../application/commands/cli-helpers.ts";
 import { startServer, type StartServerOptions } from "./server.ts";
 
 const CLIENT_ENTRY = path.resolve(
@@ -252,6 +253,27 @@ test("startServer moves to the next available port when the requested port is oc
 	const page = await fetch(`http://${handle.host}:${handle.port}/`);
 	expect(page.status).toBe(200);
 	expect(await page.text()).toContain("Test page.");
+});
+
+test("the default CLI host is reachable over IPv4", async () => {
+	const root = await makeProject();
+	const options = httpOptions({ port: 0 });
+	const handle = await startServer({
+		root,
+		port: options.port,
+		host: options.host,
+		watch: false,
+	});
+	servers.push(handle);
+
+	let response: Response | undefined;
+	try {
+		response = await fetch(`http://127.0.0.1:${handle.port}/`);
+	} catch {
+		// The assertion below reports an IPv4-inaccessible default as a test failure.
+	}
+
+	expect(response?.status).toBe(200);
 });
 
 test("startServer rejects local Python execution when uv is unavailable", async () => {
