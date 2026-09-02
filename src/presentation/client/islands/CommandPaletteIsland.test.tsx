@@ -33,11 +33,10 @@ afterAll(() => {
 	restoreDom?.();
 });
 
-test("publishes and filters the four approved commands", () => {
+test("publishes and filters the three approved commands", () => {
 	expect(
 		paletteModule.COMMAND_PALETTE_COMMANDS.map((command) => command.title),
 	).toEqual([
-		"Open Python Terminal",
 		"Open Scientific Calculator",
 		"Search Site",
 		"Search Page",
@@ -46,7 +45,7 @@ test("publishes and filters the four approved commands", () => {
 		paletteModule
 			.filterCommandPaletteCommands("python")
 			.map((item) => item.id),
-	).toEqual(["open-python-terminal"]);
+	).toEqual([]);
 	expect(
 		paletteModule
 			.filterCommandPaletteCommands("search")
@@ -73,7 +72,7 @@ test("renders the shared palette with shadcn CommandDialog chrome", async () => 
 	expect(document.querySelector('[data-slot="command-list"]')).toBeTruthy();
 	expect(document.querySelector('[data-slot="command-group"]')).toBeTruthy();
 	expect(document.querySelectorAll('[data-slot="command-item"]')).toHaveLength(
-		4,
+		3,
 	);
 });
 

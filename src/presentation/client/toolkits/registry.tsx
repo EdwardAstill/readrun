@@ -1,16 +1,7 @@
-import { PythonTerminal } from "./PythonTerminal.tsx";
 import { ScientificCalculatorToolkit } from "./ScientificCalculatorToolkit.tsx";
 import type { ToolkitDefinition, ToolkitId } from "./types.ts";
 
 export const TOOLKIT_DEFINITIONS = [
-	{
-		id: "python-terminal",
-		title: "Python Terminal",
-		description: "Run persistent Python commands in this browser.",
-		defaultSize: { width: 640, height: 420 },
-		minimumSize: { width: 360, height: 240 },
-		render: () => <PythonTerminal autoFocus />,
-	},
 	{
 		id: "scientific-calculator",
 		title: "Scientific Calculator",

@@ -24,7 +24,7 @@ same source with wiki navigation.
 
 **[Commands](./start/commands.md)** — CLI command reference: every `rr` subcommand with arguments and options.
 
-**[Toolkits](./toolkits.md)** — Open and manage the persistent Python terminal and scientific calculator.
+**[Toolkits](./toolkits.md)** — Open and manage the scientific calculator.
 
 **[Reference](./reference/overview.md)** — The app model: content folders, assets, runtime behavior, and source layout.
 

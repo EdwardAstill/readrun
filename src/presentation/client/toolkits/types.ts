@@ -1,6 +1,6 @@
 import type React from "react";
 
-export type ToolkitId = "python-terminal" | "scientific-calculator";
+export type ToolkitId = "scientific-calculator";
 
 export interface ToolkitSize {
   width: number;

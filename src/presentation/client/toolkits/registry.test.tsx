@@ -6,7 +6,7 @@ import {
 	TOOLKIT_DEFINITIONS,
 } from "./registry.tsx";
 
-test("registers exactly the two approved built-in toolkits", () => {
+test("registers exactly the approved built-in toolkit", () => {
 	expect(
 		TOOLKIT_DEFINITIONS.map(({ id, title, description }) => ({
 			id,
@@ -14,11 +14,6 @@ test("registers exactly the two approved built-in toolkits", () => {
 			description,
 		})),
 	).toEqual([
-		{
-			id: "python-terminal",
-			title: "Python Terminal",
-			description: "Run persistent Python commands in this browser.",
-		},
 		{
 			id: "scientific-calculator",
 			title: "Scientific Calculator",
@@ -28,12 +23,8 @@ test("registers exactly the two approved built-in toolkits", () => {
 });
 
 test("renders each toolkit through its definition", () => {
-	const terminal = getToolkitDefinition("python-terminal");
 	const calculator = getToolkitDefinition("scientific-calculator");
 
-	expect(renderToStaticMarkup(terminal!.render())).toContain(
-		"Python terminal input",
-	);
 	expect(renderToStaticMarkup(calculator!.render())).toContain(
 		"Scientific calculator",
 	);

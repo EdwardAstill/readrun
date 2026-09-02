@@ -1,11 +1,6 @@
 // Optional browser-side Python execution via Pyodide (WebAssembly).
 // Only loaded when enableBrowserPython is true in runtime config.
 
-import type {
-	TerminalExecution,
-	TerminalPythonRuntime,
-} from "../toolkits/terminal-session.ts";
-
 // --- Types ---
 
 interface PyodideInterface {
@@ -141,7 +136,6 @@ let pyodide: PyodideInterface | null = null;
 let pyodideLoading: Promise<PyodideInterface> | null = null;
 let packagesReady: Promise<void> | null = null;
 let matplotlibPatched = false;
-let terminalSupportReady: Promise<void> | null = null;
 
 // --- Package parsing ---
 
@@ -231,17 +225,6 @@ export async function loadPyodideRuntime(): Promise<PyodideInterface> {
 // --- Package installation ---
 
 export async function installPackages(packages: string[]): Promise<void> {
-	await installPackagesWithMode(packages, false);
-}
-
-async function installPackagesStrict(packages: string[]): Promise<void> {
-	await installPackagesWithMode(packages, true);
-}
-
-async function installPackagesWithMode(
-	packages: string[],
-	strict: boolean,
-): Promise<void> {
 	if (packages.length === 0) {
 		return;
 	}
@@ -253,10 +236,7 @@ async function installPackagesWithMode(
 	for (const pkg of packages) {
 		try {
 			await micropip.install(pkg);
-		} catch (error) {
-			if (strict) {
-				throw error;
-			}
+		} catch {
 			// Best-effort package installation
 		}
 	}
@@ -282,112 +262,6 @@ _plt.show = _readrun_show
 		matplotlibPatched = true;
 	}
 }
-
-// --- Persistent terminal execution ---
-
-const TERMINAL_BOOTSTRAP = `
-import ast as _rr_ast
-import contextlib as _rr_contextlib
-import io as _rr_io
-import json as _rr_json
-import traceback as _rr_traceback
-
-_readrun_terminal_sessions = {}
-
-def _readrun_terminal_globals(session_id):
-    return _readrun_terminal_sessions.setdefault(
-        session_id,
-        {"__builtins__": __builtins__, "__name__": "__readrun_terminal__"},
-    )
-
-def _readrun_terminal_execute(session_id, source):
-    namespace = _readrun_terminal_globals(session_id)
-    stdout = _rr_io.StringIO()
-    stderr = _rr_io.StringIO()
-    result = None
-    error = None
-    try:
-        module = _rr_ast.parse(source, mode="exec")
-        with _rr_contextlib.redirect_stdout(stdout), _rr_contextlib.redirect_stderr(stderr):
-            if module.body and isinstance(module.body[-1], _rr_ast.Expr):
-                prefix = _rr_ast.Module(body=module.body[:-1], type_ignores=[])
-                if prefix.body:
-                    exec(compile(prefix, "<readrun-terminal>", "exec"), namespace, namespace)
-                expression = _rr_ast.Expression(module.body[-1].value)
-                value = eval(
-                    compile(expression, "<readrun-terminal>", "eval"),
-                    namespace,
-                    namespace,
-                )
-                if value is not None:
-                    result = repr(value)
-            else:
-                exec(compile(module, "<readrun-terminal>", "exec"), namespace, namespace)
-    except BaseException:
-        error = _rr_traceback.format_exc()
-    return _rr_json.dumps({
-        "stdout": stdout.getvalue(),
-        "stderr": stderr.getvalue(),
-        "result": result,
-        "error": error,
-    })
-
-def _readrun_terminal_reset(session_id):
-    _readrun_terminal_sessions.pop(session_id, None)
-`;
-
-async function ensureTerminalSupport(): Promise<void> {
-	if (terminalSupportReady) {
-		return terminalSupportReady;
-	}
-
-	const initialization = (async () => {
-		const py = await loadPyodideRuntime();
-		py.runPython(TERMINAL_BOOTSTRAP);
-	})();
-	terminalSupportReady = initialization;
-	try {
-		await initialization;
-	} catch (error) {
-		if (terminalSupportReady === initialization) {
-			terminalSupportReady = null;
-		}
-		throw error;
-	}
-}
-
-async function runPyodideTerminal(
-	sessionId: string,
-	source: string,
-): Promise<TerminalExecution> {
-	const py = await loadPyodideRuntime();
-	await ensureTerminalSupport();
-	await installPackagesStrict(parseImports(source));
-	const serialized = py.runPython(
-		`_readrun_terminal_execute(${JSON.stringify(sessionId)}, ${JSON.stringify(source)})`,
-	);
-	if (typeof serialized !== "string") {
-		throw new Error("Pyodide terminal returned an invalid execution result");
-	}
-	return JSON.parse(serialized) as TerminalExecution;
-}
-
-async function resetPyodideTerminal(sessionId: string): Promise<void> {
-	if (!pyodide || !terminalSupportReady) {
-		return;
-	}
-	await terminalSupportReady;
-	pyodide.runPython(`_readrun_terminal_reset(${JSON.stringify(sessionId)})`);
-}
-
-export const pyodideTerminalRuntime: TerminalPythonRuntime = {
-	prepare: async () => {
-		await loadPyodideRuntime();
-		await ensureTerminalSupport();
-	},
-	execute: runPyodideTerminal,
-	reset: resetPyodideTerminal,
-};
 
 // --- Scanning page for imports ---
 

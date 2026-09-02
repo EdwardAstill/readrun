@@ -11,15 +11,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { installHappyDom } from "../../../test/happy-dom.ts";
 import type { ToolkitDefinition } from "../toolkits/types.ts";
 
-const terminalDefinition: ToolkitDefinition = {
-	id: "python-terminal",
-	title: "Python Terminal",
-	description: "Run persistent Python commands in this browser.",
-	defaultSize: { width: 640, height: 420 },
-	minimumSize: { width: 360, height: 240 },
+const calculatorDefinition: ToolkitDefinition = {
+	id: "scientific-calculator",
+	title: "Scientific Calculator",
+	description: "Open the scientific calculator.",
+	defaultSize: { width: 900, height: 620 },
+	minimumSize: { width: 600, height: 420 },
 	render: () => (
 		<textarea
-			aria-label="Test terminal input"
+			aria-label="Test toolkit input"
 			data-toolkit-primary-input
 			defaultValue="initial"
 		/>
@@ -55,7 +55,7 @@ afterAll(() => {
 });
 
 test("opens the command palette from Ctrl/Cmd+K, including editable fields", async () => {
-	await renderShell([terminalDefinition]);
+	await renderShell([calculatorDefinition]);
 
 	const ctrl = await dispatchPaletteShortcut(document.body, { ctrlKey: true });
 	expect(ctrl.defaultPrevented).toBe(true);
@@ -70,33 +70,33 @@ test("opens the command palette from Ctrl/Cmd+K, including editable fields", asy
 });
 
 test("preserves a toolkit across restore and navigation but resets it after close", async () => {
-	await renderShell([terminalDefinition]);
-	await openCommand("Open Python Terminal");
+	await renderShell([calculatorDefinition]);
+	await openCommand("Open Scientific Calculator");
 
-	const first = terminalInput();
+	const first = toolkitInput();
 	expect(document.activeElement).toBe(first);
 	first.value = "preserved";
 
-	await clickLabel("Minimize Python Terminal");
+	await clickLabel("Minimize Scientific Calculator");
 	document.dispatchEvent(new Event("readrun:remount"));
-	expect(document.querySelector('[aria-label="Test terminal input"]')).toBe(first);
+	expect(document.querySelector('[aria-label="Test toolkit input"]')).toBe(first);
 	expect(first.value).toBe("preserved");
 
-	await openCommand("Open Python Terminal");
-	expect(terminalInput()).toBe(first);
-	expect(document.querySelectorAll('[data-toolkit-id="python-terminal"]')).toHaveLength(1);
+	await openCommand("Open Scientific Calculator");
+	expect(toolkitInput()).toBe(first);
+	expect(document.querySelectorAll('[data-toolkit-id="scientific-calculator"]')).toHaveLength(1);
 	expect(document.activeElement).toBe(first);
 
-	await clickLabel("Close Python Terminal");
-	await openCommand("Open Python Terminal");
-	const reopened = terminalInput();
+	await clickLabel("Close Scientific Calculator");
+	await openCommand("Open Scientific Calculator");
+	const reopened = toolkitInput();
 	expect(reopened).not.toBe(first);
 	expect(reopened.value).toBe("initial");
 });
 
 test("Escape closes the toolkit without opening Settings", async () => {
-	await renderShell([terminalDefinition]);
-	await openCommand("Open Python Terminal");
+	await renderShell([calculatorDefinition]);
+	await openCommand("Open Scientific Calculator");
 	const teardownShortcuts = shortcutsModule.initShortcuts();
 
 	try {
@@ -110,7 +110,7 @@ test("Escape closes the toolkit without opening Settings", async () => {
 			);
 		});
 
-		expect(document.querySelector('[data-toolkit-id="python-terminal"]')).toBeNull();
+		expect(document.querySelector('[data-toolkit-id="scientific-calculator"]')).toBeNull();
 		expect(overlayModule.getActiveOverlay()).toBeNull();
 	} finally {
 		teardownShortcuts();
@@ -184,12 +184,12 @@ test("preserves the real calculator expression through restore and navigation", 
 });
 
 test("mounts site search only when search is enabled", async () => {
-	await renderShell([terminalDefinition], false);
+	await renderShell([calculatorDefinition], false);
 	await act(async () => overlayModule.openOverlay("site-search-overlay"));
 	await nextAnimationFrame();
 	expect(document.querySelector('[aria-label="Search all pages"]')).toBeNull();
 
-	await renderCurrentShell([terminalDefinition], true);
+	await renderCurrentShell([calculatorDefinition], true);
 	await nextAnimationFrame();
 	expect(
 		document.querySelector('input[aria-label="Search all pages"]'),
@@ -266,11 +266,11 @@ async function clickButton(label: string): Promise<void> {
 	await act(async () => button.click());
 }
 
-function terminalInput(): HTMLTextAreaElement {
+function toolkitInput(): HTMLTextAreaElement {
 	const input = document.querySelector<HTMLTextAreaElement>(
-		'[aria-label="Test terminal input"]',
+		'[aria-label="Test toolkit input"]',
 	);
-	if (!input) throw new Error("Expected test terminal input");
+	if (!input) throw new Error("Expected test toolkit input");
 	return input;
 }
 

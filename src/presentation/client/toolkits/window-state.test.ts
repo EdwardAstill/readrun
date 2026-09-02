@@ -6,10 +6,10 @@ import {
 } from "./window-state.ts";
 import type { ToolkitDefinition } from "./types.ts";
 
-const terminal: ToolkitDefinition = {
-  id: "python-terminal",
-  title: "Python Terminal",
-  description: "Run browser Python",
+const calculator: ToolkitDefinition = {
+  id: "scientific-calculator",
+  title: "Scientific Calculator",
+  description: "Open the scientific calculator.",
   defaultSize: { width: 640, height: 420 },
   minimumSize: { width: 360, height: 240 },
   render: () => null,
@@ -22,18 +22,18 @@ describe("floating toolkit state", () => {
     let state = createToolkitWorkspaceState();
     state = reduceToolkitWindows(state, {
       type: "open",
-      definition: terminal,
+      definition: calculator,
       viewport,
     });
     state = reduceToolkitWindows(state, {
       type: "open",
-      definition: terminal,
+      definition: calculator,
       viewport,
     });
 
     expect(state.windows).toHaveLength(1);
     expect(state.windows[0]).toMatchObject({
-      id: "python-terminal",
+      id: "scientific-calculator",
       minimized: false,
       rect: { x: 24, y: 24, width: 640, height: 420 },
       zIndex: 2,
@@ -41,17 +41,7 @@ describe("floating toolkit state", () => {
   });
 
   test("returns the original state when raising an absent window", () => {
-    const state = {
-      windows: [
-        {
-          id: "python-terminal" as const,
-          minimized: false,
-          rect: { x: 24, y: 24, width: 640, height: 420 },
-          zIndex: 1,
-        },
-      ],
-      nextZIndex: 2,
-    };
+    const state = createToolkitWorkspaceState();
 
     const next = reduceToolkitWindows(state, {
       type: "raise",
@@ -59,41 +49,31 @@ describe("floating toolkit state", () => {
     });
 
     expect(next).toBe(state);
-    expect(next).toEqual({
-      windows: [
-        {
-          id: "python-terminal",
-          minimized: false,
-          rect: { x: 24, y: 24, width: 640, height: 420 },
-          zIndex: 1,
-        },
-      ],
-      nextZIndex: 2,
-    });
+    expect(next).toEqual({ windows: [], nextZIndex: 1 });
   });
 
   test("minimizes, restores, and removes a window", () => {
     let state = reduceToolkitWindows(createToolkitWorkspaceState(), {
       type: "open",
-      definition: terminal,
+      definition: calculator,
       viewport,
     });
     state = reduceToolkitWindows(state, {
       type: "minimize",
-      id: "python-terminal",
+      id: "scientific-calculator",
     });
     expect(state.windows[0]?.minimized).toBe(true);
 
     state = reduceToolkitWindows(state, {
       type: "open",
-      definition: terminal,
+      definition: calculator,
       viewport,
     });
     expect(state.windows[0]?.minimized).toBe(false);
 
     state = reduceToolkitWindows(state, {
       type: "close",
-      id: "python-terminal",
+      id: "scientific-calculator",
     });
     expect(state.windows).toEqual([]);
   });
@@ -103,7 +83,7 @@ describe("floating toolkit state", () => {
       clampWindowRect(
         { x: 900, y: -20, width: 1200, height: 100 },
         viewport,
-        terminal.minimumSize,
+        calculator.minimumSize,
       ),
     ).toEqual({ x: 0, y: 0, width: 1000, height: 240 });
   });
@@ -111,20 +91,20 @@ describe("floating toolkit state", () => {
   test("normalizes every open window after viewport shrink", () => {
     let state = reduceToolkitWindows(createToolkitWorkspaceState(), {
       type: "open",
-      definition: terminal,
+      definition: calculator,
       viewport,
     });
     state = reduceToolkitWindows(state, {
       type: "set-rect",
-      id: "python-terminal",
+      id: "scientific-calculator",
       rect: { x: 600, y: 400, width: 400, height: 300 },
       viewport,
-      minimumSize: terminal.minimumSize,
+      minimumSize: calculator.minimumSize,
     });
     state = reduceToolkitWindows(state, {
       type: "normalize",
       viewport: { width: 500, height: 360 },
-      definitions: [terminal],
+      definitions: [calculator],
     });
 
     expect(state.windows[0]?.rect).toEqual({

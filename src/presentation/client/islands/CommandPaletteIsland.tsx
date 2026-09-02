@@ -18,12 +18,6 @@ export type CommandPaletteCommand = SearchPaletteItem &
 
 export const COMMAND_PALETTE_COMMANDS = [
 	{
-		id: "open-python-terminal",
-		title: "Open Python Terminal",
-		subtitle: "Run persistent Python commands in this browser.",
-		toolkitId: "python-terminal",
-	},
-	{
 		id: "open-scientific-calculator",
 		title: "Open Scientific Calculator",
 		subtitle: "Open the scientific calculator.",
