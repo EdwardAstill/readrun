@@ -8,6 +8,9 @@ browser. The existing `rr` command remains the entry point:
 - `rr .` opens the current folder.
 - `rr <folder>` opens that folder through the existing implicit `serve` route.
 - `rr docs` opens readrun's built-in documentation.
+- `rr web .` opens the current folder in the default external browser.
+- `rr web docs` opens readrun's built-in documentation in the default external
+  browser.
 - `--no-open` continues to run only the HTTP server.
 
 This first version targets source checkouts and intentionally does not add an
@@ -16,9 +19,10 @@ installer, folder picker, bundled Bun sidecar, or a second rendering pipeline.
 ## Architecture
 
 The existing Bun CLI continues to own content discovery, widget building, the
-HTTP server, and its lifecycle. When a serve-family command starts without
-`--no-open`, the CLI launches a small Tauri executable and passes the resolved
-loopback URL as its only application argument.
+HTTP server, and its lifecycle. Normal serve-family commands launch a small
+Tauri executable and pass the resolved loopback URL as its only application
+argument. The explicit `rr web` command instead uses the existing platform
+browser opener and does not start Tauri.
 
 The Tauri executable is a generic viewer. It validates that the supplied URL is
 HTTP and loopback-only, creates one native webview window for that URL, and
@@ -43,8 +47,10 @@ later without changing the server or viewer contract.
 6. When that window closes, the desktop child exits. The CLI stops its file
    watcher and HTTP server, then exits.
 
-`--no-open` skips steps 3 through 6 after the status messages and preserves the
-current long-running server behavior.
+`rr web` branches after step 3: it opens the URL once in the default browser and
+keeps the server running until terminal interruption, because an external
+browser does not provide a reliable window-close signal. `--no-open` opens
+neither Tauri nor a browser and preserves the same long-running server behavior.
 
 ## Components and changes
 
@@ -69,9 +75,18 @@ without opening a real window.
 ### Serve command lifecycle
 
 Change the serve-family orchestration so the server handle is stopped in a
-`finally` block after the desktop viewer exits or fails. Browser-specific
-opening helpers are removed from this path. The headless `--no-open` path does
-not stop immediately and therefore continues to keep the CLI alive.
+`finally` block after the desktop viewer exits or fails. Retain the
+browser-opening helpers behind a distinct `browser` viewer mode used only by
+`rr web`; that mode opens once and leaves the server running. The headless
+`--no-open` path does not open either viewer and also leaves the server running.
+
+### Browser command
+
+Add a small `web` command with one required folder, Markdown path, or `docs`
+target. The exact token `docs` resolves to the built-in docs folder, while
+`./docs` means a folder named `docs` relative to the current working directory.
+The command delegates to the same serve orchestration in browser mode, so it
+does not duplicate content or server logic.
 
 Add Bun scripts for checking and building the Rust viewer. Do not introduce a
 second JavaScript frontend or Vite.
@@ -88,18 +103,23 @@ second JavaScript frontend or Vite.
   server port.
 - On terminal interruption, the launch adapter terminates the desktop child
   and stops the readrun server before exiting.
+- Browser mode stays alive until terminal interruption; it does not attempt to
+  infer when an external browser tab closes.
 
 ## Security
 
 The viewer accepts only `http://localhost`, `http://127.0.0.0/8`, and
 `http://[::1]` URLs. It does not grant the loaded page shell, filesystem, or
 other Tauri capabilities. The server remains loopback-bound for the native app
-flow.
+flow. Browser and headless modes retain the explicit `--host` behavior of the
+HTTP server.
 
 ## Testing and verification
 
 - Bun unit tests cover the desktop command construction, one launch per serve
   command, successful cleanup, and cleanup after launch failure.
+- Bun unit tests cover `rr web` target selection and verify that browser mode
+  opens once without immediately stopping the server.
 - Existing server tests continue to cover page and asset responses.
 - Rust unit tests cover accepted and rejected viewer URLs.
 - `cargo check` verifies the Tauri project.
@@ -108,6 +128,9 @@ flow.
   documentation, closes it, and confirms the server port is released.
 - A second smoke test runs `rr .` from an arbitrary content folder and confirms
   that folder is shown.
+- Browser smoke tests run `rr web .` and `rr web docs`, confirm that each opens
+  the requested content in the default browser, and stop each server with
+  terminal interruption.
 
 ## Deferred work
 

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make `rr`, `rr .`, `rr <folder>`, and `rr docs` open exactly one native Tauri window while keeping `--no-open` as the server-only mode.
+**Goal:** Make normal `rr` serve routes open exactly one native Tauri window, retain explicit external-browser access through `rr web .` and `rr web docs`, and keep `--no-open` as the server-only mode.
 
-**Architecture:** The existing Bun CLI remains responsible for resolving content, building widgets, and running the loopback HTTP server. A focused TypeScript adapter starts a generic Tauri v2 viewer through Cargo, passes it the resolved local URL, waits for the window process to exit, and lets the serve command stop the server in `finally`; the Rust viewer validates the URL and owns no readrun content logic.
+**Architecture:** The existing Bun CLI remains responsible for resolving content, building widgets, and running the HTTP server. A focused TypeScript adapter starts a generic Tauri v2 viewer through Cargo for normal commands, while an explicit `web` subcommand selects the retained platform browser opener; desktop mode waits and cleans up in `finally`, whereas browser and headless modes keep serving until terminal interruption.
 
 **Tech Stack:** Bun 1.4, TypeScript 5.9, `bun:test`, Rust 1.98, Tauri 2.11.5, tauri-build 2.6.3, url 2.5.8
 
@@ -12,12 +12,12 @@
 
 ## Global Constraints
 
-- Keep `rr` as the only user-facing launcher: `rr .` means the current folder and `rr docs` means the checked-in `docs/` folder.
-- The desktop path may bind only to `localhost`, an address in `127.0.0.0/8`, or `::1`; non-loopback hosts remain available only with `--no-open`.
+- Keep `rr` as the user-facing launcher: `rr .` means the current folder, `rr docs` means the checked-in `docs/` folder, `rr web .` opens the current folder externally, and `rr web docs` opens the checked-in docs externally.
+- The desktop path may bind only to `localhost`, an address in `127.0.0.0/8`, or `::1`; explicit browser and `--no-open` modes retain user-selected `--host` values.
 - The Tauri viewer accepts only HTTP loopback URLs and exposes no commands, plugins, filesystem APIs, shell APIs, or other Tauri capabilities to the page.
 - Create exactly one standard, decorated, resizable window with an initial size of 1280 by 800 and a minimum size of 640 by 480.
 - Closing the native window stops the watcher and HTTP server and releases the port; launch failure and terminal interruption perform the same cleanup.
-- Do not fall back to Zen, Firefox, Chrome, or any other external browser.
+- Do not fall back to an external browser when Tauri fails. External browsers are launched only by the explicit `rr web` command.
 - This version runs from source through Cargo. Do not add an installer, precompiled sidecar, folder picker, icons, signing, auto-update, file associations, or a second frontend.
 - Use Bun for TypeScript scripts and tests. Do not add Node-only runners, npm scripts, Vite, or another JavaScript frontend.
 - Preserve all unrelated dirty worktree changes. In particular, retain the existing default-host edits in `src/application/commands/cli-helpers.ts` and `src/infrastructure/runtime/server.test.ts` while modifying those files.
@@ -32,11 +32,13 @@
 - `src-tauri/src/main.rs`: loopback URL validation and creation of the single native window.
 - `src/infrastructure/desktop/launcher.ts`: Cargo command construction, child-process waiting, and signal forwarding.
 - `src/infrastructure/desktop/launcher.test.ts`: isolated tests using fake process creation and fake signal registration.
-- `src/application/commands/serve.ts`: desktop/server orchestration and cleanup ownership.
-- `src/application/commands/serve.test.ts`: lifecycle tests with fake server and desktop ports.
-- `src/application/commands/cli-helpers.ts`: native-window option copy and deletion of external-browser spawning helpers.
-- `src/application/commands/cli-helpers.test.ts`: remove obsolete platform browser-opener tests.
-- `src/cli.ts`: use the same IPv4 loopback default for bare `rr` as every other serve route.
+- `src/application/commands/serve.ts`: desktop, browser, and server-only orchestration with mode-specific cleanup ownership.
+- `src/application/commands/serve.test.ts`: lifecycle tests with fake server, desktop, and browser ports.
+- `src/application/commands/web.ts`: `rr web` target resolution and delegation to browser-mode serving.
+- `src/application/commands/web.test.ts`: current-folder and built-in-docs browser-route tests.
+- `src/application/commands/cli-helpers.ts`: generic window option copy and retained platform browser spawning helpers.
+- `src/application/commands/cli-helpers.test.ts`: retain platform browser-opener tests.
+- `src/cli.ts`: register `web` and use the same IPv4 loopback default for bare `rr` as every other serve route.
 - `.gitignore`: ignore Rust build output only.
 - `package.json`: ship `src-tauri/` and expose explicit Rust check/test/build scripts.
 - `docs/start/commands.md`: describe native-window and `--no-open` behavior.
@@ -529,14 +531,15 @@ git commit -m "feat: launch desktop viewer from Bun"
 
 **Files:**
 - Create: `src/application/commands/serve.test.ts`
+- Create: `src/application/commands/web.ts`
+- Create: `src/application/commands/web.test.ts`
 - Modify: `src/application/commands/serve.ts`
 - Modify: `src/application/commands/cli-helpers.ts`
-- Delete: `src/application/commands/cli-helpers.test.ts`
 - Modify: `src/cli.ts`
 
 **Interfaces:**
-- Consumes: `launchDesktop(url: string): Promise<void>` from Task 2; `ServeProjectPorts["startServer"]`; existing `ServerHandle.stop()`.
-- Produces: exported `RunServeCommandOptions` with optional `startServer` and `launchDesktop` dependencies; one-viewer-per-command behavior; cleanup on viewer success, viewer failure, and forwarded signal; unchanged long-running `--no-open` behavior.
+- Consumes: `launchDesktop(url: string): Promise<void>` from Task 2; retained `openBrowser(url: string): void`; `ServeProjectPorts["startServer"]`; existing `ServerHandle.stop()`.
+- Produces: exported `RunServeCommandOptions` with `desktop` and `browser` modes; `rr web <path|docs>` routing; cleanup on desktop success, desktop failure, and forwarded signal; long-running browser and `--no-open` behavior.
 
 - [ ] **Step 1: Add a behavior-preserving injection seam before running lifecycle tests**
 
@@ -553,6 +556,8 @@ export interface RunServeCommandOptions {
 	) => Promise<ProjectConfigDocuments>;
 	startServer?: ServeProjectPorts["startServer"];
 	launchDesktop?: (url: string) => Promise<void>;
+	viewer?: "desktop" | "browser";
+	openBrowser?: (url: string) => void;
 }
 ```
 
@@ -563,14 +568,18 @@ change the server port passed to `serveProject` to:
 { startServer: options.startServer ?? startServer },
 ```
 
-Temporarily replace the final browser call with an awaited injectable wrapper:
+Temporarily replace the final browser call with injectable wrappers:
 
 ```ts
 if (input.openBrowser) {
-	await (
-		options.launchDesktop ??
-		(async (viewerUrl: string) => openBrowser(viewerUrl))
-	)(url);
+	if (options.viewer === "browser") {
+		(options.openBrowser ?? openBrowser)(url);
+	} else {
+		await (
+			options.launchDesktop ??
+			(async (viewerUrl: string) => openBrowser(viewerUrl))
+		)(url);
+	}
 }
 ```
 
@@ -658,9 +667,32 @@ test("runServeCommand stops the server when desktop launch fails", async () => {
 	expect(stops).toBe(1);
 });
 
+test("runServeCommand opens a browser once and leaves its server running", async () => {
+	let stops = 0;
+	const opened: string[] = [];
+
+	await runServeCommand(
+		{ path: contentDir, host: "0.0.0.0", port: "43123" },
+		{
+			viewer: "browser",
+			startServer: async (input) =>
+				fakeServer(input.host ?? "0.0.0.0", input.port, () => {
+					stops += 1;
+				}),
+			openBrowser: (url) => {
+				opened.push(url);
+			},
+		},
+	);
+
+	expect(opened).toEqual(["http://0.0.0.0:43123/"]);
+	expect(stops).toBe(0);
+});
+
 test("runServeCommand leaves no-open servers running without a viewer", async () => {
 	let stops = 0;
 	let launches = 0;
+	let browserOpens = 0;
 
 	await runServeCommand(
 		{
@@ -677,10 +709,14 @@ test("runServeCommand leaves no-open servers running without a viewer", async ()
 			launchDesktop: async () => {
 				launches += 1;
 			},
+			openBrowser: () => {
+				browserOpens += 1;
+			},
 		},
 	);
 
 	expect(launches).toBe(0);
+	expect(browserOpens).toBe(0);
 	expect(stops).toBe(0);
 });
 
@@ -699,7 +735,7 @@ test("runServeCommand rejects a non-loopback desktop host before startup", async
 			},
 		),
 	).rejects.toThrow(
-		"Desktop mode requires a loopback host; use --no-open for remote hosts.",
+		"Desktop mode requires a loopback host; use rr web or --no-open for remote hosts.",
 	);
 
 	expect(starts).toBe(0);
@@ -732,8 +768,10 @@ bun test src/application/commands/serve.test.ts
 ```
 
 Expected: FAIL without starting real processes. The injected fake server and
-viewer are used, but the server is not stopped, non-loopback desktop hosts are
-not rejected before startup, and the IPv6 URL is not bracketed.
+viewer are used, but desktop mode does not stop the server, non-loopback
+desktop hosts are not rejected before startup, and the IPv6 URL is not
+bracketed. Browser and headless lifecycle cases already pass through the safe
+injection seam.
 
 - [ ] **Step 4: Replace browser spawning with awaited desktop lifecycle orchestration**
 
@@ -753,6 +791,7 @@ import {
 import {
 	fail,
 	httpOptions,
+	openBrowser,
 	resolveServeContentTarget,
 	serverArgs,
 	type ServerArgsValues,
@@ -760,13 +799,15 @@ import {
 
 export interface ServeCommandArgs extends ServerArgsValues {}
 
+export type ServeViewer = "desktop" | "browser" | null;
+
 export interface ServeProjectInput {
 	contentDir: string;
 	filePath?: string;
 	openPath: string;
 	port: number;
 	host: string;
-	openDesktop: boolean;
+	viewer: ServeViewer;
 	source: "serve" | "docs" | "docs-wiki";
 	readProjectConfigDocuments?: (
 		root: string,
@@ -780,6 +821,8 @@ export interface RunServeCommandOptions {
 	) => Promise<ProjectConfigDocuments>;
 	startServer?: ServeProjectPorts["startServer"];
 	launchDesktop?: (url: string) => Promise<void>;
+	viewer?: Exclude<ServeViewer, null>;
+	openBrowser?: (url: string) => void;
 }
 
 function normalizedHost(host: string): string {
@@ -809,10 +852,12 @@ export async function runServeCommand(
 ): Promise<void> {
 	const target = await resolveServeContentTarget(args.path);
 	const http = httpOptions(args);
-	const openDesktop = !http.noOpen;
-	if (openDesktop && !isLoopbackHost(http.host)) {
+	const viewer: ServeViewer = http.noOpen
+		? null
+		: (options.viewer ?? "desktop");
+	if (viewer === "desktop" && !isLoopbackHost(http.host)) {
 		fail(
-			"Desktop mode requires a loopback host; use --no-open for remote hosts.",
+			"Desktop mode requires a loopback host; use rr web or --no-open for remote hosts.",
 		);
 	}
 
@@ -820,7 +865,7 @@ export async function runServeCommand(
 		...target,
 		port: http.port,
 		host: http.host,
-		openDesktop,
+		viewer,
 		source: options.source ?? "serve",
 		readProjectConfigDocuments: options.readProjectConfigDocuments,
 	};
@@ -842,7 +887,11 @@ export async function runServeCommand(
 
 	console.log(`readrun ${input.source} running at ${url}`);
 	console.log(`Serving content from: ${input.contentDir}`);
-	if (!input.openDesktop) {
+	if (input.viewer === null) {
+		return;
+	}
+	if (input.viewer === "browser") {
+		(options.openBrowser ?? openBrowser)(url);
 		return;
 	}
 
@@ -854,50 +903,185 @@ export async function runServeCommand(
 }
 ```
 
-This validates the requested binding before `startServer`, so desktop mode never briefly exposes the content server on a non-loopback interface. The Rust viewer independently validates the URL as a second boundary.
+This validates the requested binding before `startServer`, so desktop mode never briefly exposes the content server on a non-loopback interface. The Rust viewer independently validates the URL as a second boundary. Explicit browser mode retains user-selected hosts and returns after one browser-open request, leaving the Bun server alive.
 
-- [ ] **Step 5: Remove the obsolete browser helpers and update CLI wording/defaults**
+- [ ] **Step 5: Write the failing `rr web` routing tests**
 
-In `src/application/commands/cli-helpers.ts`, change the `no-open` description to:
+Create `src/application/commands/web.test.ts`:
 
 ```ts
-description: "Do not open the desktop window",
+import { expect, test } from "bun:test";
+import path from "node:path";
+
+import type {
+	RunServeCommandOptions,
+	ServeCommandArgs,
+} from "./serve.ts";
+import { runWebCommand } from "./web.ts";
+
+interface ServeCall {
+	args: ServeCommandArgs;
+	options: RunServeCommandOptions;
+}
+
+test("runWebCommand serves a folder in explicit browser mode", async () => {
+	const calls: ServeCall[] = [];
+
+	await runWebCommand(
+		{ path: ".", host: "127.0.0.1", port: "43123" },
+		{
+			serve: async (args, options = {}) => {
+				calls.push({ args, options });
+			},
+		},
+	);
+
+	expect(calls).toEqual([
+		{
+			args: { path: ".", host: "127.0.0.1", port: "43123" },
+			options: { source: "serve", viewer: "browser" },
+		},
+	]);
+});
+
+test("runWebCommand maps the exact docs token to built-in docs", async () => {
+	const calls: ServeCall[] = [];
+	const docsDir = path.resolve(import.meta.dirname, "../../../docs");
+
+	await runWebCommand(
+		{ path: "docs", host: "127.0.0.1", port: "43123" },
+		{
+			serve: async (args, options = {}) => {
+				calls.push({ args, options });
+			},
+		},
+	);
+
+	expect(calls).toEqual([
+		{
+			args: { path: docsDir, host: "127.0.0.1", port: "43123" },
+			options: { source: "docs", viewer: "browser" },
+		},
+	]);
+});
 ```
 
-Delete `browserOpenCommand` and `openBrowser` completely. Keep `errorMessage` because `withCommandErrors` still uses it. Delete `src/application/commands/cli-helpers.test.ts`, whose three cases cover only the removed browser opener.
+Run:
 
-In the no-argument branch of `src/cli.ts`, replace the hard-coded host:
+```bash
+bun test src/application/commands/web.test.ts
+```
+
+Expected: FAIL because `src/application/commands/web.ts` does not exist.
+
+- [ ] **Step 6: Implement `rr web` and register it with the CLI**
+
+Create `src/application/commands/web.ts`:
+
+```ts
+import { defineCommand } from "citty";
+import {
+	builtInDocsDir,
+	resolveExistingPath,
+	serverArgs,
+	type ServerArgsValues,
+} from "./cli-helpers.ts";
+import {
+	runServeCommand,
+	type RunServeCommandOptions,
+	type ServeCommandArgs,
+} from "./serve.ts";
+
+export interface WebCommandArgs extends ServerArgsValues {}
+
+export interface RunWebCommandOptions {
+	serve?: (
+		args: ServeCommandArgs,
+		options?: RunServeCommandOptions,
+	) => Promise<void>;
+}
+
+export async function runWebCommand(
+	args: WebCommandArgs,
+	options: RunWebCommandOptions = {},
+): Promise<void> {
+	const useBuiltInDocs = args.path === "docs";
+	const contentPath = useBuiltInDocs
+		? await resolveExistingPath(
+				builtInDocsDir(),
+				() => "Built-in docs folder not found.",
+			)
+		: (args.path ?? ".");
+
+	await (options.serve ?? runServeCommand)(
+		{ ...args, path: contentPath },
+		{
+			source: useBuiltInDocs ? "docs" : "serve",
+			viewer: "browser",
+		},
+	);
+}
+
+export const webCommand = defineCommand({
+	meta: {
+		name: "web",
+		description: "Serve readrun content in the default web browser.",
+	},
+	args: {
+		path: {
+			type: "positional",
+			required: true,
+			description: "Folder, .md file, or docs",
+		},
+		...serverArgs,
+	},
+	async run({ args }) {
+		await runWebCommand(args as WebCommandArgs);
+	},
+});
+```
+
+In `src/cli.ts`, import `webCommand`, add `"web"` to
+`KNOWN_TOP_LEVEL_COMMANDS`, and register `web: webCommand` in `subCommands`.
+Also replace the no-argument branch's hard-coded host with:
 
 ```ts
 host: "127.0.0.1",
 ```
 
-- [ ] **Step 6: Run focused lifecycle, host, launcher, and existing server tests**
+In `src/application/commands/cli-helpers.ts`, retain `browserOpenCommand` and
+`openBrowser`, but change the shared option description to:
+
+```ts
+description: "Do not open a window",
+```
+
+- [ ] **Step 7: Run focused lifecycle, routing, host, launcher, and existing server tests**
 
 Run:
 
 ```bash
-bun test src/application/commands/serve.test.ts src/infrastructure/desktop/launcher.test.ts src/infrastructure/runtime/server.test.ts
+bun test src/application/commands/serve.test.ts src/application/commands/web.test.ts src/application/commands/cli-helpers.test.ts src/infrastructure/desktop/launcher.test.ts src/infrastructure/runtime/server.test.ts
 bun run typecheck
 ```
 
-Expected: all new tests pass, the existing IPv4 default-host regression remains green, and TypeScript reports no errors.
+Expected: all new tests pass, the retained platform-opener tests and existing IPv4 default-host regression remain green, and TypeScript reports no errors.
 
-- [ ] **Step 7: Verify no external-browser launcher remains in the CLI path**
+- [ ] **Step 8: Verify browser launching is restricted to explicit browser mode**
 
 Run:
 
 ```bash
-rg -n "browserOpenCommand|openBrowser|xdg-open|cmd.*start|Could not auto-open browser" src
+rg -n "browserOpenCommand|openBrowser|xdg-open|cmd.*start|Could not auto-open browser" src/application/commands src/infrastructure/desktop
 ```
 
-Expected: no matches. Browser terminology inside the presentation runtime is valid and must not be removed.
+Expected: platform opener implementations remain in `cli-helpers.ts`, their tests remain in `cli-helpers.test.ts`, and `serve.ts` calls `openBrowser` only in its explicit `viewer === "browser"` branch. The desktop launcher contains no browser opener.
 
-- [ ] **Step 8: Commit lifecycle integration without staging unrelated UI edits**
+- [ ] **Step 9: Commit lifecycle and explicit web integration without staging unrelated UI edits**
 
 ```bash
-git add src/application/commands/serve.ts src/application/commands/serve.test.ts src/application/commands/cli-helpers.ts src/application/commands/cli-helpers.test.ts src/cli.ts src/infrastructure/runtime/server.test.ts
-git commit -m "feat: open serve commands in Tauri"
+git add src/application/commands/serve.ts src/application/commands/serve.test.ts src/application/commands/web.ts src/application/commands/web.test.ts src/application/commands/cli-helpers.ts src/cli.ts src/infrastructure/runtime/server.test.ts
+git commit -m "feat: add native and explicit web launch modes"
 ```
 
 Before committing, inspect `git diff --cached` and confirm it contains the prior loopback-host regression plus this task, but none of the unrelated toolkit or shadcn worktree changes.
@@ -948,13 +1132,13 @@ In `docs/start/commands.md`, replace the server-options block with:
 ```text
 --port=<n>     Port (default: 3001)
 --host=<name>  Hostname (default: 127.0.0.1)
---no-open      Run only the HTTP server; do not open the desktop window
+--no-open      Run only the HTTP server; do not open a window
 ```
 
 After “Equivalent to `rr serve .`”, add:
 
 ```markdown
-By default, serve-family commands open exactly one native readrun window and
+By default, normal serve-family commands open exactly one native readrun window and
 keep the local server alive until that window closes. Closing the window stops
 the server. Use `--no-open` when you want a server without a desktop window.
 ```
@@ -970,6 +1154,25 @@ Under `rr docs`, add:
 ```markdown
 This opens the documentation in the same single native window used by `rr .`.
 ```
+
+Add this command section after `rr docs`:
+
+````markdown
+## `rr web <folder|file.md|docs>`
+
+Serve content in the default external browser instead of the native window.
+The exact `docs` token selects readrun's built-in documentation; use `./docs`
+to select a folder named `docs` relative to the current directory.
+
+```bash
+rr web .
+rr web docs
+rr web ./notes
+```
+
+Browser mode keeps serving until you press Ctrl-C. It does not stop when an
+external browser tab closes.
+````
 
 - [ ] **Step 3: Update getting-started guidance for source-based Tauri startup**
 
@@ -992,6 +1195,10 @@ stops the local server.
 
 For a server-only session, run `rr . --no-open` and open the printed loopback
 URL yourself.
+
+To use your default external browser instead of the native window, run
+`rr web .` for the current folder or `rr web docs` for the built-in docs. The
+browser-mode server runs until you press Ctrl-C.
 ```
 
 - [ ] **Step 4: Clarify the native shell versus the browser-compatible page runtime**
@@ -1002,8 +1209,8 @@ In `docs/reference/overview.md`, replace the development-mode paragraph with:
 Use `rr` or `rr serve` while editing. The dev server reads the source folder,
 renders pages on request, serves assets, and opens one native readrun window.
 The window displays the same browser-compatible page runtime used by static
-builds and reloads when source files change. Use `--no-open` for server-only
-operation.
+builds and reloads when source files change. Use `rr web <path>` for an external
+browser or `--no-open` for server-only operation.
 ```
 
 In the serve-mode flow in `docs/reference/runtime.md`, replace the final three lines with:
@@ -1022,6 +1229,10 @@ native window, and stops the server when the window closes. `--no-open` skips
 the Tauri process and leaves the server running. The page inside the webview is
 still a browser-compatible runtime, so the browser-runtime sections below also
 describe behavior in the desktop app and in static deployments.
+
+`rr web` selects the platform browser opener instead of Tauri and also leaves
+the server running until terminal interruption, because an external browser
+does not expose a reliable tab-close lifecycle to the CLI.
 ```
 
 - [ ] **Step 5: Run all automated verification from a clean process state**
@@ -1029,7 +1240,7 @@ describe behavior in the desktop app and in static deployments.
 First terminate only stale readrun/Cargo viewer processes from earlier manual runs after identifying their PIDs:
 
 ```bash
-pgrep -af 'src/cli.ts.*(serve|docs)|readrun-desktop|cargo run.*src-tauri/Cargo.toml'
+pgrep -af 'src/cli.ts.*(serve|docs|web)|readrun-desktop|cargo run.*src-tauri/Cargo.toml'
 ```
 
 Use `kill <identified-pid>` for the exact listed readrun processes; do not use broad `pkill` patterns. Then run:
@@ -1078,7 +1289,30 @@ Expected manual observations: one native window renders the example lecture
 content from `docs/examples`; closing it returns the shell and releases port
 3001.
 
-- [ ] **Step 8: Verify headless mode and non-loopback protection**
+- [ ] **Step 8: Smoke-test both explicit browser routes**
+
+Run each command separately, stopping the first with Ctrl-C before starting the
+second:
+
+```bash
+cd /home/eastill/projects/readrun/docs/examples
+bun /home/eastill/projects/readrun/src/cli.ts web . --port 43124
+```
+
+Expected: the default external browser opens the example content once, no
+Tauri window opens, and the server remains reachable until Ctrl-C.
+
+Then run:
+
+```bash
+cd /home/eastill/projects/readrun
+bun src/cli.ts web docs --port 43124
+```
+
+Expected: the default external browser opens the built-in docs once, no Tauri
+window opens, and the server remains reachable until Ctrl-C.
+
+- [ ] **Step 9: Verify headless mode and non-loopback protection**
 
 Run headless mode in one terminal:
 
@@ -1094,9 +1328,9 @@ Then run:
 bun src/cli.ts docs --host 0.0.0.0
 ```
 
-Expected: the command exits non-zero with `Desktop mode requires a loopback host; use --no-open for remote hosts.` and starts neither server nor window.
+Expected: the command exits non-zero with `Desktop mode requires a loopback host; use rr web or --no-open for remote hosts.` and starts neither server nor window.
 
-- [ ] **Step 9: Inspect the final diff and commit documentation/scripts**
+- [ ] **Step 10: Inspect the final diff and commit documentation/scripts**
 
 Run:
 
@@ -1117,8 +1351,9 @@ git commit -m "docs: explain native readrun launcher"
 ## Completion Checklist
 
 - [ ] `rr`, `rr .`, `rr <folder>`, and `rr docs` each start one Tauri window and no external browser.
+- [ ] `rr web .` and `rr web docs` each open one external browser route, start no Tauri window, and keep serving until Ctrl-C.
 - [ ] The window receives an HTTP loopback URL and Rust rejects every other initial URL.
-- [ ] Desktop mode rejects a non-loopback binding before the server starts; `--no-open` still permits explicitly requested remote bindings.
+- [ ] Desktop mode rejects a non-loopback binding before the server starts; explicit browser and `--no-open` modes still permit user-selected hosts.
 - [ ] Closing or failing the viewer stops both the file watcher and server through `ServerHandle.stop()`.
 - [ ] SIGINT and SIGTERM terminate the viewer child, after which the serve `finally` stops the server.
 - [ ] No default Tauri window, plugins, commands, capabilities, or second frontend exist.
