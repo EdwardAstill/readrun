@@ -64,7 +64,7 @@ export function normaliseWikilinkKey(value: string): string {
   const withoutLabel = trimmed.split("|", 1)[0] ?? "";
   const withoutHash = withoutLabel.split("#", 1)[0] ?? "";
   const withoutQuery = withoutHash.split("?", 1)[0] ?? "";
-  const normalisedPath = normalisePageRelPath(withoutQuery).replace(/\.(md|jsx)$/i, "");
+  const normalisedPath = normalisePageRelPath(withoutQuery).replace(/\.(md|jsx|pdf)$/i, "");
   const squashed = normalisedPath.replace(/\s+/g, " ").trim().toLowerCase();
 
   if (squashed === "index") {
@@ -94,7 +94,7 @@ export function exactWikilinkTarget(value: string): string {
 }
 
 function stripWikilinkTargetExtension(value: string): string {
-  return value.replace(/\.(md|jsx)$/i, "");
+  return value.replace(/\.(md|jsx|pdf)$/i, "");
 }
 
 export function extractOutboundWikilinks(body: string): OutboundWikilink[] {

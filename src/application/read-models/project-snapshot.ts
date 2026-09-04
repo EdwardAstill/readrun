@@ -5,6 +5,7 @@ import type { NavigationDocument } from "../../domain/navigation/schema.ts";
 import { resolveNavigation } from "../../domain/navigation/resolve.ts";
 import { buildContentIndex, type ContentIndex } from "../../domain/pages/content-index.ts";
 import { discoverPages } from "../../domain/pages/discovery.ts";
+import type { PdfPage } from "../../domain/pages/page.ts";
 import { createContentScope, type ContentScope } from "../../domain/project/scope.ts";
 import { detectRouteCollisions, generateSiteRoutes } from "../../domain/routes/generate.ts";
 import type { SiteRoute } from "../../domain/routes/model.ts";
@@ -71,6 +72,17 @@ export async function loadContentProjectSnapshot(
   const pageFiles = files.filter((file) => file.decision?.kind === "page");
   const loadedPages = await Promise.all(
     pageFiles.map(async (file) => {
+      if (file.relPath.toLowerCase().endsWith(".pdf")) {
+        return {
+          discovered: {
+            filePath: file.filePath,
+            relPath: file.relPath,
+            mtimeMs: file.mtimeMs,
+          },
+          issues: [],
+        };
+      }
+
       const source = await ports.contentSource.readText(file.relPath);
       const resolved = file.relPath.endsWith(".md")
         ? await resolveExecutableSourceRefs(source, ports.contentSource)
@@ -112,7 +124,18 @@ export async function loadContentProjectSnapshot(
       relPath: page.relPath,
       title: page.title,
     })),
-    assets: assetIndex,
+    assets: [
+      ...assetIndex.assets,
+      ...indexResult.index.pages
+        .filter((page): page is PdfPage => page.kind === "pdf")
+        .map((page) => ({
+          filePath: page.filePath,
+          relPath: page.relPath,
+          publicUrl: page.sourceUrl,
+          kind: "file" as const,
+          mtimeMs: page.mtimeMs,
+        })),
+    ],
     tags:
       indexResult.index.mode === "wiki"
         ? Array.from(indexResult.index.tags.values()).map((tag) => ({

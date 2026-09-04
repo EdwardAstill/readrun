@@ -13,6 +13,48 @@ test("uses README.md as the root route when a folder has no explicit index page"
   expect(rootRouteRelPath(snapshot.routes)).toBe("README.md");
 });
 
+test("discovers PDFs as pages without reading them as text", async () => {
+  const pdfFile = pageFile("slides/Week 1.pdf");
+  const snapshot = await loadContentProjectSnapshot(
+    {
+      root: "/notes",
+      config: {
+        contentDir: "/notes",
+        mode: "tree",
+        treeSource: "filesystem",
+        ignorePatterns: [],
+        issues: [],
+      } as ContentProjectConfig,
+      files: [pdfFile],
+    },
+    {
+      contentSource: {
+        async listFiles() {
+          return [pdfFile];
+        },
+        async readText() {
+          throw new Error("PDF content must not be read as text");
+        },
+      },
+    },
+  );
+
+  expect(snapshot.contentIndex.byRelPath.get("slides/Week 1.pdf")).toEqual(
+    expect.objectContaining({
+      kind: "pdf",
+      title: "Week 1",
+      url: "/slides/Week 1",
+      sourceUrl: "/slides/Week 1.pdf",
+    }),
+  );
+  expect(snapshot.routes).toContainEqual(
+    expect.objectContaining({
+      kind: "asset",
+      url: "/slides/Week 1.pdf",
+    }),
+  );
+});
+
 test("uses conventional root landing names before falling back to the first page", async () => {
   const snapshot = await snapshotFor({
     "alpha.md": "# Alpha",
@@ -111,7 +153,37 @@ test("resolves jsx executable refs from generated widget output", async () => {
   }
   expect(page.body).toContain("const selected = points[focusedId]");
   expect(page.outboundLinks).toHaveLength(0);
-  expect(snapshot.validation?.warnings).toHaveLength(0);
+	expect(snapshot.validation?.warnings).toHaveLength(0);
+});
+
+test("resolves output-only plot JSX refs from generated widget output", async () => {
+	const snapshot = await loadContentProjectSnapshot(
+		{
+			root: "/notes",
+			config: {
+				contentDir: "/notes",
+				mode: "tree",
+				treeSource: "filesystem",
+				ignorePatterns: [],
+				issues: [],
+			} as ContentProjectConfig,
+			files: [pageFile("index.md")],
+		},
+		{
+			contentSource: contentSource({
+				"index.md": "# Plot\n\n[plot-jsx=heatmap-demo.jsx]\n",
+				".readrun/.widgets-out/heatmap-demo.jsx": "render(<HeatmapDemo />);",
+			}),
+		},
+	);
+
+	const page = snapshot.contentIndex.byRelPath.get("index.md");
+	if (page?.kind !== "markdown") {
+		throw new Error("Expected index.md to be a markdown page");
+	}
+	expect(page.body).toContain("[plot-jsx]");
+	expect(page.body).toContain("render(<HeatmapDemo />);");
+	expect(snapshot.validation?.warnings).toHaveLength(0);
 });
 
 test("reports missing executable source references", async () => {

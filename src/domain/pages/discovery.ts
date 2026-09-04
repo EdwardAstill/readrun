@@ -1,9 +1,17 @@
 import { parseFrontmatter } from "./frontmatter.ts";
-import type { JsxPage, MarkdownPage, Page, PageExtension, PageSource } from "./page.ts";
-import { normalisePageRelPath, pageUrlFromRelPath } from "./page.ts";
+import type { JsxPage, MarkdownPage, Page, PageExtension, PdfPage } from "./page.ts";
+import {
+  normalisePageRelPath,
+  pageSourceUrlFromRelPath,
+  pageUrlFromRelPath,
+} from "./page.ts";
 import { extractOutboundWikilinks } from "./wikilinks.ts";
 
-export interface DiscoveredFile extends PageSource {
+export interface DiscoveredFile {
+  filePath: string;
+  relPath: string;
+  source?: string;
+  mtimeMs: number;
   ext: PageExtension;
 }
 
@@ -47,7 +55,7 @@ function pageTitleFromBody(body: string, fallback: string): string {
 function fallbackTitleFromRelPath(relPath: string): string {
   const segments = relPath.split("/");
   const filename = segments[segments.length - 1] ?? relPath;
-  const stem = filename.replace(/\.(md|jsx)$/i, "");
+  const stem = filename.replace(/\.(md|jsx|pdf)$/i, "");
 
   return stem
     .replace(/[-_]+/g, " ")
@@ -81,16 +89,27 @@ function normaliseTags(tags: string[] | undefined): string[] {
 
 function toDiscoveredFile(entry: FileEntryLike): DiscoveredFile | null {
   const relPathInput = entry.relPath ?? entry.path ?? entry.filePath;
-  const source = entry.source ?? entry.text ?? entry.contents;
 
-  if (relPathInput == null || source == null) {
+  if (relPathInput == null) {
     return null;
   }
 
   const relPath = normalisePageRelPath(relPathInput);
-  const ext = relPath.endsWith(".md") ? ".md" : relPath.endsWith(".jsx") ? ".jsx" : null;
+  const lowerRelPath = relPath.toLowerCase();
+  const ext = lowerRelPath.endsWith(".md")
+    ? ".md"
+    : lowerRelPath.endsWith(".jsx")
+      ? ".jsx"
+      : lowerRelPath.endsWith(".pdf")
+        ? ".pdf"
+        : null;
 
   if (ext == null) {
+    return null;
+  }
+
+  const source = entry.source ?? entry.text ?? entry.contents;
+  if (ext !== ".pdf" && source == null) {
     return null;
   }
 
@@ -104,26 +123,40 @@ function toDiscoveredFile(entry: FileEntryLike): DiscoveredFile | null {
 }
 
 export function pageFromDiscoveredFile(file: DiscoveredFile, _config: ConfigLike): Page {
-  const parsed = parseFrontmatter(file.source);
   const segments = file.relPath.split("/");
   const filename = segments[segments.length - 1] ?? file.relPath;
   const fallbackTitle = fallbackTitleFromRelPath(file.relPath);
-  const title = parsed.frontmatter.title?.trim() || pageTitleFromBody(parsed.body, fallbackTitle);
-  const tags = normaliseTags(parsed.frontmatter.tags);
   const base = {
     url: pageUrlFromRelPath(file.relPath, {
       preserveIndex: _config.mode === "wiki",
     }),
     filePath: file.filePath,
     relPath: file.relPath,
-    title,
     filename,
     mtimeMs: file.mtimeMs,
   };
 
+  if (file.ext === ".pdf") {
+    const page: PdfPage = {
+      ...base,
+      kind: "pdf",
+      ext: ".pdf",
+      title: fallbackTitle,
+      sourceUrl: pageSourceUrlFromRelPath(file.relPath),
+      tags: [],
+      outboundLinks: [],
+    };
+    return page;
+  }
+
+  const parsed = parseFrontmatter(file.source ?? "");
+  const title = parsed.frontmatter.title?.trim() || pageTitleFromBody(parsed.body, fallbackTitle);
+  const tags = normaliseTags(parsed.frontmatter.tags);
+  const textBase = { ...base, title };
+
   if (file.ext === ".md") {
     const page: MarkdownPage = {
-      ...base,
+      ...textBase,
       kind: "markdown",
       ext: ".md",
       body: parsed.body,
@@ -134,7 +167,7 @@ export function pageFromDiscoveredFile(file: DiscoveredFile, _config: ConfigLike
   }
 
   const page: JsxPage = {
-    ...base,
+    ...textBase,
     kind: "jsx",
     ext: ".jsx",
     source: parsed.body,

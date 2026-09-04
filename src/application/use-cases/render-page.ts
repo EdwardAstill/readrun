@@ -4,6 +4,8 @@ import { findRouteByUrl } from "../../domain/routes/generate.ts";
 import type { SiteRoute, TagRoute } from "../../domain/routes/model.ts";
 import { escapeHtml } from "../../shared/html.ts";
 import { renderMarkdown } from "../../presentation/markdown/renderMarkdown.ts";
+import { renderToStaticMarkup } from "react-dom/server";
+import { PdfViewer } from "../../presentation/viewers/PdfViewer.tsx";
 import { renderDocument } from "../../presentation/shell/renderDocument.tsx";
 import { presentationStyles } from "../../presentation/styles/index.ts";
 import type { ResourceBrowserEntry } from "../../presentation/contracts.ts";
@@ -72,14 +74,16 @@ export async function renderPage(
 					2,
 				),
 			};
-		case "asset":
+		case "asset": {
+			const assetFile = Bun.file(route.asset.filePath);
 			return {
 				route,
 				status: 200,
 				title: route.asset.relPath,
-				contentType: "application/octet-stream",
-				body: Bun.file(route.asset.filePath),
+				contentType: assetFile.type || "application/octet-stream",
+				body: assetFile,
 			};
+		}
 		case "tag":
 			return htmlResponse(
 				200,
@@ -118,8 +122,19 @@ export async function renderPage(
 							page,
 							wikilinks: resolvePageWikilinks(page, snapshot.contentIndex),
 						})
-					: {
+					: page.kind === "jsx"
+						? {
 							html: `<div class="jsx-page" data-jsx-page="${escapeHtml(page.relPath)}"></div><script type="text/plain" data-jsx-source="${escapeHtml(page.relPath)}">${escapeHtml(page.source)}</script>`,
+							toc: [],
+							}
+						: {
+							html: renderToStaticMarkup(
+								PdfViewer({
+									src: page.sourceUrl,
+									title: page.title,
+									standalone: true,
+								}),
+							),
 							toc: [],
 						};
 			const runtime = resolveRuntimeConfig({

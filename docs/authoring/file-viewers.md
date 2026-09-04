@@ -86,6 +86,18 @@ Supported: `.mp4`, `.webm`, `.ogv`.
 
 Renders using the browser's native PDF viewer inside a sandboxed iframe.
 
+PDFs can also be ordinary content files beside Markdown and JSX pages. Readrun
+adds them to filesystem navigation and opens each one in a full-page viewer:
+
+```text
+notes/
+  introduction.md
+  lecture-slides.pdf
+```
+
+`rr build` copies the original PDF into the static output. You can also open a
+single document directly with `rr serve lecture-slides.pdf`.
+
 ---
 
 ## All attributes

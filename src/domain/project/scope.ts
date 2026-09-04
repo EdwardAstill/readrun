@@ -127,7 +127,7 @@ export function explainScopeDecision(
     return decision(normalised, false, "private", "project-private");
   }
 
-  if (normalised.endsWith(".md") || normalised.endsWith(".jsx")) {
+  if (/\.(md|jsx|pdf)$/i.test(normalised)) {
     return decision(normalised, true, "page", "supported-page");
   }
 

@@ -1,4 +1,6 @@
-export type PageExtension = ".md" | ".jsx";
+import { ensureLeadingSlash } from "../../shared/paths.ts";
+
+export type PageExtension = ".md" | ".jsx" | ".pdf";
 
 export interface PageSource {
   filePath: string;
@@ -48,7 +50,15 @@ export interface JsxPage extends BasePage {
   outboundLinks: [];
 }
 
-export type Page = MarkdownPage | JsxPage;
+export interface PdfPage extends BasePage {
+  kind: "pdf";
+  ext: ".pdf";
+  sourceUrl: string;
+  tags: [];
+  outboundLinks: [];
+}
+
+export type Page = MarkdownPage | JsxPage | PdfPage;
 
 interface ContentIssueLike {
   severity: "error" | "warning";
@@ -87,7 +97,7 @@ export function pageStemFromRelPath(
   options: { preserveIndex?: boolean } = {},
 ): string {
   const normalised = normalisePageRelPath(relPath);
-  const withoutExt = normalised.replace(/\.(md|jsx)$/i, "");
+  const withoutExt = normalised.replace(/\.(md|jsx|pdf)$/i, "");
 
   if (options.preserveIndex) {
     return withoutExt;
@@ -110,6 +120,10 @@ export function pageUrlFromRelPath(
 ): string {
   const stem = pageStemFromRelPath(relPath, options);
   return stem.length === 0 ? "/" : `/${stem}`;
+}
+
+export function pageSourceUrlFromRelPath(relPath: string): string {
+  return ensureLeadingSlash(normalisePageRelPath(relPath));
 }
 
 export function detectPageUrlCollision(pages: Page[]): ContentIssueLike[] {

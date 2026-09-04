@@ -334,7 +334,7 @@ function comparePagesByRelPath(left: Page, right: Page): number {
 }
 
 function stripPageExtension(segment: string): string {
-  return segment.replace(/\.(md|jsx)$/i, "");
+  return segment.replace(/\.(md|jsx|pdf)$/i, "");
 }
 
 function prettifySegment(segment: string): string {

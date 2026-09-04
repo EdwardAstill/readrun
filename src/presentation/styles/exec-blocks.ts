@@ -1,5 +1,5 @@
 export const execBlockStyles = `
-/* Code surfaces use shadcn Card, ButtonGroup, Button, and Textarea defaults. */
+/* Code surfaces use shadcn Card, Button, and Textarea defaults. */
 .readrun-main .code-panel pre {
   width: 100%;
   margin: 0;
@@ -11,6 +11,15 @@ export const execBlockStyles = `
   word-break: normal;
   background: var(--color-surface, var(--rr-surface));
   color: var(--color-text);
+}
+
+.exec-block--output-only {
+  min-width: 0;
+  margin: 1rem 0;
+}
+
+.exec-block--output-only .exec-output {
+  background: transparent;
 }
 
 .jsx-output__mount {

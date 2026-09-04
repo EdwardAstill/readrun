@@ -8,6 +8,7 @@ export const BLOCK_REGISTRY: BlockDefinition[] = [
   { name: "run", category: "executable", aliases: ["exec"] },
   { name: "python", category: "executable", aliases: ["py"] },
   { name: "jsx", category: "executable" },
+  { name: "plot-jsx", category: "executable" },
   { name: "query", category: "executable" },
   { name: "upload", category: "other" },
   { name: "include", category: "other" },

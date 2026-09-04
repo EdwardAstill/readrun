@@ -48,6 +48,25 @@ test("runBuildCommand honors --output alias and emits rendered markdown", async 
   expect(await Bun.file(path.join(project.out, "_readrun", "assets", "images", "dot.svg")).exists()).toBe(true);
 });
 
+test("static builds render PDF pages and copy the source document", async () => {
+  const project = await makeProject();
+  const pdf = "%PDF-1.4\n% readrun test\n";
+  await Bun.write(path.join(project.root, "lecture.pdf"), pdf);
+
+  await runBuildCommand({
+    path: project.root,
+    output: project.out,
+    platform: "plain",
+  });
+
+  const html = await Bun.file(
+    path.join(project.out, "lecture", "index.html"),
+  ).text();
+  expect(html).toContain('class="viewer viewer-pdf viewer-pdf-page"');
+  expect(html).toContain('src="/lecture.pdf"');
+  expect(await Bun.file(path.join(project.out, "lecture.pdf")).text()).toBe(pdf);
+});
+
 test("GitHub project builds prefix root-relative site URLs", async () => {
   const project = await makeProject();
   const projectDir = path.join(project.root, "readrun");

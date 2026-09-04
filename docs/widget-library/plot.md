@@ -6,16 +6,16 @@ title: Plot Widgets
 
 ## Frame
 
-[jsx=frame-demo.jsx collapsed]
+[plot-jsx=frame-demo.jsx]
 
 ## Heatmap
 
-[jsx=heatmap-demo.jsx collapsed]
+[plot-jsx=heatmap-demo.jsx]
 
 ## Histogram
 
-[jsx=histogram-demo.jsx collapsed]
+[plot-jsx=histogram-demo.jsx]
 
 ## Loss landscape
 
-[jsx=loss-landscape.jsx collapsed]
+[plot-jsx=loss-landscape.jsx]

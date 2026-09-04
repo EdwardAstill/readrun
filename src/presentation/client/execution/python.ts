@@ -65,8 +65,7 @@ async function runLocalPythonBlock(
 
 	const { outputEl, runBtn } = elements;
 
-	runBtn.disabled = true;
-	runBtn.textContent = "Running locally...";
+	setRunButtonState(runBtn, true, "Running locally...");
 	clearElement(outputEl);
 	appendStatus(outputEl, "Running locally...", "loading");
 
@@ -96,9 +95,18 @@ async function runLocalPythonBlock(
 		const message = err instanceof Error ? err.message : String(err);
 		appendText(outputEl, `Connection error: ${message}`, "error");
 	} finally {
-		runBtn.disabled = false;
-		runBtn.textContent = "Run";
+		setRunButtonState(runBtn, false, "Run");
 	}
+}
+
+function setRunButtonState(
+	button: HTMLButtonElement,
+	disabled: boolean,
+	label: string,
+): void {
+	button.disabled = disabled;
+	button.setAttribute("aria-label", label);
+	button.title = label;
 }
 
 function findExecElements(blockId: string):

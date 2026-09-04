@@ -12,15 +12,21 @@ test("code panel actions retain client hook classes on shared buttons", () => {
 			canRun
 			canEnlarge
 			canCopy
-			canEdit
 		/>,
 	);
 
-	expect(html).toContain("bg-primary");
 	expect(html).toContain("exec-run-btn");
 	expect(html).toContain("exec-enlarge-btn");
 	expect(html).toContain("code-copy-btn");
-	expect(html).toContain("exec-toggle-btn");
+	expect(html).toContain('aria-label="Run"');
+	expect(html).toContain('aria-label="Enlarge"');
+	expect(html).toContain('aria-label="Copy"');
+	expect(html).toContain("lucide-play");
+	expect(html).toContain("lucide-maximize-2");
+	expect(html).toContain("lucide-copy");
+	expect(html.match(/data-slot="button"/g)).toHaveLength(3);
+	expect(html).not.toContain('data-slot="button-group"');
+	expect(html).not.toContain("bg-primary");
 	expect(html).toContain('data-block-id="example"');
 });
 
@@ -33,7 +39,7 @@ test("code blocks use the canonical shadcn Card composition", () => {
 	expect(html).toContain('data-slot="card-header"');
 	expect(html).toContain('data-slot="card-title"');
 	expect(html).toContain('data-slot="card-action"');
-	expect(html).toContain('data-slot="button-group"');
+	expect(html).not.toContain('data-slot="button-group"');
 	expect(html).toContain('data-slot="card-content"');
 	expect(html).toContain("gap-0");
 	expect(html).toContain("overflow-hidden");

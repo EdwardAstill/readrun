@@ -1,8 +1,10 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 
 export interface DesktopLaunch {
 	command: string[];
 	cwd: string;
+	environment: DesktopEnvironment;
 }
 
 export interface DesktopProcess {
@@ -34,11 +36,13 @@ export interface DesktopSignals {
 
 export interface LaunchDesktopOptions {
 	packageRoot?: string;
+	electronExecutable?: string;
 	spawnDesktop?: SpawnDesktop;
 	signals?: DesktopSignals;
-	platform?: typeof process.platform;
 	environment?: DesktopEnvironment;
 }
+
+const require = createRequire(import.meta.url);
 
 const processSignals: DesktopSignals = {
 	once(signal, listener) {
@@ -59,35 +63,33 @@ const spawnDesktop: SpawnDesktop = (command, options) => {
 	};
 };
 
-export function desktopEnvironment(
-	platform: typeof process.platform = process.platform,
-	environment: DesktopEnvironment = process.env,
-): DesktopEnvironment {
-	if (
-		platform !== "linux" ||
-		environment.__NV_DISABLE_EXPLICIT_SYNC !== undefined
-	) {
-		return environment;
+function installedElectronExecutable(): string {
+	const executable = require("electron");
+	if (typeof executable !== "string") {
+		throw new Error("Could not resolve the Electron executable.");
 	}
-
-	return { ...environment, __NV_DISABLE_EXPLICIT_SYNC: "1" };
+	return executable;
 }
 
 export function desktopLaunch(
 	url: string,
-	packageRoot = path.resolve(import.meta.dirname, "../../.."),
+	options: Pick<
+		LaunchDesktopOptions,
+		"packageRoot" | "electronExecutable" | "environment"
+	> = {},
 ): DesktopLaunch {
+	const packageRoot =
+		options.packageRoot ?? path.resolve(import.meta.dirname, "../../..");
 	return {
 		command: [
-			"cargo",
-			"run",
-			"--quiet",
-			"--manifest-path",
-			path.join(packageRoot, "src-tauri", "Cargo.toml"),
-			"--",
-			url,
+			options.electronExecutable ?? installedElectronExecutable(),
+			path.join(packageRoot, "src-electron", "main.js"),
 		],
 		cwd: packageRoot,
+		environment: {
+			...(options.environment ?? process.env),
+			READRUN_DESKTOP_URL: url,
+		},
 	};
 }
 
@@ -95,22 +97,26 @@ export async function launchDesktop(
 	url: string,
 	options: LaunchDesktopOptions = {},
 ): Promise<void> {
-	const launch = desktopLaunch(url, options.packageRoot);
+	const launch = desktopLaunch(url, options);
 	const child = (options.spawnDesktop ?? spawnDesktop)(launch.command, {
 		cwd: launch.cwd,
 		stdin: "inherit",
 		stdout: "inherit",
 		stderr: "inherit",
-		env: desktopEnvironment(options.platform, options.environment),
+		env: launch.environment,
 	});
 	const signals = options.signals ?? processSignals;
-	const terminate = () => child.kill();
+	let interrupted = false;
+	const terminate = () => {
+		interrupted = true;
+		child.kill();
+	};
 
 	signals.once("SIGINT", terminate);
 	signals.once("SIGTERM", terminate);
 	try {
 		const status = await child.exited;
-		if (status !== 0) {
+		if (status !== 0 && !interrupted) {
 			throw new Error(`readrun desktop exited with status ${status}.`);
 		}
 	} finally {

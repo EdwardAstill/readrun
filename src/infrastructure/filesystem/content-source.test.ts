@@ -22,6 +22,7 @@ test("prunes excluded directories without hiding project pages and assets", asyn
   const included = [
     "index.md",
     "guide/intro.md",
+    "slides/week 1.pdf",
     ".readrun/assets/images/logo.svg",
     ".readrun/assets/data/nested/input.csv",
   ];

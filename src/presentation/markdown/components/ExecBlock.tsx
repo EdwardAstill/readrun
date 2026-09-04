@@ -16,6 +16,8 @@ export interface ExecBlockProps {
 	canEnlarge?: boolean;
 	/** Whether to show the run button (triggers client-side execution). */
 	canRun?: boolean;
+	/** Render only the mounted output, without source or code controls. */
+	outputOnly?: boolean;
 }
 
 function encodeSource(source: string): string {
@@ -30,6 +32,28 @@ export function ExecBlock(props: ExecBlockProps): React.JSX.Element {
 	const canEnlarge = props.canEnlarge !== false;
 	const canRun = props.canRun !== false;
 	const editable = props.editable === true;
+	const executionPayload = (
+		<>
+			<script
+				type="text/plain"
+				data-source={blockId}
+				dangerouslySetInnerHTML={{ __html: encodeSource(props.source) }}
+			/>
+			<output className="exec-output" data-output={blockId} />
+		</>
+	);
+
+	if (props.outputOnly) {
+		return (
+			<div
+				className="block-exec exec-block exec-block--output-only"
+				data-block-id={blockId}
+				data-language={lang}
+			>
+				{executionPayload}
+			</div>
+		);
+	}
 
 	return (
 		<CodePanel
@@ -43,7 +67,6 @@ export function ExecBlock(props: ExecBlockProps): React.JSX.Element {
 					canRun={canRun}
 					canEnlarge={canEnlarge}
 					canCopy
-					canEdit={editable}
 				/>
 			}
 		>
@@ -55,12 +78,7 @@ export function ExecBlock(props: ExecBlockProps): React.JSX.Element {
 					spellCheck={false}
 				/>
 			) : null}
-			<script
-				type="text/plain"
-				data-source={blockId}
-				dangerouslySetInnerHTML={{ __html: encodeSource(props.source) }}
-			/>
-			<output className="exec-output" data-output={blockId} />
+			{executionPayload}
 		</CodePanel>
 	);
 }

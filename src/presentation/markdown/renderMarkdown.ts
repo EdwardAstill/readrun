@@ -99,16 +99,20 @@ function renderBlock(
 		case "exec":
 		case "python":
 		case "py":
-		case "jsx": {
+		case "jsx":
+		case "plot-jsx": {
+			const outputOnly = name === "plot-jsx";
 			const execId = `${pageSlug ?? "page"}-exec-${execBlockCounter++}`;
 			return renderToStaticMarkup(
 				React.createElement(ExecBlock, {
 					blockId: execId,
-					language: name === "py" ? "python" : name,
+					language: outputOnly ? "jsx" : name === "py" ? "python" : name,
 					source: block.body || stringAttr(attrs, "src") || "",
+					outputOnly,
 					collapsed:
-						booleanAttr(attrs, "collapsed") || booleanAttr(attrs, "hidden"),
-					editable: booleanAttr(attrs, "editable"),
+						!outputOnly &&
+						(booleanAttr(attrs, "collapsed") || booleanAttr(attrs, "hidden")),
+					editable: !outputOnly && booleanAttr(attrs, "editable"),
 				}),
 			);
 		}

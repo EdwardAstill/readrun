@@ -6,6 +6,7 @@ export * from "./ContextMenu.tsx";
 export * from "./Dialog.tsx";
 export * from "./DropdownMenu.tsx";
 export * from "./Input.tsx";
+export * from "./InputGroup.tsx";
 export * from "./Kbd.tsx";
 export * from "./Label.tsx";
 export * from "./NativeSelect.tsx";

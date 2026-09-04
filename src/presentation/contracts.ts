@@ -6,7 +6,7 @@ export interface ShellPage {
 	url: string;
 	relPath: string;
 	title: string;
-	kind: "markdown" | "jsx";
+	kind: "markdown" | "jsx" | "pdf";
 }
 
 export interface TocItem {

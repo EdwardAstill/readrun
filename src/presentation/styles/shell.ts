@@ -1,4 +1,17 @@
 export const shellStyles = `
+/* Keep every shell pane scrollable while hiding draggable scrollbar chrome. */
+.readrun-shell,
+.readrun-shell * {
+  scrollbar-width: none;
+}
+
+.readrun-shell::-webkit-scrollbar,
+.readrun-shell *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Focus mode: hide items outside scope, collapse focused folder */
 .nav-tree li.rr-hidden { display: none; }
 .nav-tree li.rr-focus-self > details > summary { display: none; }

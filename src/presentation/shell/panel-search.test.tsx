@@ -51,7 +51,9 @@ describe("sidebar panel search controls", () => {
 
 		expect(html).toContain('id="page-nav-search"');
 		expect(html).toContain('id="page-nav-fold-all-btn"');
-		expect(html).toContain('data-slot="button-group"');
+		expect(html).toContain('data-slot="input-group"');
+		expect(html).toContain('data-slot="input-group-addon"');
+		expect(html).not.toContain('data-slot="button-group"');
 		expect(html).toContain('aria-label="Search page controls"');
 		expect(html).toContain('data-slot="sidebar-group"');
 		expect(html).toContain('data-slot="sidebar-group-content"');
@@ -70,7 +72,9 @@ describe("sidebar panel search controls", () => {
 
 		expect(html).toContain('id="toc-search"');
 		expect(html).toContain('id="toc-fold-all-btn"');
-		expect(html).toContain('data-slot="button-group"');
+		expect(html).toContain('data-slot="input-group"');
+		expect(html).toContain('data-slot="input-group-addon"');
+		expect(html).not.toContain('data-slot="button-group"');
 		expect(html).toContain('aria-label="Search heading controls"');
 		expect(html).toContain('data-slot="sidebar-group"');
 		expect(html).toContain('data-slot="sidebar-group-content"');
@@ -93,7 +97,9 @@ describe("sidebar panel search controls", () => {
 
 		expect(html).toContain('id="resource-browser-search"');
 		expect(html).toContain('id="resource-browser-fold-all-btn"');
-		expect(html).toContain('data-slot="button-group"');
+		expect(html).toContain('data-slot="input-group"');
+		expect(html).toContain('data-slot="input-group-addon"');
+		expect(html).not.toContain('data-slot="button-group"');
 		expect(html).toContain('aria-label="Search resource controls"');
 		expect(html).not.toContain('id="resource-browser-count"');
 		expect(html).not.toContain("resource-browser__category-count");

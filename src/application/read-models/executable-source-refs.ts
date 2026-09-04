@@ -1,7 +1,14 @@
 import { normaliseRelPath } from "../../shared/paths.ts";
 import type { ContentSource } from "../ports/content-source.ts";
 
-const EXECUTABLE_REF_NAMES = new Set(["python", "py", "jsx", "run", "exec"]);
+const EXECUTABLE_REF_NAMES = new Set([
+	"python",
+	"py",
+	"jsx",
+	"plot-jsx",
+	"run",
+	"exec",
+]);
 const EXECUTABLE_REF_PATTERN =
 	/^[ \t]*\[([A-Za-z][\w-]*)=([^\s\]"]+)([^\]]*)\][ \t]*$/gm;
 

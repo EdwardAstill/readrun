@@ -61,9 +61,9 @@ External file reference (canonical file lives in `.readrun/assets/scripts/`; leg
 
 ### JSX / React (`[jsx]`)
 
-Renders a React component. Auto-renders on page load — no Run button.
-Call `render()` with your root element. Full Tailwind and `@readrun/widgets`
-available.
+Renders a React component. It auto-renders on page load and keeps Run available
+to mount it again. Call `render()` with your root element. Full Tailwind and
+`@readrun/widgets` are available.
 
 ```md
 [jsx]
@@ -79,6 +79,16 @@ External file reference:
 
 ```md
 [jsx=scripts/chart.jsx]
+```
+
+### Plot JSX (`[plot-jsx]`)
+
+Mounts JSX as an output-only visualization. The component auto-renders without
+a language header, source code, or Run, Enlarge, and Copy controls. Use this for
+plot widgets when readers only need the interactive result.
+
+```md
+[plot-jsx=heatmap-demo.jsx]
 ```
 
 ### Quiz (`[quiz]`)

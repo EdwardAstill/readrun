@@ -7,8 +7,8 @@ export interface Page {
   title: string;
   filename: string;
   mtimeMs: number;
-  kind?: "markdown" | "jsx";
-  ext?: ".md" | ".jsx";
+  kind?: "markdown" | "jsx" | "pdf";
+  ext?: ".md" | ".jsx" | ".pdf";
   tags?: string[];
 }
 

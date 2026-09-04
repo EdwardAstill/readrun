@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { baseStyles } from "./base.ts";
 import { markdownStyles } from "./markdown.ts";
+import { shellStyles } from "./shell.ts";
 import { uiStyles } from "./ui.ts";
 
 describe("shadcn shell style ownership", () => {
@@ -20,6 +21,12 @@ describe("shadcn shell style ownership", () => {
 		expect(uiStyles).not.toContain(".settings__switch");
 		expect(uiStyles).not.toContain(".settings__select");
 		expect(uiStyles).not.toContain(".overlay__close-hint");
+	});
+
+	test("hides shell scrollbars without disabling scrolling", () => {
+		expect(shellStyles).toContain("scrollbar-width: none");
+		expect(shellStyles).toContain("::-webkit-scrollbar");
+		expect(shellStyles).not.toContain("overflow: hidden");
 	});
 });
 

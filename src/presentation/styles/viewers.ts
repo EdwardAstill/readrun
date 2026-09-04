@@ -21,6 +21,10 @@ export const viewerStyles = `
   border: none;
   display: block;
 }
+.viewer-pdf-page iframe {
+  height: calc(100svh - 2rem);
+  min-height: 32rem;
+}
 
 /* ── Audio / Video ── */
 .audio-viewer-wrap,

@@ -7,7 +7,7 @@ title: Widgets (`@readrun/widgets`)
 readrun ships a small React-based component library for building interactive
 visualisations. Author `.tsx` widgets in your content folder; `rr` bundles
 each one to a self-contained `.jsx` file and the existing JSX runtime mounts
-them through the same `[jsx=...]` block syntax used elsewhere.
+them through `[jsx=...]` or the output-only `[plot-jsx=...]` plot syntax.
 
 ## Where files live
 
@@ -101,6 +101,13 @@ In your markdown:
 
 readrun finds `.readrun/.widgets-out/my-widget.jsx`, embeds it inline, and mounts
 it on page load through Babel-standalone.
+
+For a plot that should show only its interactive output, without source or code
+controls, use:
+
+```markdown
+[plot-jsx=my-widget.jsx]
+```
 
 ## Conventions
 

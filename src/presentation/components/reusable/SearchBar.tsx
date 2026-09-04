@@ -3,8 +3,12 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef } from "react";
 
 import { Button } from "../ui/Button.tsx";
-import { ButtonGroup } from "../ui/ButtonGroup.tsx";
 import { Input } from "../ui/Input.tsx";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "../ui/InputGroup.tsx";
 
 export interface SearchBarProps {
 	id?: string;
@@ -64,24 +68,44 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 	const total = props.matchCount?.total ?? 0;
 	const current = props.matchCount?.current ?? 0;
 
-	const content = (
+	const input = props.grouped ? (
+		<InputGroupInput
+			id={props.id}
+			ref={inputRef}
+			className={props.inputClassName}
+			type="search"
+			value={props.value}
+			onChange={(event) => props.onChange(event.currentTarget.value)}
+			onKeyDown={handleKeyDown}
+			placeholder={props.placeholder}
+			role={props.role}
+			aria-label={props.ariaLabel ?? props.placeholder}
+			aria-controls={props.ariaControls}
+			aria-expanded={props.ariaExpanded}
+			aria-activedescendant={props.ariaActiveDescendant}
+			aria-autocomplete={props.role === "combobox" ? "list" : undefined}
+		/>
+	) : (
+		<Input
+			id={props.id}
+			ref={inputRef}
+			className={props.inputClassName}
+			type="search"
+			value={props.value}
+			onChange={(event) => props.onChange(event.currentTarget.value)}
+			onKeyDown={handleKeyDown}
+			placeholder={props.placeholder}
+			role={props.role}
+			aria-label={props.ariaLabel ?? props.placeholder}
+			aria-controls={props.ariaControls}
+			aria-expanded={props.ariaExpanded}
+			aria-activedescendant={props.ariaActiveDescendant}
+			aria-autocomplete={props.role === "combobox" ? "list" : undefined}
+		/>
+	);
+
+	const actions = (
 		<>
-			<Input
-				id={props.id}
-				ref={inputRef}
-				className={props.inputClassName}
-				type="search"
-				value={props.value}
-				onChange={(event) => props.onChange(event.currentTarget.value)}
-				onKeyDown={handleKeyDown}
-				placeholder={props.placeholder}
-				role={props.role}
-				aria-label={props.ariaLabel ?? props.placeholder}
-				aria-controls={props.ariaControls}
-				aria-expanded={props.ariaExpanded}
-				aria-activedescendant={props.ariaActiveDescendant}
-				aria-autocomplete={props.role === "combobox" ? "list" : undefined}
-			/>
 			{props.matchCount !== undefined && (
 				<span
 					className={props.countClassName ?? "search-bar__count"}
@@ -131,18 +155,32 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 	);
 
 	if (props.grouped) {
+		const hasActions =
+			props.matchCount !== undefined ||
+			props.onNavigate !== undefined ||
+			props.onClose !== undefined ||
+			props.trailingActions !== undefined;
+
 		return (
-			<ButtonGroup
+			<InputGroup
 				className={props.className}
 				aria-label={
 					props.groupAriaLabel ??
 					`${props.ariaLabel ?? props.placeholder ?? "Search"} controls`
 				}
 			>
-				{content}
-			</ButtonGroup>
+				{input}
+				{hasActions ? (
+					<InputGroupAddon align="inline-end">{actions}</InputGroupAddon>
+				) : null}
+			</InputGroup>
 		);
 	}
 
-	return <div className={props.className}>{content}</div>;
+	return (
+		<div className={props.className}>
+			{input}
+			{actions}
+		</div>
+	);
 }

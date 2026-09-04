@@ -1,6 +1,6 @@
 import type React from "react";
+import { Copy, Maximize2, Play } from "lucide-react";
 
-import { ButtonGroup } from "../../components/ui/ButtonGroup.tsx";
 import { Button } from "../../components/ui/Button.tsx";
 import {
 	Card,
@@ -34,8 +34,8 @@ export function CodePanel(props: CodePanelProps): React.JSX.Element {
 			<CardHeader className="gap-2 px-3 py-2">
 				<CardTitle className="self-center text-sm">{language}</CardTitle>
 				{props.actions ? (
-					<CardAction className="self-center">
-						<ButtonGroup>{props.actions}</ButtonGroup>
+					<CardAction className="flex items-center gap-1 self-center">
+						{props.actions}
 					</CardAction>
 				) : null}
 			</CardHeader>
@@ -60,7 +60,6 @@ export interface CodePanelActionsProps {
 	canRun?: boolean;
 	canEnlarge?: boolean;
 	canCopy?: boolean;
-	canEdit?: boolean;
 }
 
 export function CodePanelActions(
@@ -70,41 +69,38 @@ export function CodePanelActions(
 		<>
 			{props.canRun ? (
 				<Button
-					size="sm"
-					variant="default"
-					className="code-action-btn code-action-btn--primary exec-run-btn"
+					size="icon-sm"
+					variant="ghost"
+					className="code-action-btn exec-run-btn"
 					data-block-id={props.blockId}
+					aria-label="Run"
+					title="Run"
 				>
-					Run
+					<Play aria-hidden="true" />
 				</Button>
 			) : null}
 			{props.canEnlarge ? (
 				<Button
-					size="sm"
+					size="icon-sm"
 					variant="ghost"
 					className="code-action-btn exec-enlarge-btn"
 					data-block-id={props.blockId}
+					aria-label="Enlarge"
+					title="Enlarge"
 				>
-					Enlarge
+					<Maximize2 aria-hidden="true" />
 				</Button>
 			) : null}
 			{props.canCopy ? (
 				<Button
-					size="sm"
+					size="icon-sm"
 					variant="ghost"
 					className="code-action-btn code-copy-btn"
 					data-block-id={props.blockId}
+					aria-label="Copy"
+					title="Copy"
 				>
-					Copy
-				</Button>
-			) : null}
-			{props.canEdit ? (
-				<Button
-					size="sm"
-					variant="ghost"
-					className="code-action-btn exec-toggle-btn"
-				>
-					Edit
+					<Copy aria-hidden="true" />
 				</Button>
 			) : null}
 		</>

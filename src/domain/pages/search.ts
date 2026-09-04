@@ -34,6 +34,8 @@ export function buildSearchDocuments(index: ContentIndex): SearchDocument[] {
     relPath: page.relPath,
     title: page.title,
     tags: [...page.tags],
-    text: plainTextForSearch(page.kind === "markdown" ? page.body : page.source),
+    text: plainTextForSearch(
+      page.kind === "markdown" ? page.body : page.kind === "jsx" ? page.source : "",
+    ),
   }));
 }

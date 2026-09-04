@@ -484,8 +484,11 @@ export async function runPyodideBlock(
 		return;
 	}
 
-	runBtn.disabled = true;
-	runBtn.textContent = pyodide ? "Running..." : "Loading Python...";
+	setRunButtonState(
+		runBtn,
+		true,
+		pyodide ? "Running..." : "Loading Python...",
+	);
 
 	// Clear output
 	while (outputEl.firstChild) {
@@ -494,7 +497,7 @@ export async function runPyodideBlock(
 
 	try {
 		if (packagesReady) {
-			runBtn.textContent = "Installing packages...";
+			setRunButtonState(runBtn, true, "Installing packages...");
 			await packagesReady;
 		}
 
@@ -502,11 +505,11 @@ export async function runPyodideBlock(
 		const pkgs = parseImports(code);
 
 		if (pkgs.length > 0 && !packagesReady) {
-			runBtn.textContent = "Installing packages...";
+			setRunButtonState(runBtn, true, "Installing packages...");
 			await installPackages(pkgs);
 		}
 
-		runBtn.textContent = "Running...";
+		setRunButtonState(runBtn, true, "Running...");
 		const beforeFS = snapshotFS(py);
 		const result = await runPyodidePython(code);
 
@@ -543,7 +546,16 @@ export async function runPyodideBlock(
 		pre.textContent = `Error: ${message}`;
 		outputEl.appendChild(pre);
 	} finally {
-		runBtn.disabled = false;
-		runBtn.textContent = "Run";
+		setRunButtonState(runBtn, false, "Run");
 	}
+}
+
+function setRunButtonState(
+	button: HTMLButtonElement,
+	disabled: boolean,
+	label: string,
+): void {
+	button.disabled = disabled;
+	button.setAttribute("aria-label", label);
+	button.title = label;
 }

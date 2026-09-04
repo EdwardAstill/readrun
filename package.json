@@ -9,19 +9,16 @@
   },
   "files": [
     "src",
-    "src-tauri",
+    "src-electron",
     "docs",
     "integrations",
     "README.md"
   ],
   "scripts": {
     "dev": "bun --hot src/cli.ts serve docs --no-open",
-    "desktop:build": "cargo build --manifest-path src-tauri/Cargo.toml",
-    "desktop:check": "cargo check --manifest-path src-tauri/Cargo.toml",
-    "desktop:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "build:docs": "bun src/cli.ts build docs",
     "check": "bun run typecheck && bun run test && bun run validate:docs",
-    "test": "bun test ./src --parallel",
+    "test": "bun test ./src ./src-electron --parallel",
     "typecheck": "tsc --noEmit",
     "validate:docs": "bun src/cli.ts validate docs --strict"
   },
@@ -56,6 +53,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "electron": "44.1.1",
     "katex": "^0.18.4",
     "lucide-react": "^1.27.0",
     "react": "^19",

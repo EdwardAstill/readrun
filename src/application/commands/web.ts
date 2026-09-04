@@ -50,7 +50,7 @@ export const webCommand = defineCommand({
 		path: {
 			type: "positional",
 			required: true,
-			description: "Folder, .md file, or docs",
+			description: "Folder, .md file, .pdf file, or docs",
 		},
 		...serverArgs,
 	},

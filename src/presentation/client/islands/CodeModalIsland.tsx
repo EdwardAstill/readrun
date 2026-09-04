@@ -142,17 +142,22 @@ async function copyCodeFromButton(button: HTMLButtonElement): Promise<void> {
 	);
 	if (!block) return;
 
-	const originalText = button.textContent ?? "Copy";
+	const originalLabel = button.getAttribute("aria-label") ?? "Copy";
 	try {
 		await writeClipboard(readCodeText(block));
-		button.textContent = "Copied";
+		setButtonLabel(button, "Copied");
 	} catch {
-		button.textContent = "Failed";
+		setButtonLabel(button, "Copy failed");
 	} finally {
 		window.setTimeout(() => {
-			button.textContent = originalText;
+			setButtonLabel(button, originalLabel);
 		}, 1200);
 	}
+}
+
+function setButtonLabel(button: HTMLButtonElement, label: string): void {
+	button.setAttribute("aria-label", label);
+	button.title = label;
 }
 
 async function writeClipboard(text: string): Promise<void> {

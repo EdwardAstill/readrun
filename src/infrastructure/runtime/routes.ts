@@ -122,7 +122,10 @@ export async function dispatchSnapshotRequest(
 ): Promise<Response> {
 	const url = new URL(request.url);
 	const pathname = normaliseRoutePathname(url.pathname);
-	const handler = routes.get(pathname)?.[request.method as "GET" | "POST"];
+	const decodedPathname = decodeRoutePathname(pathname);
+	const handler =
+		routes.get(pathname)?.[request.method as "GET" | "POST"] ??
+		routes.get(decodedPathname)?.[request.method as "GET" | "POST"];
 	return handler ? handler(request) : new Response("Not found", { status: 404 });
 }
 
@@ -130,6 +133,14 @@ function normaliseRoutePathname(pathname: string): string {
 	return pathname.endsWith("/") || pathname.includes(".")
 		? pathname
 		: `${pathname}/`;
+}
+
+function decodeRoutePathname(pathname: string): string {
+	try {
+		return decodeURIComponent(pathname);
+	} catch {
+		return pathname;
+	}
 }
 
 function createClientBundleLoader(

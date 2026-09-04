@@ -176,7 +176,7 @@ Python code blocks run in the browser via [Pyodide](https://pyodide.org/) (Pytho
 
 ### JSX blocks (`[jsx]...[/jsx]`)
 
-JSX blocks run React/JSX code in the browser and auto-render on page load (no Run button needed). React 18, ReactDOM, Babel, and Tailwind CSS are loaded automatically.
+JSX blocks run React/JSX code in the browser and auto-render on page load. React 18, ReactDOM, Babel, and Tailwind CSS are loaded automatically.
 
 Use the `render()` function to mount a component:
 
@@ -192,6 +192,9 @@ render(<Counter />);
 
 JSX blocks can also have Hide/Show, Enlarge, and Run controls like Python blocks. Add `hidden` to start collapsed.
 
+Use `[plot-jsx=widget.jsx]` for plots that should auto-render without a language
+header, visible source, or code controls.
+
 ## User interface
 
 - **Settings panel** — press Escape to open (Escape follows a priority chain: close open overlays → close search → close settings panel → exit focus mode → open settings). Adjust font size (small/medium/large), content width (500–1400px slider), theme, and sidebar visibility
@@ -199,7 +202,7 @@ JSX blocks can also have Hide/Show, Enlarge, and Run controls like Python blocks
 - **In-page search** — press `s` to search. Matches are highlighted and counted (e.g. "3/12"). Navigate with Enter/Shift+Enter or arrow buttons
 - **Table of contents** — auto-generated from headings in the right sidebar. Sections are collapsible. The current section highlights as you scroll (scroll spy). Heading IDs are generated from the text (e.g. `## My Section` → `#my-section`)
 - **Context menu** — right-click in the content area for quick access to Search and Settings
-- **Code block controls** — every executable block has Hide/Show (collapse the code), Enlarge (full-screen modal with synced output), and Run buttons
+- **Code block controls** — regular executable blocks use separate Run, Enlarge, and Copy icon buttons; output-only `[plot-jsx]` blocks omit code controls
 - **Focus mode** — press `f` to hide both sidebars for distraction-free reading
 - **Resizable sidebars** — drag the edge of the nav or TOC sidebar to resize. Widths persist across page loads
 - **Image lightbox** — click any image to view it enlarged. Press Escape to close

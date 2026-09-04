@@ -218,18 +218,38 @@ test("startServer serves the runtime client assets", async () => {
 test("startServer serves project asset byte ranges through Bun.file", async () => {
 	const root = await makeProjectWithFiles({
 		"index.md": "# Range\n",
-		".readrun/assets/files/range.txt": "0123456789",
+		".readrun/assets/files/range file.txt": "0123456789",
 	});
 	const server = await startTestServer({ root });
 
 	const response = await fetch(
-		`${server.baseUrl}/_readrun/assets/files/range.txt`,
+		`${server.baseUrl}/_readrun/assets/files/range%20file.txt`,
 		{ headers: { Range: "bytes=2-5" } },
 	);
 
 	expect(response.status).toBe(206);
 	expect(response.headers.get("content-range")).toBe("bytes 2-5/10");
 	expect(await response.text()).toBe("2345");
+});
+
+test("startServer renders and serves PDFs whose paths contain spaces", async () => {
+	const pdf = "%PDF-1.4\n% readrun test\n";
+	const root = await makeProjectWithFiles({
+		"index.md": "# PDFs\n",
+		"slides/Week 1.pdf": pdf,
+	});
+	const server = await startTestServer({ root });
+
+	const page = await fetch(`${server.baseUrl}/slides/Week%201/`);
+	expect(page.status).toBe(200);
+	const html = await page.text();
+	expect(html).toContain('class="viewer viewer-pdf viewer-pdf-page"');
+	expect(html).toContain('src="/slides/Week 1.pdf"');
+
+	const source = await fetch(`${server.baseUrl}/slides/Week%201.pdf`);
+	expect(source.status).toBe(200);
+	expect(source.headers.get("content-type")).toContain("application/pdf");
+	expect(await source.text()).toBe(pdf);
 });
 
 test("startServer moves to the next available port when the requested port is occupied", async () => {

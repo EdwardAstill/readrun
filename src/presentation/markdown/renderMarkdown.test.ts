@@ -110,6 +110,23 @@ test("renderMarkdown applies collapsed and editable executable attrs", () => {
 	expect(result.html).toContain('data-language="jsx"');
 });
 
+test("renderMarkdown renders plot JSX as output only", () => {
+	const result = renderMarkdown({
+		page: page(
+			"[plot-jsx]\nconst Plot = () => <div>Plot</div>;\nrender(<Plot />);\n[/plot-jsx]\n",
+		),
+	});
+
+	expect(result.html).toContain("exec-block--output-only");
+	expect(result.html).toContain('data-language="jsx"');
+	expect(result.html).toContain('class="exec-output"');
+	expect(result.html).not.toContain('data-slot="card"');
+	expect(result.html).not.toContain("exec-run-btn");
+	expect(result.html).not.toContain("exec-enlarge-btn");
+	expect(result.html).not.toContain("code-copy-btn");
+	expect(result.html).not.toContain("const Plot");
+});
+
 test("renderMarkdown leaves dollar-delimited inline math for the browser", () => {
 	const result = renderMarkdown({
 		page: page("The formula $x^2 + y^2 = z^2$ is Pythagorean."),

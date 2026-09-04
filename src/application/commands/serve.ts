@@ -126,13 +126,13 @@ export async function runServeCommand(
 export const serveCommand = defineCommand({
 	meta: {
 		name: "serve",
-		description: "Serve a folder or .md file with readrun runtime features.",
+		description: "Serve a folder, .md file, or .pdf file with readrun runtime features.",
 	},
 	args: {
 		path: {
 			type: "positional",
 			required: false,
-			description: "Folder or .md file (default: cwd)",
+			description: "Folder, .md file, or .pdf file (default: cwd)",
 		},
 		...serverArgs,
 	},

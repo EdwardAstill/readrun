@@ -35,7 +35,7 @@ stops the server. Use `--no-open` when you want a server without a window.
 
 ## `rr <folder|file.md>`
 
-If the argument is a folder or `.md` file, acts like `rr serve <path>`.
+If the argument is a folder, `.md` file, or `.pdf` file, acts like `rr serve <path>`.
 
 ```bash
 rr my-notes/
@@ -46,7 +46,7 @@ rr my-notes/guide.md
 
 ## `rr serve [path]`
 
-Serve a folder or `.md` file with runnable blocks.
+Serve a folder, `.md` file, or `.pdf` file with Readrun navigation and viewers.
 The dev server watches the source folder and reloads the open readrun window on
 changes.
 
@@ -57,6 +57,7 @@ protection is generated only for Vercel builds that include `.readrun/pw.txt`.
 rr serve                 # serve cwd
 rr serve my-notes/       # serve a folder
 rr serve guide.md        # serve a single file
+rr serve lecture.pdf     # serve a PDF in the full-page viewer
 ```
 
 ---
@@ -73,7 +74,7 @@ This opens the documentation in the same single native window used by `rr .`.
 
 ---
 
-## `rr web <folder|file.md|docs>`
+## `rr web <folder|file.md|file.pdf|docs>`
 
 Serve content in the default external browser instead of the native window.
 The exact `docs` token selects readrun's built-in documentation; use `./docs`

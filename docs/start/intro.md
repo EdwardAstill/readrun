@@ -16,14 +16,8 @@ bun install
 bun link
 ```
 
-The source version opens a native Tauri window and therefore also needs Rust,
-Cargo, and the [Tauri system prerequisites](https://v2.tauri.app/start/prerequisites/)
-for your operating system. The first launch compiles the small desktop viewer;
-later launches reuse Cargo's build cache.
-
-On Linux, readrun defaults `__NV_DISABLE_EXPLICIT_SYNC=1` for the desktop child
-to avoid a known [WebKitGTK crash on NVIDIA/Wayland](https://bugs.webkit.org/show_bug.cgi?id=280210).
-An explicitly configured value is left unchanged.
+The source version opens an Electron window. `bun install` downloads the matching
+Electron runtime, so no separate native build toolchain is required.
 
 ## Start the dev server
 

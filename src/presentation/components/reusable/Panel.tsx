@@ -1,7 +1,7 @@
 import type React from "react";
 import type { ReactNode } from "react";
 
-import { Button } from "../ui/Button.tsx";
+import { InputGroupButton } from "../ui/InputGroup.tsx";
 import { SidebarGroup } from "../ui/Sidebar.tsx";
 import { PanelBody } from "./PanelBody.tsx";
 import { SearchBar } from "./SearchBar.tsx";
@@ -52,10 +52,9 @@ export function Panel(props: PanelProps): React.JSX.Element {
 						ariaLabel={props.searchAriaLabel ?? props.searchPlaceholder}
 						trailingActions={
 							props.collapseButton ? (
-								<Button
+								<InputGroupButton
 									id={props.collapseButton.id}
-									variant="outline"
-									size="icon"
+									size="icon-xs"
 									aria-label={props.collapseButton.label}
 									title={
 										props.collapseButton.title ?? props.collapseButton.label
@@ -66,7 +65,7 @@ export function Panel(props: PanelProps): React.JSX.Element {
 									onClick={props.collapseButton.onClick}
 								>
 									{props.collapseButton.icon ?? "-"}
-								</Button>
+								</InputGroupButton>
 							) : null
 						}
 					/>

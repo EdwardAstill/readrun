@@ -174,10 +174,10 @@ export async function resolveServeContentTarget(
     };
   }
 
-  if (stats.isFile() && resolvedPath.endsWith(".md")) {
+  if (stats.isFile() && /\.(md|pdf)$/i.test(resolvedPath)) {
     const contentDir = path.dirname(resolvedPath);
     const relPath = path.relative(contentDir, resolvedPath);
-    const openPath = `/${relPath.replace(/\\/g, "/").replace(/\.md$/i, "")}`;
+    const openPath = `/${relPath.replace(/\\/g, "/").replace(/\.(md|pdf)$/i, "")}`;
 
     return {
       contentDir,
@@ -186,7 +186,7 @@ export async function resolveServeContentTarget(
     };
   }
 
-  fail(`Not a folder or .md file: ${resolvedPath}`);
+  fail(`Not a folder, .md file, or .pdf file: ${resolvedPath}`);
 }
 
 export function parsePort(raw: unknown, defaultValue = 3001): number {

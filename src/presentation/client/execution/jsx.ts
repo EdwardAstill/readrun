@@ -27,8 +27,7 @@ export async function runJsxBlock(blockId: string, code: string): Promise<void> 
 	}
 
 	if (runBtn) {
-		runBtn.disabled = true;
-		runBtn.textContent = "Loading React...";
+		setRunButtonState(runBtn, true, "Loading React...");
 	}
 
 	clearElement(outputEl);
@@ -39,10 +38,19 @@ export async function runJsxBlock(blockId: string, code: string): Promise<void> 
 		renderError(outputEl, err instanceof Error ? err.message : String(err));
 	} finally {
 		if (runBtn) {
-			runBtn.disabled = false;
-			runBtn.textContent = "Run";
+			setRunButtonState(runBtn, false, "Run");
 		}
 	}
+}
+
+function setRunButtonState(
+	button: HTMLButtonElement,
+	disabled: boolean,
+	label: string,
+): void {
+	button.disabled = disabled;
+	button.setAttribute("aria-label", label);
+	button.title = label;
 }
 
 export async function mountJsxPages(

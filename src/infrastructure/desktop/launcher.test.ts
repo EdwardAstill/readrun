@@ -1,32 +1,12 @@
 import { expect, test } from "bun:test";
 
 import {
-	desktopEnvironment,
 	desktopLaunch,
 	launchDesktop,
 	type DesktopProcess,
 	type DesktopSignal,
 	type DesktopSignals,
 } from "./launcher.ts";
-
-test("desktopEnvironment disables NVIDIA explicit sync on Linux", () => {
-	expect(desktopEnvironment("linux", { PATH: "/bin" })).toEqual({
-		PATH: "/bin",
-		__NV_DISABLE_EXPLICIT_SYNC: "1",
-	});
-});
-
-test("desktopEnvironment preserves user overrides and other platforms", () => {
-	expect(
-		desktopEnvironment("linux", {
-			PATH: "/bin",
-			__NV_DISABLE_EXPLICIT_SYNC: "0",
-		}),
-	).toEqual({ PATH: "/bin", __NV_DISABLE_EXPLICIT_SYNC: "0" });
-	expect(desktopEnvironment("darwin", { PATH: "/bin" })).toEqual({
-		PATH: "/bin",
-	});
-});
 
 class FakeSignals implements DesktopSignals {
 	readonly listeners = new Map<DesktopSignal, () => void>();
@@ -42,18 +22,23 @@ class FakeSignals implements DesktopSignals {
 	}
 }
 
-test("desktopLaunch constructs the source Cargo command", () => {
-	expect(desktopLaunch("http://127.0.0.1:3001/", "/repo")).toEqual({
+test("desktopLaunch constructs the Electron command", () => {
+	expect(
+		desktopLaunch("http://127.0.0.1:3001/", {
+			packageRoot: "/repo",
+			electronExecutable: "/repo/node_modules/electron/dist/electron",
+			environment: { PATH: "/bin" },
+		}),
+	).toEqual({
 		command: [
-			"cargo",
-			"run",
-			"--quiet",
-			"--manifest-path",
-			"/repo/src-tauri/Cargo.toml",
-			"--",
-			"http://127.0.0.1:3001/",
+			"/repo/node_modules/electron/dist/electron",
+			"/repo/src-electron/main.js",
 		],
 		cwd: "/repo",
+		environment: {
+			PATH: "/bin",
+			READRUN_DESKTOP_URL: "http://127.0.0.1:3001/",
+		},
 	});
 });
 
@@ -61,25 +46,23 @@ test("launchDesktop resolves after one successful viewer process", async () => {
 	let spawned = 0;
 	await launchDesktop("http://127.0.0.1:3001/", {
 		packageRoot: "/repo",
-		platform: "linux",
+		electronExecutable: "/repo/node_modules/electron/dist/electron",
 		environment: { PATH: "/bin" },
 		spawnDesktop(command, options) {
 			spawned += 1;
 			expect(command).toEqual([
-				"cargo",
-				"run",
-				"--quiet",
-				"--manifest-path",
-				"/repo/src-tauri/Cargo.toml",
-				"--",
-				"http://127.0.0.1:3001/",
+				"/repo/node_modules/electron/dist/electron",
+				"/repo/src-electron/main.js",
 			]);
 			expect(options).toEqual({
 				cwd: "/repo",
 				stdin: "inherit",
 				stdout: "inherit",
 				stderr: "inherit",
-				env: { PATH: "/bin", __NV_DISABLE_EXPLICIT_SYNC: "1" },
+				env: {
+					PATH: "/bin",
+					READRUN_DESKTOP_URL: "http://127.0.0.1:3001/",
+				},
 			});
 			return { exited: Promise.resolve(0), kill() {} };
 		},
@@ -93,6 +76,7 @@ test("launchDesktop rejects an unsuccessful viewer exit", async () => {
 	await expect(
 		launchDesktop("http://127.0.0.1:3001/", {
 			packageRoot: "/repo",
+			electronExecutable: "/repo/node_modules/electron/dist/electron",
 			spawnDesktop: () => ({ exited: Promise.resolve(9), kill() {} }),
 			signals: new FakeSignals(),
 		}),
@@ -114,6 +98,7 @@ test("launchDesktop forwards interruption and removes its listeners", async () =
 	const signals = new FakeSignals();
 	const launch = launchDesktop("http://127.0.0.1:3001/", {
 		packageRoot: "/repo",
+		electronExecutable: "/repo/node_modules/electron/dist/electron",
 		spawnDesktop: () => child,
 		signals,
 	});
@@ -121,7 +106,7 @@ test("launchDesktop forwards interruption and removes its listeners", async () =
 	expect([...signals.listeners.keys()]).toEqual(["SIGINT", "SIGTERM"]);
 	signals.listeners.get("SIGINT")?.();
 	expect(kills).toBe(1);
-	finishViewer(0);
+	finishViewer(130);
 	await launch;
 	expect(signals.listeners.size).toBe(0);
 });
