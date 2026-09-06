@@ -20,6 +20,9 @@ export async function bundleClient(entry?: string): Promise<BundleResult> {
   try {
     const result = await Bun.build({
       entrypoints: [filePath],
+      // Tailwind otherwise scans the caller's cwd (potentially an entire home
+      // directory) while serving the render-blocking client stylesheet.
+      root: path.resolve(import.meta.dirname, "../../.."),
       target: "browser",
       format: "esm",
       splitting: false,

@@ -12,6 +12,7 @@ import { initNavCollapse, initNavFocus } from "./nav-focus.ts";
 import { initPageNavTreeChrome } from "./page-nav-tree.ts";
 import { initResourceBrowserChrome } from "./resource-browser.ts";
 import { initTocSidebar } from "./toc.ts";
+import { initFlowcharts } from "./flowchart.tsx";
 import { initCsvViewers } from "./csv-viewer.ts";
 import { renderPageMath } from "./math.ts";
 import {
@@ -73,6 +74,7 @@ function clientFeatures(): ClientFeature[] {
 		pageFeature("resource-browser", initResourceBrowserChrome),
 		pageFeature("toc", initTocSidebar),
 		pageFeature("csv-viewers", initCsvViewers),
+		pageFeature("flowcharts", initFlowcharts),
 		pageFeature("nav-focus", initNavFocus),
 		pageFeature("nav-collapse", initNavCollapse),
 	];

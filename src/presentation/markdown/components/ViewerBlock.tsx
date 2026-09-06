@@ -1,12 +1,13 @@
 import type React from "react";
 
+import { FlowchartViewer } from "../../viewers/FlowchartViewer.tsx";
 import { CsvViewer } from "../../viewers/CsvViewer.tsx";
 import { MediaViewer } from "../../viewers/MediaViewer.tsx";
 import { ModelViewer } from "../../viewers/ModelViewer.tsx";
 import { PdfViewer } from "../../viewers/PdfViewer.tsx";
 
 export interface ViewerBlockProps {
-	kind?: "csv" | "image" | "audio" | "video" | "file" | "model" | "pdf";
+	kind?: "flowchart" | "csv" | "image" | "audio" | "video" | "file" | "model" | "pdf";
 	src?: string;
 	source?: string;
 	title?: string;
@@ -15,6 +16,8 @@ export interface ViewerBlockProps {
 
 export function ViewerBlock(props: ViewerBlockProps): React.JSX.Element {
 	switch (props.kind) {
+		case "flowchart":
+			return <FlowchartViewer src={props.src ?? ""} title={props.title} height={props.height} />;
 		case "csv":
 			return <CsvViewer source={props.source} caption={props.title} />;
 		case "audio":

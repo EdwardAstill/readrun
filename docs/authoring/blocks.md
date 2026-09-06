@@ -190,6 +190,15 @@ Self-closing image reference block. Images live anywhere under `.readrun/assets/
 
 Images are embedded into the rendered page and open in the lightbox when clicked.
 
+### Flowcharts (`[flowchart]`)
+
+Embeds a workflow or process as connected cards with panning and zoom controls.
+See [Flowcharts](./flowcharts.md) for graph authoring and a live example.
+
+```md
+[flowchart=files/workflow.json title="Publishing workflow" height=540]
+```
+
 ### Viewer blocks
 
 Self-closing file reference blocks. Files live anywhere under `.readrun/assets/`.

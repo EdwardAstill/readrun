@@ -18,6 +18,7 @@ import {
 import { cn } from "./cn";
 
 interface QuizStepProps {
+  skipped?: boolean;
   domId: string;
   formName: string;
   item: QuizItem;
@@ -56,7 +57,7 @@ export function QuizStep(props: QuizStepProps): React.JSX.Element {
     <QuestionnaireItem
       name={props.formName}
       multiple={props.item.type === "multi"}
-      required
+      required={!props.skipped}
       aria-labelledby={headingId}
       data-quiz-step={props.item.id}
     >

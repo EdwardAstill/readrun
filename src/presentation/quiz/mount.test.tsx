@@ -314,3 +314,34 @@ function markdownPage(body: string): MarkdownPage {
 		outboundLinks: [],
 	};
 }
+
+test("skip advances unanswered questions, allows returning, and finishes with skipped results", async () => {
+	const quiz = definition("skip-quiz", "Skip quiz");
+	quiz.items.push({ ...quiz.items[0]!, id: "q-2" });
+	document.body.innerHTML = renderToStaticMarkup(<QuizBlock definition={quiz} />);
+	const { mountQuizIslands } = await import("./mount.tsx");
+	let dispose: (() => void) | undefined;
+	await act(async () => { dispose = mountQuizIslands(document); });
+	const host = document.querySelector<HTMLElement>('[data-island="quiz"]')!;
+	try {
+		await act(async () => button(host, "Skip").click());
+		expect(host.textContent).toContain("Step 2 of 2");
+		await act(async () => button(host, "Previous").click());
+		expect(host.textContent).toContain("Step 1 of 2");
+		const input = host.querySelector<HTMLInputElement>('input[type="radio"][value="a"]')!;
+		await act(async () => input.click());
+		await act(async () => button(host, "Check answer").click());
+		await act(async () => button(host, "Next").click());
+		await act(async () => button(host, "Skip").click());
+		expect(host.textContent).toContain("1 / 2");
+		expect(host.textContent).toContain("Skipped");
+		await act(async () => button(host, "Restart quiz").click());
+		await act(async () => button(host, "Skip").click());
+		await act(async () => button(host, "Skip").click());
+		expect(host.textContent).toContain("0 / 2");
+		expect(host.querySelectorAll("[data-quiz-root] li")).toHaveLength(2);
+		for (const row of host.querySelectorAll("[data-quiz-root] li")) expect(row.textContent).toContain("Skipped");
+	} finally {
+		await act(async () => dispose?.());
+	}
+});

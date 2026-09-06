@@ -97,8 +97,10 @@ function QuizSession(props: {
   const previousPhase = React.useRef(state.phase);
   const completionNotified = React.useRef(false);
   const result = React.useMemo(
-    () => scoreQuiz(props.quiz, state.answers),
-    [props.quiz, state.answers],
+    () => scoreQuiz(props.quiz, Object.fromEntries(
+      Object.entries(state.answers).filter(([id]) => state.grades[id] !== undefined),
+    )),
+    [props.quiz, state.answers, state.grades],
   );
 
   React.useEffect(() => {
@@ -138,6 +140,7 @@ function QuizSession(props: {
       item,
       Boolean(state.grades[item.id]),
       formName(props.idPrefix, item.id),
+      state.skipped.includes(item.id),
     ),
   );
   const activeAnswer = activeItem ? state.answers[activeItem.id] : undefined;
@@ -236,6 +239,7 @@ function QuizSession(props: {
               item={item}
               answer={state.answers[item.id]}
               grade={state.grades[item.id]}
+              skipped={state.skipped.includes(item.id)}
               hintVisible={state.visibleHints.includes(item.id)}
               onAnswer={(answer: SubmittedAnswer) =>
                 dispatch({ type: "answer", itemId: item.id, answer })
@@ -249,6 +253,16 @@ function QuizSession(props: {
         <CardFooter className="border-t pt-6">
           <QuestionnaireActions>
             <QuestionnairePrevious />
+            {activeItem && activeItem.type !== "info" && !activeGrade && (
+              <Button
+                type="button"
+                variant="outline"
+                className="col-start-2 row-start-1 min-h-11 sm:min-h-0"
+                onClick={() => dispatch({ type: "skip", itemId: activeItem.id })}
+              >
+                Skip
+              </Button>
+            )}
             {activeItem?.type === "info" ? (
               nextItem ? (
                 <QuestionnaireNext onClick={goNext}>Continue</QuestionnaireNext>
@@ -346,18 +360,19 @@ function toQuestionnaireItem(
   item: QuizItem,
   locked: boolean,
   name: string,
+  skipped: boolean,
 ): {
   name: string;
   required?: boolean;
   choices?: Array<{ value: string; disabled?: boolean }>;
 } {
   if (item.type === "info" || item.type === "freetext") {
-    return { name, required: item.type === "freetext" };
+    return { name, required: item.type === "freetext" && !skipped };
   }
 
   return {
     name,
-    required: true,
+    required: !skipped,
     choices: item.choices.map((choice) => ({
       value: choice.id,
       disabled: locked,

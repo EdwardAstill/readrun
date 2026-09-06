@@ -163,6 +163,7 @@ function renderBlock(
 			return `<p class="block block-include" data-src="${escapeHtml(
 				stringAttr(attrs, "src") ?? "",
 			)}">${escapeHtml(`[include=${stringAttr(attrs, "src") ?? ""}]`)}</p>`;
+		case "flowchart":
 		case "viewer":
 		case "csv":
 		case "image":
@@ -175,6 +176,7 @@ function renderBlock(
 			return renderToStaticMarkup(
 				React.createElement(ViewerBlock, {
 					kind: viewerKindFromName(name),
+					height: name === "flowchart" ? Number(stringAttr(attrs, "height") ?? 480) : undefined,
 					src: assetUrlFromRelPath(
 						stringAttr(attrs, "src") ?? stringAttr(attrs, "path") ?? "",
 					),
@@ -210,9 +212,9 @@ function renderBlock(
 
 function viewerKindFromName(
 	name: string,
-): "csv" | "image" | "audio" | "video" | "file" | "model" | "pdf" {
-	if (["csv", "image", "audio", "video", "file", "pdf"].includes(name)) {
-		return name as "csv" | "image" | "audio" | "video" | "file" | "pdf";
+): "flowchart" | "csv" | "image" | "audio" | "video" | "file" | "model" | "pdf" {
+	if (["flowchart", "csv", "image", "audio", "video", "file", "pdf"].includes(name)) {
+		return name as "flowchart" | "csv" | "image" | "audio" | "video" | "file" | "pdf";
 	}
 	if (name === "stl" || name === "model") return "model";
 	return "file";

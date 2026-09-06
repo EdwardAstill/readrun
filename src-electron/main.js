@@ -1,6 +1,10 @@
 import { app, BrowserWindow } from "electron";
 
 import { viewerUrl } from "./viewer-url.js";
+import { configureDesktopGraphics } from "./graphics.js";
+import { enableWheelZoom } from "./zoom.js";
+
+configureDesktopGraphics(app);
 
 let url;
 try {
@@ -27,6 +31,7 @@ async function createWindow() {
 		},
 	});
 
+	enableWheelZoom(mainWindow.webContents);
 	mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
 	mainWindow.webContents.on("will-navigate", (event, destination) => {
 		try {

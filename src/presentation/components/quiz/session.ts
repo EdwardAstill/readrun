@@ -11,6 +11,7 @@ export interface QuizSessionState {
   answers: Record<string, SubmittedAnswer>;
   grades: Record<string, GradeResult>;
   visibleHints: string[];
+  skipped: string[];
   phase: "active" | "complete";
 }
 
@@ -18,6 +19,7 @@ export type QuizSessionAction =
   | { type: "answer"; itemId: string; answer: SubmittedAnswer }
   | { type: "toggle-hint"; itemId: string }
   | { type: "submit"; itemId: string }
+  | { type: "skip"; itemId: string }
   | { type: "go-to"; itemId: string }
   | { type: "complete" }
   | { type: "restart" };
@@ -28,6 +30,7 @@ export function createQuizSession(definition: QuizDefinition): QuizSessionState 
     answers: {},
     grades: {},
     visibleHints: [],
+    skipped: [],
     phase: definition.items.length > 0 ? "active" : "complete",
   };
 }
@@ -103,10 +106,32 @@ export function reduceQuizSession(
 
       return {
         ...state,
+        skipped: state.skipped.filter((id) => id !== action.itemId),
         grades: {
           ...state.grades,
           [action.itemId]: gradeAnswer(question, submitted),
         },
+      };
+    }
+    case "skip": {
+      const index = definition.items.findIndex((item) => item.id === action.itemId);
+      const item = definition.items[index];
+      if (!item || !isQuestion(item) || action.itemId !== state.activeItemId || state.grades[item.id]) {
+        return state;
+      }
+      const answers = { ...state.answers };
+      delete answers[item.id];
+      const skipped = [...new Set([...state.skipped, item.id])];
+      const next = definition.items[index + 1];
+      const canComplete = definition.items.filter(isQuestion).every(
+        (question) => state.grades[question.id] !== undefined || skipped.includes(question.id),
+      );
+      return {
+        ...state,
+        answers,
+        skipped,
+        activeItemId: next?.id ?? state.activeItemId,
+        phase: !next && canComplete ? "complete" : "active",
       };
     }
     case "go-to": {
@@ -137,7 +162,8 @@ export function reduceQuizSession(
       if (
         currentItem !== undefined &&
         isQuestion(currentItem) &&
-        state.grades[currentItem.id] === undefined
+        state.grades[currentItem.id] === undefined &&
+        !state.skipped.includes(currentItem.id)
       ) {
         return state;
       }
@@ -150,7 +176,7 @@ export function reduceQuizSession(
     case "complete": {
       const allQuestionsGraded = definition.items
         .filter(isQuestion)
-        .every((question) => state.grades[question.id] !== undefined);
+        .every((question) => state.grades[question.id] !== undefined || state.skipped.includes(question.id));
 
       if (!allQuestionsGraded) {
         return state;

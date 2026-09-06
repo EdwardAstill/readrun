@@ -46,7 +46,7 @@ export function QuizResults(props: QuizResultsProps): React.JSX.Element {
                 {index + 1}. {question.prompt}
               </div>
               <span className="shrink-0 font-medium">
-                {props.grades[question.id]?.correct ? "Correct" : "Incorrect"}
+                {!props.grades[question.id] ? "Skipped" : props.grades[question.id]?.correct ? "Correct" : "Incorrect"}
               </span>
             </li>
           ))}

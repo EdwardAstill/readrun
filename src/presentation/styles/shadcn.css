@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
 @import "tw-animate-css";
 @import "../components/quiz/styles.css";
 
@@ -51,4 +52,22 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.flowchart-viewer .react-flow {
+  --xy-background-color: var(--background);
+  --xy-edge-stroke: var(--muted-foreground);
+  --xy-edge-label-color: var(--foreground);
+  --xy-edge-label-background-color: var(--background);
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-border-color: var(--border);
+  --xy-handle-background-color: var(--primary);
+  --xy-handle-border-color: var(--background);
+}
+
+.flowchart-viewer .react-flow__controls {
+  border-radius: var(--radius);
+  overflow: hidden;
 }

@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    { "id": "draft", "position": { "x": 150, "y": 0 }, "data": { "label": "Write a draft", "description": "Capture the idea in Markdown." } },
+    { "id": "review", "position": { "x": 150, "y": 180 }, "data": { "label": "Review", "description": "Check the content and examples." } },
+    { "id": "revise", "position": { "x": -20, "y": 360 }, "data": { "label": "Revise", "description": "Address the review feedback." } },
+    { "id": "publish", "position": { "x": 320, "y": 360 }, "data": { "label": "Publish", "description": "Build and share the site." } }
+  ],
+  "edges": [
+    { "id": "draft-review", "source": "draft", "target": "review", "label": "Draft and feedback", "arrow": false },
+    { "id": "review-revise", "source": "review", "target": "revise", "label": "Needs changes" },
+    { "id": "review-publish", "source": "review", "target": "publish", "label": "Approved" }
+  ]
+}

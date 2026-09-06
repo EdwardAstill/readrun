@@ -230,3 +230,15 @@ Missing type
 	expect(result.html).toContain("requires type=single");
 	expect(result.html).not.toContain('data-island="quiz"');
 });
+
+test("flowchart blocks render asset-backed islands with escaped captions and heights", () => {
+	const result = renderMarkdown({ page: page('[flowchart=files/chart.json title="Example"]') });
+	const explicit = renderMarkdown({ page: page('[flowchart src="files/my chart.json" title="<Example>" height=600]\n\nAfter') });
+	expect(explicit.html).toContain('data-flowchart-src="/_readrun/assets/files/my%20chart.json"');
+	expect(explicit.html).toContain('height:600px');
+	expect(explicit.html).toContain('&lt;Example&gt;');
+	expect(explicit.html).toContain('<p>After</p>');
+	expect(result.html).toContain('data-flowchart-src');
+	const fallback = renderMarkdown({ page: page('[flowchart=files/chart.json height=-1]') });
+	expect(fallback.html).toContain('height:480px');
+});
