@@ -5,7 +5,8 @@ import type {
 	ServeProjectPorts,
 	ServerHandle,
 } from "../use-cases/serve-project.ts";
-import { runServeCommand } from "./serve.ts";
+import { parseArgs } from "citty";
+import { runServeCommand, serveArgs } from "./serve.ts";
 
 const contentDir = path.resolve(import.meta.dirname, "../../../docs");
 
@@ -161,4 +162,39 @@ test("runServeCommand formats an IPv6 loopback viewer URL", async () => {
 	);
 
 	expect(launches).toEqual(["http://[::1]:43123/"]);
+});
+
+
+test("parses --floating before or after a folder and forwards it to the viewer", async () => {
+	for (const argv of [[contentDir, "--floating"], ["--floating", contentDir]]) {
+		const args = parseArgs<typeof serveArgs>(argv, serveArgs);
+		let stops = 0;
+		await runServeCommand(args, {
+			startServer: async () => fakeServer("127.0.0.1", 3001, () => { stops += 1; }),
+			launchDesktop: async (_, options) => { expect(options?.floating).toBe(true); },
+		});
+		expect(stops).toBe(1);
+	}
+});
+
+test("rejects floating without a desktop viewer before starting a server", async () => {
+	await expect(runServeCommand({ path: contentDir, floating: true, open: false }, {
+		startServer: async () => { throw new Error("must not start"); },
+	})).rejects.toThrow("--floating requires the desktop viewer");
+});
+
+
+test("CLI accepts floating folder shorthand and rejects no-open without starting", async () => {
+	const cli = path.resolve(import.meta.dirname, "../../cli.ts");
+	for (const argv of [
+		[contentDir, "--floating", "--no-open"],
+		["--floating", contentDir, "--no-open"],
+		["--floating", "--no-open"],
+		["serve", contentDir, "--floating", "--no-open"],
+	]) {
+		const result = Bun.spawnSync([process.execPath, cli, ...argv]);
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr.toString()).toContain("--floating requires the desktop viewer");
+		expect(result.stdout.toString()).not.toContain("running at");
+	}
 });

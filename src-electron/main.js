@@ -3,6 +3,7 @@ import { app, BrowserWindow } from "electron";
 import { viewerUrl } from "./viewer-url.js";
 import { configureDesktopGraphics } from "./graphics.js";
 import { enableWheelZoom } from "./zoom.js";
+import { floatDesktopWindow } from "./floating.js";
 
 configureDesktopGraphics(app);
 
@@ -46,6 +47,9 @@ async function createWindow() {
 		mainWindow = undefined;
 	});
 
+	if (process.env.READRUN_DESKTOP_FLOATING === "1") {
+		await floatDesktopWindow(process.pid);
+	}
 	await mainWindow.loadURL(url.toString());
 }
 

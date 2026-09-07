@@ -138,9 +138,7 @@ const actions: ShortcutActions = {
 		});
 	},
 	toggleSidebar: () => {
-		const s = getSettings();
-		s.showSidebar = !s.showSidebar;
-		commitSettings(s);
+		openOverlay("files-overlay");
 	},
 	focusMode: () => {
 		const s = getSettings();
@@ -215,7 +213,7 @@ export const SHORTCUT_GROUPS = [
 	{
 		label: "Reading",
 		items: [
-			["Toggle sidebar", "toggleSidebar"],
+			["Open files", "toggleSidebar"],
 			["Focus mode", "focusMode"],
 			["Next theme", "nextTheme"],
 			["Previous theme", "prevTheme"],

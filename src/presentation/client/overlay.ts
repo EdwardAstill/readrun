@@ -3,6 +3,9 @@
 import { clearNavFocus } from "./nav-focus.ts";
 
 export const OVERLAY_IDS = [
+	"files-overlay",
+	"outline-overlay",
+	"resources-overlay",
 	"settings-overlay",
 	"shortcuts-overlay",
 	"page-search-overlay",

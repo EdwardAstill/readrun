@@ -7,7 +7,7 @@ import { initModelViewers } from "./model-viewer.ts";
 import { initUploadBlocks } from "./upload.ts";
 import { mountQuizIslands } from "../quiz/mount.tsx";
 import { initExecBlocks } from "./execution/python.ts";
-import { mountResizableShell } from "./resizable-shell.tsx";
+import { mountNavigationDialogs } from "./navigation-dialogs.ts";
 import { initNavCollapse, initNavFocus } from "./nav-focus.ts";
 import { initPageNavTreeChrome } from "./page-nav-tree.ts";
 import { initResourceBrowserChrome } from "./resource-browser.ts";
@@ -37,7 +37,7 @@ if (typeof document !== "undefined") {
 
 function clientFeatures(): ClientFeature[] {
 	return [
-		applicationFeature("resizable-shell", mountResizableShell),
+		applicationFeature("navigation-dialogs", mountNavigationDialogs),
 		applicationFeature("shell-navigation", () => {
 			const navigation = createShellNavigation();
 			const live = runtime ? createLiveClient({ runtime, navigation }) : null;

@@ -11,7 +11,7 @@ import { docsWikiCommand } from "./application/commands/docs-wiki.ts";
 import { doctorCommand } from "./application/commands/doctor.ts";
 import { initCommand } from "./application/commands/init.ts";
 import { newCommand } from "./application/commands/new.ts";
-import { serveCommand, runServeCommand } from "./application/commands/serve.ts";
+import { serveCommand, serveArgs, runServeCommand } from "./application/commands/serve.ts";
 import { todayCommand } from "./application/commands/today.ts";
 import { validateCommand } from "./application/commands/validate.ts";
 import { deployCommand } from "./application/commands/deploy.ts";
@@ -43,6 +43,8 @@ const KNOWN_TOP_LEVEL_COMMANDS = new Set([
 	"--version",
 	"-v",
 ]);
+
+if (process.argv[2] === "--floating") process.argv.splice(2, 0, "serve");
 
 const firstArgument = process.argv[2];
 if (
@@ -86,16 +88,9 @@ const main = defineCommand({
 		"widgets-build": widgetsBuildCommand,
 		web: webCommand,
 	},
+	args: serveArgs,
 	async run({ args }) {
-		const trailingArgs = (args._ as string[]) ?? [];
-		if (trailingArgs.length === 0) {
-			await runServeCommand({
-				path: process.cwd(),
-				port: "3001",
-				host: "127.0.0.1",
-				open: true,
-			});
-		}
+		if (args._.length === 0) await runServeCommand(args);
 	},
 });
 

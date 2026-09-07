@@ -307,3 +307,22 @@ Check environment: Bun runtime, built-in docs path, and user config path.
 ```bash
 rr doctor
 ```
+
+
+## Floating desktop window
+
+On Hyprland 0.55+ with Lua configuration, use:
+
+```bash
+rr ~/dotfiles/shortcuts --floating
+rr serve docs --floating
+rr --floating
+```
+
+`--floating` opens the desktop viewer as a centered 1100 × 750 floating window.
+It requires Hyprland and its `hyprctl` command, and cannot be combined with
+`--no-open`. Other launches keep their usual window behavior. Closing the viewer
+also stops its local server. The flag targets only the new viewer process.
+
+The compositor integration uses Hyprland's
+[Lua control interface](https://wiki.hypr.land/configuring/core/advanced-configuration/using-hyprctl/).

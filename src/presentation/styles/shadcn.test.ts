@@ -61,52 +61,16 @@ test("the production client bundle includes preflight before shadcn utilities", 
 	}
 });
 
-test("production shell follows the shadcn sidebar and resizable composition", async () => {
+
+test("navigation dialogs preserve the shadcn radius and tree components", async () => {
 	const shell = await Bun.file(
 		new URL("../shell/ReadrunShell.tsx", import.meta.url),
-	).text();
-	const sidebar = await Bun.file(
-		new URL("../shell/LeftSidebar.tsx", import.meta.url),
-	).text();
-	const resizable = await Bun.file(
-		new URL("../client/resizable-shell.tsx", import.meta.url),
 	).text();
 	const tree = await Bun.file(
 		new URL("../components/reusable/Tree.tsx", import.meta.url),
 	).text();
 
-	expect(shell).toContain("<SidebarProvider");
-	expect(shell).toContain("<LeftSidebar");
-	expect(shell).toContain("<SidebarInset");
-	expect(shell).toContain("<MobileSidebarHeader");
-	expect(sidebar).toContain("export function MobileSidebarTrigger");
-	expect(sidebar).toContain("export function MobileSidebarHeader");
-	expect(sidebar).toContain("<SidebarTrigger");
-	expect(sidebar).toContain("<header");
-	expect(sidebar).toContain("md:hidden");
-	expect(sidebar).not.toContain("SidebarRail");
-	expect(resizable).toContain("<ResizablePanelGroup");
-	expect(resizable).toContain("<ResizableHandle");
-	expect(resizable).toContain("<ResizablePanel");
-	expect(resizable).toContain(
-		"<AppSidebar nodes={props.nodes.sidebarChildren} fillPanel />",
-	);
-	expect(resizable).toContain(
-		'collapsible={props.fillPanel ? "none" : undefined}',
-	);
-	expect(
-		resizable.match(/className="h-svh min-h-0 overflow-hidden"/g),
-	).toHaveLength(2);
-	expect(resizable).toContain(
-		'<SidebarInset className="h-full min-h-0 overflow-hidden">',
-	);
-	expect(resizable).toContain(
-		'"readrun-sidebar w-full overflow-hidden rounded-r-xl"',
-	);
-	expect(
-		resizable.match(/groupResizeBehavior="preserve-pixel-size"/g),
-	).toHaveLength(2);
-	expect(resizable).not.toContain('groupResizeBehavior="preserve-relative-size"');
+	expect(shell).toContain("rounded-xl");
 	expect(tree).toContain("<SidebarGroupLabel");
 	expect(tree).toContain("<SidebarMenuButton");
 	expect(tree).toContain("<details");

@@ -37,6 +37,7 @@ test("desktopLaunch constructs the Electron command", () => {
 		cwd: "/repo",
 		environment: {
 			PATH: "/bin",
+			READRUN_DESKTOP_FLOATING: "0",
 			READRUN_DESKTOP_URL: "http://127.0.0.1:3001/",
 		},
 	});
@@ -61,6 +62,7 @@ test("launchDesktop resolves after one successful viewer process", async () => {
 				stderr: "inherit",
 				env: {
 					PATH: "/bin",
+					READRUN_DESKTOP_FLOATING: "0",
 					READRUN_DESKTOP_URL: "http://127.0.0.1:3001/",
 				},
 			});
@@ -109,4 +111,19 @@ test("launchDesktop forwards interruption and removes its listeners", async () =
 	finishViewer(130);
 	await launch;
 	expect(signals.listeners.size).toBe(0);
+});
+
+
+test("floating is opt-in and requires Hyprland", () => {
+	const options = { packageRoot: "/repo", electronExecutable: "/electron" };
+	expect(() => desktopLaunch("http://127.0.0.1:3001/", {
+		...options, floating: true, environment: {},
+	})).toThrow("requires Hyprland");
+	const launch = desktopLaunch("http://127.0.0.1:3001/", {
+		...options, floating: true, environment: { HYPRLAND_INSTANCE_SIGNATURE: "test" },
+	});
+	expect(launch.environment.READRUN_DESKTOP_FLOATING).toBe("1");
+	expect(desktopLaunch("http://127.0.0.1:3001/", {
+		...options, environment: { READRUN_DESKTOP_FLOATING: "1" },
+	}).environment.READRUN_DESKTOP_FLOATING).toBe("0");
 });

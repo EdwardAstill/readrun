@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { ReadrunShell } from "./ReadrunShell.tsx";
 
-test("renders the shadcn sidebar shell and client dialog islands", () => {
+test("renders centered navigation dialogs and client dialog islands", () => {
 	const html = renderToStaticMarkup(
 		<ReadrunShell
 			navigation={{ mode: "tree", source: "filesystem", tree: [] }}
@@ -14,27 +14,22 @@ test("renders the shadcn sidebar shell and client dialog islands", () => {
 		/>,
 	);
 
-	expect(html).toContain('data-slot="sidebar-wrapper"');
-	expect(html).toContain('data-slot="sidebar"');
-	expect(html).toContain('data-slot="sidebar-inset"');
-	expect(html).toContain('data-slot="sidebar-trigger"');
-	expect(html).toContain("md:hidden");
-	expect(html).toContain("<header");
-	expect(html).toContain("h-12 shrink-0 items-center border-b");
-	expect(html).not.toContain('data-slot="separator"');
-	expect(html).not.toContain('data-slot="breadcrumb"');
-	expect(html).toContain('data-island="resizable-shell"');
-	expect(html).not.toContain('id="mobile-menu-btn"');
-	expect(html).not.toContain('id="desktop-search-btn"');
-	expect(html).not.toContain('id="desktop-settings-btn"');
-	expect(html).not.toContain('class="shell-toolbar"');
+	expect(html).not.toContain('data-slot="sidebar"');
+	expect(html).not.toContain('data-island="resizable-shell"');
+	for (const id of ["files", "outline", "resources"]) {
+		expect(html).toContain(`data-open-overlay="${id}-overlay"`);
+		expect(html).toContain(`<dialog id="${id}-overlay"`);
+		expect(html).toContain(`aria-labelledby="${id}-overlay-title"`);
+	}
+	expect(html).toContain("No headings on this page");
+	expect(html).toContain("No resources found");
 	expect(html).toContain('data-island="shell-dialogs"');
 	expect(html).toContain("<svg");
 	expect(html).not.toContain("🔍");
 	expect(html).not.toContain("☰");
 });
 
-test("keeps the article and sidebars in independent scroll regions", () => {
+test("keeps the article and dialogs in independent scroll regions", () => {
 	const html = renderToStaticMarkup(
 		<ReadrunShell
 			navigation={{ mode: "tree", source: "filesystem", tree: [] }}
@@ -52,7 +47,8 @@ test("keeps the article and sidebars in independent scroll regions", () => {
 		/>,
 	);
 
-	expect(html.match(/data-slot="sidebar-content"/g)).toHaveLength(2);
+	expect(html.match(/data-navigation-dialog="true"/g)).toHaveLength(3);
+	expect(html).toContain("max-h-[80svh]");
 	expect(html).not.toContain('data-slot="sidebar-footer"');
 	expect(html).toContain("h-svh min-h-0 overflow-hidden readrun-shell");
 	expect(html).toContain(

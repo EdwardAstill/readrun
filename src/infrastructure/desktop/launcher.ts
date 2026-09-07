@@ -35,6 +35,7 @@ export interface DesktopSignals {
 }
 
 export interface LaunchDesktopOptions {
+	floating?: boolean;
 	packageRoot?: string;
 	electronExecutable?: string;
 	spawnDesktop?: SpawnDesktop;
@@ -75,9 +76,13 @@ export function desktopLaunch(
 	url: string,
 	options: Pick<
 		LaunchDesktopOptions,
-		"packageRoot" | "electronExecutable" | "environment"
+		"packageRoot" | "electronExecutable" | "environment" | "floating"
 	> = {},
 ): DesktopLaunch {
+	const environment = options.environment ?? process.env;
+	if (options.floating && !environment.HYPRLAND_INSTANCE_SIGNATURE) {
+		throw new Error("--floating currently requires Hyprland.");
+	}
 	const packageRoot =
 		options.packageRoot ?? path.resolve(import.meta.dirname, "../../..");
 	return {
@@ -87,7 +92,8 @@ export function desktopLaunch(
 		],
 		cwd: packageRoot,
 		environment: {
-			...(options.environment ?? process.env),
+			...environment,
+			READRUN_DESKTOP_FLOATING: options.floating ? "1" : "0",
 			READRUN_DESKTOP_URL: url,
 		},
 	};

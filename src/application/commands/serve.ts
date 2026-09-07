@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 import path from "node:path";
 import { defineCommand } from "citty";
 import type { ProjectConfigDocuments } from "../../domain/project/config-schema.ts";
-import { launchDesktop } from "../../infrastructure/desktop/launcher.ts";
+import { launchDesktop, type LaunchDesktopOptions } from "../../infrastructure/desktop/launcher.ts";
 import { startServer } from "../../infrastructure/runtime/server.ts";
 import {
 	serveProject,
@@ -17,7 +17,9 @@ import {
 	type ServerArgsValues,
 } from "./cli-helpers.ts";
 
-export interface ServeCommandArgs extends ServerArgsValues {}
+export interface ServeCommandArgs extends ServerArgsValues {
+	floating?: boolean;
+}
 
 export type ServeViewer = "desktop" | "browser" | null;
 
@@ -40,7 +42,7 @@ export interface RunServeCommandOptions {
 		root: string,
 	) => Promise<ProjectConfigDocuments>;
 	startServer?: ServeProjectPorts["startServer"];
-	launchDesktop?: (url: string) => Promise<void>;
+	launchDesktop?: (url: string, options?: LaunchDesktopOptions) => Promise<void>;
 	viewer?: Exclude<ServeViewer, null>;
 	openBrowser?: (url: string) => void;
 }
@@ -75,6 +77,9 @@ export async function runServeCommand(
 	const viewer: ServeViewer = http.noOpen
 		? null
 		: (options.viewer ?? "desktop");
+	if (args.floating && viewer !== "desktop") {
+		fail("--floating requires the desktop viewer; remove --no-open.");
+	}
 	if (viewer === "desktop" && !isLoopbackHost(http.host)) {
 		fail(
 			"Desktop mode requires a loopback host; use rr web or --no-open for remote hosts.",
@@ -117,25 +122,32 @@ export async function runServeCommand(
 	}
 
 	try {
-		await (options.launchDesktop ?? launchDesktop)(url);
+		await (options.launchDesktop ?? launchDesktop)(url, { floating: args.floating });
 	} finally {
 		handle.stop();
 	}
 }
+
+export const serveArgs = {
+	path: {
+		type: "positional",
+		required: false,
+		description: "Folder, .md file, or .pdf file (default: cwd)",
+	},
+	...serverArgs,
+	floating: {
+		type: "boolean",
+		default: false,
+		description: "Open a floating desktop window (Hyprland)",
+	},
+} as const;
 
 export const serveCommand = defineCommand({
 	meta: {
 		name: "serve",
 		description: "Serve a folder, .md file, or .pdf file with readrun runtime features.",
 	},
-	args: {
-		path: {
-			type: "positional",
-			required: false,
-			description: "Folder, .md file, or .pdf file (default: cwd)",
-		},
-		...serverArgs,
-	},
+	args: serveArgs,
 	async run({ args }) {
 		await runServeCommand(args as ServeCommandArgs);
 	},
