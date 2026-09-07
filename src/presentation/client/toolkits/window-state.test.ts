@@ -6,10 +6,10 @@ import {
 } from "./window-state.ts";
 import type { ToolkitDefinition } from "./types.ts";
 
-const calculator: ToolkitDefinition = {
-  id: "scientific-calculator",
-  title: "Scientific Calculator",
-  description: "Open the scientific calculator.",
+const toolkit: ToolkitDefinition = {
+  id: "test-toolkit",
+  title: "Test Toolkit",
+  description: "Open the test toolkit.",
   defaultSize: { width: 640, height: 420 },
   minimumSize: { width: 360, height: 240 },
   render: () => null,
@@ -22,18 +22,18 @@ describe("floating toolkit state", () => {
     let state = createToolkitWorkspaceState();
     state = reduceToolkitWindows(state, {
       type: "open",
-      definition: calculator,
+      definition: toolkit,
       viewport,
     });
     state = reduceToolkitWindows(state, {
       type: "open",
-      definition: calculator,
+      definition: toolkit,
       viewport,
     });
 
     expect(state.windows).toHaveLength(1);
     expect(state.windows[0]).toMatchObject({
-      id: "scientific-calculator",
+      id: "test-toolkit",
       minimized: false,
       rect: { x: 24, y: 24, width: 640, height: 420 },
       zIndex: 2,
@@ -45,7 +45,7 @@ describe("floating toolkit state", () => {
 
     const next = reduceToolkitWindows(state, {
       type: "raise",
-      id: "scientific-calculator",
+      id: "test-toolkit",
     });
 
     expect(next).toBe(state);
@@ -55,25 +55,25 @@ describe("floating toolkit state", () => {
   test("minimizes, restores, and removes a window", () => {
     let state = reduceToolkitWindows(createToolkitWorkspaceState(), {
       type: "open",
-      definition: calculator,
+      definition: toolkit,
       viewport,
     });
     state = reduceToolkitWindows(state, {
       type: "minimize",
-      id: "scientific-calculator",
+      id: "test-toolkit",
     });
     expect(state.windows[0]?.minimized).toBe(true);
 
     state = reduceToolkitWindows(state, {
       type: "open",
-      definition: calculator,
+      definition: toolkit,
       viewport,
     });
     expect(state.windows[0]?.minimized).toBe(false);
 
     state = reduceToolkitWindows(state, {
       type: "close",
-      id: "scientific-calculator",
+      id: "test-toolkit",
     });
     expect(state.windows).toEqual([]);
   });
@@ -83,7 +83,7 @@ describe("floating toolkit state", () => {
       clampWindowRect(
         { x: 900, y: -20, width: 1200, height: 100 },
         viewport,
-        calculator.minimumSize,
+        toolkit.minimumSize,
       ),
     ).toEqual({ x: 0, y: 0, width: 1000, height: 240 });
   });
@@ -91,20 +91,20 @@ describe("floating toolkit state", () => {
   test("normalizes every open window after viewport shrink", () => {
     let state = reduceToolkitWindows(createToolkitWorkspaceState(), {
       type: "open",
-      definition: calculator,
+      definition: toolkit,
       viewport,
     });
     state = reduceToolkitWindows(state, {
       type: "set-rect",
-      id: "scientific-calculator",
+      id: "test-toolkit",
       rect: { x: 600, y: 400, width: 400, height: 300 },
       viewport,
-      minimumSize: calculator.minimumSize,
+      minimumSize: toolkit.minimumSize,
     });
     state = reduceToolkitWindows(state, {
       type: "normalize",
       viewport: { width: 500, height: 360 },
-      definitions: [calculator],
+      definitions: [toolkit],
     });
 
     expect(state.windows[0]?.rect).toEqual({

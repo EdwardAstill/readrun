@@ -27,7 +27,6 @@ import {
 import { readRuntimeConfig } from "./runtime-config.ts";
 import type { ClientFeature } from "./features.ts";
 import "../styles/shadcn.css";
-import "sci-calc-widget/styles.css";
 
 const runtime = readRuntimeConfig();
 

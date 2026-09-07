@@ -19,10 +19,10 @@ import {
 	reduceToolkitWindows,
 } from "./window-state.ts";
 
-const calculator: ToolkitDefinition = {
-	id: "scientific-calculator",
-	title: "Scientific Calculator",
-	description: "Open the scientific calculator.",
+const toolkit: ToolkitDefinition = {
+	id: "test-toolkit",
+	title: "Test Toolkit",
+	description: "Open the test toolkit.",
 	defaultSize: { width: 640, height: 420 },
 	minimumSize: { width: 360, height: 240 },
 	render: () => (
@@ -62,19 +62,19 @@ test("renders a labelled modeless window and preserves its child while minimized
 
 	expect(dialog.getAttribute("aria-modal")).toBe("false");
 	expect(document.getElementById(titleId ?? "")?.textContent).toBe(
-		"Scientific Calculator",
+		"Test Toolkit",
 	);
 
-	await clickLabel("Minimize Scientific Calculator");
+	await clickLabel("Minimize Test Toolkit");
 	expect(dialog.hidden).toBe(true);
 	expect(dialog.inert).toBe(true);
 	expect(dialog.style.display).toBe("none");
 	expect(document.querySelector('[aria-label="Tool input"]')).toBe(input);
 	expect(
-		document.querySelector('[aria-label="Restore Scientific Calculator"]'),
+		document.querySelector('[aria-label="Restore Test Toolkit"]'),
 	).toBeTruthy();
 
-	await clickLabel("Restore Scientific Calculator");
+	await clickLabel("Restore Test Toolkit");
 	await nextAnimationFrame();
 	expect(dialog.hidden).toBe(false);
 	expect(dialog.inert).toBe(false);
@@ -86,11 +86,11 @@ test("exposes Close on right click without an action button", async () => {
 	await renderWorkspace();
 
 	expect(
-		document.querySelector('[aria-label="Window actions for Scientific Calculator"]'),
+		document.querySelector('[aria-label="Window actions for Test Toolkit"]'),
 	).toBeNull();
 	await openContextMenu(getDialog());
 	expect(
-		document.querySelector('[aria-label="Window menu for Scientific Calculator"]'),
+		document.querySelector('[aria-label="Window menu for Test Toolkit"]'),
 	).toBeTruthy();
 
 	await clickMenuItem("Close");
@@ -130,7 +130,7 @@ test("Escape closes the toolkit", async () => {
 });
 
 test("leaves Escape to an active shell overlay", async () => {
-	await renderWorkspace([calculator], openToolkitState(), false);
+	await renderWorkspace([toolkit], openToolkitState(), false);
 
 	await act(async () => {
 		document.body.dispatchEvent(
@@ -170,7 +170,7 @@ test("keeps pointer-only toolkit chrome between shell and modal layers", async (
 	);
 	expect(Number(menuPositioner.style.zIndex)).toBeLessThan(50);
 
-	await clickLabel("Minimize Scientific Calculator");
+	await clickLabel("Minimize Test Toolkit");
 	const shelf = document.querySelector<HTMLElement>(
 		'[aria-label="Minimized toolkits"]',
 	)!;
@@ -181,13 +181,13 @@ test("keeps pointer-only toolkit chrome between shell and modal layers", async (
 test("drags the title bar and resizes from the southeast handle", async () => {
 	await renderWorkspace();
 
-	await pointerSequence("Move Scientific Calculator", {
+	await pointerSequence("Move Test Toolkit", {
 		start: { x: 100, y: 100 },
 		end: { x: 140, y: 125 },
 	});
 	expect(readInlineRect()).toMatchObject({ x: 64, y: 49 });
 
-	await pointerSequence("Resize Scientific Calculator", {
+	await pointerSequence("Resize Test Toolkit", {
 		start: { x: 500, y: 400 },
 		end: { x: 530, y: 420 },
 	});
@@ -216,10 +216,10 @@ test("omits an unknown definition once without breaking known windows", async ()
 	console.error = (...args: unknown[]) => errors.push(args);
 
 	try {
-		await renderWorkspace([calculator], {
+		await renderWorkspace([toolkit], {
 			windows: [
 				{
-					id: "scientific-calculator",
+					id: "test-toolkit",
 					minimized: false,
 					rect: { x: 24, y: 24, width: 640, height: 420 },
 					zIndex: 1,
@@ -235,7 +235,7 @@ test("omits an unknown definition once without breaking known windows", async ()
 		});
 
 		expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
-		expect(getDialog().textContent).toContain("Scientific Calculator");
+		expect(getDialog().textContent).toContain("Test Toolkit");
 		expect(errors).toHaveLength(1);
 
 		await dispatchWindowResize();
@@ -259,7 +259,7 @@ async function openContextMenu(element: HTMLElement): Promise<void> {
 }
 
 async function renderWorkspace(
-	definitions: readonly ToolkitDefinition[] = [calculator],
+	definitions: readonly ToolkitDefinition[] = [toolkit],
 	initialState = openToolkitState(),
 	escapeClosesTopmost = true,
 ): Promise<void> {
@@ -300,7 +300,7 @@ function WorkspaceHarness({
 function openToolkitState(): ToolkitWorkspaceState {
 	return reduceToolkitWindows(createToolkitWorkspaceState(), {
 		type: "open",
-		definition: calculator,
+		definition: toolkit,
 		viewport: defaultViewport,
 	});
 }

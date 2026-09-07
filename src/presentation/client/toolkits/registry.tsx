@@ -1,16 +1,6 @@
-import { ScientificCalculatorToolkit } from "./ScientificCalculatorToolkit.tsx";
 import type { ToolkitDefinition, ToolkitId } from "./types.ts";
 
-export const TOOLKIT_DEFINITIONS = [
-	{
-		id: "scientific-calculator",
-		title: "Scientific Calculator",
-		description: "Open the scientific calculator.",
-		defaultSize: { width: 900, height: 620 },
-		minimumSize: { width: 600, height: 420 },
-		render: () => <ScientificCalculatorToolkit />,
-	},
-] as const satisfies readonly ToolkitDefinition[];
+export const TOOLKIT_DEFINITIONS: readonly ToolkitDefinition[] = [];
 
 export function getToolkitDefinition(
 	id: ToolkitId,

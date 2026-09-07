@@ -1,6 +1,6 @@
 import type React from "react";
 
-export type ToolkitId = "scientific-calculator";
+export type ToolkitId = string;
 
 export interface ToolkitSize {
   width: number;

@@ -16,13 +16,7 @@ export type CommandPaletteCommand = SearchPaletteItem &
 		| { toolkitId?: never; overlayId: SearchOverlayId }
 	);
 
-export const COMMAND_PALETTE_COMMANDS = [
-	{
-		id: "open-scientific-calculator",
-		title: "Open Scientific Calculator",
-		subtitle: "Open the scientific calculator.",
-		toolkitId: "scientific-calculator",
-	},
+export const COMMAND_PALETTE_COMMANDS: readonly CommandPaletteCommand[] = [
 	{
 		id: "search-site",
 		title: "Search Site",
@@ -35,7 +29,7 @@ export const COMMAND_PALETTE_COMMANDS = [
 		subtitle: "Search within the current page.",
 		overlayId: "page-search-overlay",
 	},
-] as const satisfies readonly CommandPaletteCommand[];
+];
 
 export function filterCommandPaletteCommands(
 	query: string,
@@ -74,7 +68,7 @@ export function CommandPaletteIsland({
 			);
 			if (!command) return;
 
-			if ("toolkitId" in command) {
+			if (command.toolkitId !== undefined) {
 				onOpenToolkit(command.toolkitId);
 			} else {
 				openOverlay(command.overlayId);

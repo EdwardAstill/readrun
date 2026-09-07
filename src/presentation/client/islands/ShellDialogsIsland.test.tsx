@@ -11,36 +11,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { installHappyDom } from "../../../test/happy-dom.ts";
 import type { ToolkitDefinition } from "../toolkits/types.ts";
 
-const calculatorDefinition: ToolkitDefinition = {
-	id: "scientific-calculator",
-	title: "Scientific Calculator",
-	description: "Open the scientific calculator.",
-	defaultSize: { width: 900, height: 620 },
-	minimumSize: { width: 600, height: 420 },
-	render: () => (
-		<textarea
-			aria-label="Test toolkit input"
-			data-toolkit-primary-input
-			defaultValue="initial"
-		/>
-	),
-};
-
 let restoreDom: (() => void) | undefined;
 let root: Root | undefined;
 let shellModule: typeof import("./ShellDialogsIsland.tsx");
 let overlayModule: typeof import("../overlay.ts");
-let registryModule: typeof import("../toolkits/registry.tsx");
-let shortcutsModule: typeof import("../shortcuts.ts");
-let shellIslandsModule: typeof import("../shell-islands.tsx");
 
 beforeAll(async () => {
 	restoreDom = installHappyDom("https://readrun.test/shell");
 	overlayModule = await import("../overlay.ts");
-	shortcutsModule = await import("../shortcuts.ts");
-	registryModule = await import("../toolkits/registry.tsx");
 	shellModule = await import("./ShellDialogsIsland.tsx");
-	shellIslandsModule = await import("../shell-islands.tsx");
 });
 
 afterEach(async () => {
@@ -55,7 +34,7 @@ afterAll(() => {
 });
 
 test("opens the command palette from Ctrl/Cmd+K, including editable fields", async () => {
-	await renderShell([calculatorDefinition]);
+	await renderShell([]);
 
 	const ctrl = await dispatchPaletteShortcut(document.body, { ctrlKey: true });
 	expect(ctrl.defaultPrevented).toBe(true);
@@ -69,131 +48,37 @@ test("opens the command palette from Ctrl/Cmd+K, including editable fields", asy
 	expect(overlayModule.getActiveOverlay()).toBe("command-palette-overlay");
 });
 
-test("preserves a toolkit across restore and navigation but resets it after close", async () => {
-	await renderShell([calculatorDefinition]);
-	await openCommand("Open Scientific Calculator");
-
-	const first = toolkitInput();
-	expect(document.activeElement).toBe(first);
-	first.value = "preserved";
-
-	await clickLabel("Minimize Scientific Calculator");
-	document.dispatchEvent(new Event("readrun:remount"));
-	expect(document.querySelector('[aria-label="Test toolkit input"]')).toBe(first);
-	expect(first.value).toBe("preserved");
-
-	await openCommand("Open Scientific Calculator");
-	expect(toolkitInput()).toBe(first);
-	expect(document.querySelectorAll('[data-toolkit-id="scientific-calculator"]')).toHaveLength(1);
-	expect(document.activeElement).toBe(first);
-
-	await clickLabel("Close Scientific Calculator");
-	await openCommand("Open Scientific Calculator");
-	const reopened = toolkitInput();
-	expect(reopened).not.toBe(first);
-	expect(reopened.value).toBe("initial");
-});
-
-test("Escape closes the toolkit without opening Settings", async () => {
-	await renderShell([calculatorDefinition]);
-	await openCommand("Open Scientific Calculator");
-	const teardownShortcuts = shortcutsModule.initShortcuts();
-
-	try {
-		await act(async () => {
-			document.body.dispatchEvent(
-				new KeyboardEvent("keydown", {
-					key: "Escape",
-					bubbles: true,
-					cancelable: true,
-				}),
-			);
-		});
-
-		expect(document.querySelector('[data-toolkit-id="scientific-calculator"]')).toBeNull();
-		expect(overlayModule.getActiveOverlay()).toBeNull();
-	} finally {
-		teardownShortcuts();
-	}
-});
-
-test("Escape remains toolkit-owned in the production mount order", async () => {
-	const host = document.createElement("div");
-	host.dataset.island = "shell-dialogs";
-	host.dataset.searchEnabled = "true";
-	host.dataset.settingsEnabled = "true";
-	document.body.append(host);
-	const mounted: {
-		shellHandle?: ReturnType<
-			typeof shellIslandsModule.mountApplicationShellIslands
-		>;
-		teardownShortcuts?: () => void;
-	} = {};
-
-	try {
-		await act(async () => {
-			mounted.shellHandle =
-				shellIslandsModule.mountApplicationShellIslands(document);
-			mounted.teardownShortcuts = shortcutsModule.initShortcuts();
-		});
-		await nextAnimationFrame();
-		await openCommand("Open Scientific Calculator");
-		expect(
-			document.querySelector('[data-toolkit-id="scientific-calculator"]'),
-		).toBeTruthy();
-
-		await act(async () => {
-			document.body.dispatchEvent(
-				new KeyboardEvent("keydown", {
-					key: "Escape",
-					bubbles: true,
-					cancelable: true,
-				}),
-			);
-		});
-
-		expect(
-			document.querySelector('[data-toolkit-id="scientific-calculator"]'),
-		).toBeNull();
-		expect(overlayModule.getActiveOverlay()).toBeNull();
-	} finally {
-		mounted.teardownShortcuts?.();
-		await act(async () => mounted.shellHandle?.teardown());
-	}
-});
-
-test("preserves the real calculator expression through restore and navigation", async () => {
-	const calculator = registryModule.getToolkitDefinition(
-		"scientific-calculator",
-	)!;
-	await renderShell([calculator]);
-	await openCommand("Open Scientific Calculator");
-
-	const expression = calculatorExpression();
-	await clickButton("7");
-	await clickButton("Multiply");
-	await clickButton("8");
-	expect(expression.value).toBe("7×8");
-
-	await clickLabel("Minimize Scientific Calculator");
-	await clickLabel("Restore Scientific Calculator");
-	document.dispatchEvent(new Event("readrun:remount"));
-
-	expect(calculatorExpression()).toBe(expression);
-	expect(expression.value).toBe("7×8");
-});
-
 test("mounts site search only when search is enabled", async () => {
-	await renderShell([calculatorDefinition], false);
+	await renderShell([], false);
 	await act(async () => overlayModule.openOverlay("site-search-overlay"));
 	await nextAnimationFrame();
 	expect(document.querySelector('[aria-label="Search all pages"]')).toBeNull();
 
-	await renderCurrentShell([calculatorDefinition], true);
+	await renderCurrentShell([], true);
 	await nextAnimationFrame();
 	expect(
 		document.querySelector('input[aria-label="Search all pages"]'),
 	).toBeTruthy();
+});
+
+test("the default shell offers only search commands and no toolkit windows", async () => {
+	const container = document.createElement("div");
+	document.body.append(container);
+	root = createRoot(container);
+	const ShellDialogs = shellModule.ShellDialogsIsland;
+	await act(async () => {
+		root?.render(<ShellDialogs searchEnabled settingsEnabled={false} />);
+	});
+	await dispatchPaletteShortcut(document.body, { ctrlKey: true });
+	expect(
+		[...document.querySelectorAll('[data-slot="command-item"]')].map(
+			(item) => item.textContent,
+		),
+	).toEqual([
+		"Search SiteSearch across every page.",
+		"Search PageSearch within the current page.",
+	]);
+	expect(document.querySelector("[data-toolkit-id]")).toBeNull();
 });
 
 async function renderShell(
@@ -235,49 +120,6 @@ async function dispatchPaletteShortcut(
 	await act(async () => target.dispatchEvent(event));
 	await nextAnimationFrame();
 	return event;
-}
-
-async function openCommand(title: string): Promise<void> {
-	await dispatchPaletteShortcut(document.body, { ctrlKey: true });
-	await clickText(title);
-	await nextAnimationFrame();
-}
-
-async function clickText(text: string): Promise<void> {
-	const item = [
-		...document.querySelectorAll<HTMLElement>('[data-slot="command-item"]'),
-	].find((candidate) => candidate.textContent?.includes(text));
-	if (!item) throw new Error(`Expected command "${text}"`);
-	await act(async () => item.click());
-}
-
-async function clickLabel(label: string): Promise<void> {
-	const control = document.querySelector<HTMLElement>(`[aria-label="${label}"]`);
-	if (!control) throw new Error(`Expected control labelled "${label}"`);
-	await act(async () => control.click());
-	await nextAnimationFrame();
-}
-
-async function clickButton(label: string): Promise<void> {
-	const button = [...document.querySelectorAll<HTMLButtonElement>("button")].find(
-		(candidate) => candidate.getAttribute("aria-label") === label,
-	);
-	if (!button) throw new Error(`Expected button "${label}"`);
-	await act(async () => button.click());
-}
-
-function toolkitInput(): HTMLTextAreaElement {
-	const input = document.querySelector<HTMLTextAreaElement>(
-		'[aria-label="Test toolkit input"]',
-	);
-	if (!input) throw new Error("Expected test toolkit input");
-	return input;
-}
-
-function calculatorExpression(): HTMLInputElement {
-	const input = document.querySelector<HTMLInputElement>("#sci-calc-expression");
-	if (!input) throw new Error("Expected calculator expression");
-	return input;
 }
 
 async function nextAnimationFrame(): Promise<void> {

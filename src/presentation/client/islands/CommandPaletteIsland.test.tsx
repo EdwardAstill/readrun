@@ -33,11 +33,10 @@ afterAll(() => {
 	restoreDom?.();
 });
 
-test("publishes and filters the three approved commands", () => {
+test("publishes and filters the search commands", () => {
 	expect(
 		paletteModule.COMMAND_PALETTE_COMMANDS.map((command) => command.title),
 	).toEqual([
-		"Open Scientific Calculator",
 		"Search Site",
 		"Search Page",
 	]);
@@ -72,22 +71,23 @@ test("renders the shared palette with shadcn CommandDialog chrome", async () => 
 	expect(document.querySelector('[data-slot="command-list"]')).toBeTruthy();
 	expect(document.querySelector('[data-slot="command-group"]')).toBeTruthy();
 	expect(document.querySelectorAll('[data-slot="command-item"]')).toHaveLength(
-		3,
+		2,
 	);
 });
 
-test("selects a filtered toolkit command with the keyboard", async () => {
+test("selects a filtered search command with the keyboard", async () => {
 	const opened: ToolkitId[] = [];
 	await renderPalette({ onOpenToolkit: (id) => opened.push(id) });
 	const input = document.querySelector<HTMLInputElement>(
 		'input[aria-label="Command palette"]',
 	)!;
 
-	await setInputValue(input, "calculator");
+	await setInputValue(input, "Search Page");
 	await keydown(input, "ArrowDown");
 	await keydown(input, "Enter");
 
-	expect(opened).toEqual(["scientific-calculator"]);
+	expect(opened).toEqual([]);
+	expect(overlayModule.getActiveOverlay()).toBe("page-search-overlay");
 });
 
 test("delegates search commands to their existing overlays", async () => {
