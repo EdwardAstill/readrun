@@ -26,7 +26,8 @@ export async function bundleClient(entry?: string): Promise<BundleResult> {
       target: "browser",
       format: "esm",
       splitting: false,
-      minify: false,
+      minify: true,
+      define: { "process.env.NODE_ENV": JSON.stringify("production") },
       plugins: [tailwind],
     });
 

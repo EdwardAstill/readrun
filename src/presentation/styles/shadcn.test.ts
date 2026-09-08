@@ -42,9 +42,11 @@ test("the production client bundle includes preflight before shadcn utilities", 
 	);
 
 	expect(bundle.warnings).toEqual([]);
-	expect([...bundle.style.matchAll(/^@layer properties;$/gm)]).toHaveLength(1);
+	expect([...bundle.style.matchAll(/@layer properties;/g)]).toHaveLength(1);
+	expect(bundle.script).not.toContain("react-dom-client.development");
+	expect(bundle.script).not.toContain("react.development");
 	expect(bundle.style).toContain("@layer base");
-	expect(bundle.style).toContain("list-style: none");
+	expect(bundle.style).toMatch(/list-style:\s*none/);
 	expect(bundle.style).toContain(".p-2");
 	expect(bundle.style).toMatch(
 		/\.rounded-xl\s*\{[^}]*border-radius:\s*calc\(var\(--radius\)\s*\+\s*4px\)/,

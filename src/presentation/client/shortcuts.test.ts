@@ -38,13 +38,15 @@ test("retains the page-search and shortcuts bindings", () => {
 test("opens shortcuts when question mark is typed with Shift", () => {
 	teardownShortcuts = shortcutsModule.initShortcuts();
 
-	document.body.dispatchEvent(new KeyboardEvent("keydown", {
-		key: "?",
-		code: "Slash",
-		shiftKey: true,
-		bubbles: true,
-		cancelable: true,
-	}));
+	document.body.dispatchEvent(
+		new KeyboardEvent("keydown", {
+			key: "?",
+			code: "Slash",
+			shiftKey: true,
+			bubbles: true,
+			cancelable: true,
+		}),
+	);
 
 	expect(overlayModule.getActiveOverlay()).toBe("shortcuts-overlay");
 });
@@ -57,6 +59,22 @@ test("does not handle an Escape already consumed by a toolkit", () => {
 	document.body.dispatchEvent(event);
 
 	expect(overlayModule.getActiveOverlay()).toBeNull();
+});
+
+test("pressing b swallows the key so it never types into the files search", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	const input = document.createElement("input");
+	document.body.append(input);
+
+	// The shortcut must consume the keydown; the value change would otherwise
+	// come from the same event's default text-insertion action once the files
+	// dialog focuses its search input synchronously.
+	const event = keydown("b");
+	document.body.dispatchEvent(event);
+
+	expect(event.defaultPrevented).toBe(true);
+	expect(overlayModule.getActiveOverlay()).toBe("files-overlay");
+	expect(input.value).toBe("");
 });
 
 function keydown(key: string): KeyboardEvent {

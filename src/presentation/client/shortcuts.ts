@@ -54,8 +54,12 @@ function openPageSearch(): void {
 }
 
 function getMainScrollContainer(): HTMLElement | null {
-	const frame = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-active]");
-	return (frame?.contentDocument ?? document).querySelector<HTMLElement>(".readrun-content");
+	const frame = document.querySelector<HTMLIFrameElement>(
+		"iframe[data-workspace-active]",
+	);
+	return (frame?.contentDocument ?? document).querySelector<HTMLElement>(
+		".readrun-content",
+	);
 }
 
 function getNavLinks(): HTMLAnchorElement[] {
@@ -237,7 +241,6 @@ export const SHORTCUT_GROUPS = [
 interface SimpleBinding {
 	parsed: ParsedBinding;
 	action: keyof ShortcutActions;
-	needsPreventDefault: boolean;
 }
 
 interface ChordBinding {
@@ -289,11 +292,9 @@ function buildDispatchTable(): void {
 			});
 		} else {
 			const parsed = parseBinding(binding);
-			const needsPreventDefault = parsed.key === " " || parsed.key === "/";
 			simpleBindings.push({
 				parsed,
 				action: action as keyof ShortcutActions,
-				needsPreventDefault,
 			});
 		}
 	}
@@ -351,10 +352,11 @@ function buildDispatchTable(): void {
 			!event.altKey &&
 			chordBindings[event.key]
 		) {
-			const isAlsoSimple = simpleBindings.some((b) =>
-				matchesKey(event, b.parsed),
-			);
+			const isAlsoSimple = simpleBindings.some((b) => matchesKey(event, b.parsed));
 			if (!isAlsoSimple) {
+				// Actions can focus inputs synchronously (e.g. opening the files
+				// dialog) — swallow the key so it never types into them.
+				event.preventDefault();
 				chordKey = event.key;
 				chordTimer = setTimeout(clearChord, 1000);
 				return;
@@ -362,11 +364,11 @@ function buildDispatchTable(): void {
 		}
 
 		// Check simple bindings
-		for (const { parsed, action, needsPreventDefault } of simpleBindings) {
+		for (const { parsed, action } of simpleBindings) {
 			if (matchesKey(event, parsed)) {
-				if (needsPreventDefault) {
-					event.preventDefault();
-				}
+				// Actions can focus inputs synchronously (e.g. opening the files
+				// dialog) — swallow the key so it never types into them.
+				event.preventDefault();
 				actions[action]();
 				return;
 			}

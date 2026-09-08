@@ -10,13 +10,13 @@ function usesSoftwareRendering(platform, environment, ozonePlatform = "") {
 	return disabled;
 }
 
-test("uses software rendering for native Linux Wayland before startup", () => {
-	expect(usesSoftwareRendering("linux", { WAYLAND_DISPLAY: "wayland-1" })).toBe(true);
-	expect(usesSoftwareRendering("linux", { XDG_SESSION_TYPE: "wayland" }, "auto")).toBe(true);
-	expect(usesSoftwareRendering("linux", {}, "wayland")).toBe(true);
+test("preserves acceleration for native Linux Wayland", () => {
+	expect(usesSoftwareRendering("linux", { WAYLAND_DISPLAY: "wayland-1" })).toBe(false);
+	expect(usesSoftwareRendering("linux", { XDG_SESSION_TYPE: "wayland" }, "auto")).toBe(false);
+	expect(usesSoftwareRendering("linux", {}, "wayland")).toBe(false);
 });
 
-test("uses XWayland with software rendering when available without overriding explicit platforms", () => {
+test("uses accelerated XWayland when available without overriding explicit platforms", () => {
 	for (const [selected, environment, expected] of [
 		["", { WAYLAND_DISPLAY: "wayland-1", DISPLAY: ":0" }, [["ozone-platform", "x11"]]],
 		["auto", { XDG_SESSION_TYPE: "wayland", DISPLAY: ":0" }, [["ozone-platform", "x11"]]],
@@ -33,7 +33,7 @@ test("uses XWayland with software rendering when available without overriding ex
 			disableHardwareAcceleration() { disabled = true; },
 		}, "linux", environment);
 		expect(switches).toEqual(expected);
-		expect(disabled).toBe(true);
+		expect(disabled).toBe(false);
 	}
 });
 

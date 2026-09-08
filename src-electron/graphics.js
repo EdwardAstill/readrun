@@ -10,7 +10,7 @@ export function configureDesktopGraphics(app, platform = process.platform, envir
 		if (environment.DISPLAY && (!ozonePlatform || ozonePlatform === "auto")) {
 			app.commandLine.appendSwitch("ozone-platform", "x11");
 		}
-		// The GPU process can also crash under XWayland on affected drivers.
-		app.disableHardwareAcceleration();
+		// Keep GPU acceleration enabled; software compositing makes scrolling and
+		// resizing expensive. Affected drivers can still use Electron's --disable-gpu.
 	}
 }
