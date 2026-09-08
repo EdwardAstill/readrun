@@ -1,4 +1,5 @@
 import type { ContentIndex } from "./content-index.ts";
+import { resolvePageWikilinks } from "./wikilinks.ts";
 
 export interface SearchDocument {
   id: string;
@@ -7,6 +8,7 @@ export interface SearchDocument {
   title: string;
   tags: string[];
   text: string;
+  linkedRelPaths: string[];
 }
 
 export function plainTextForSearch(markdown: string): string {
@@ -34,6 +36,8 @@ export function buildSearchDocuments(index: ContentIndex): SearchDocument[] {
     relPath: page.relPath,
     title: page.title,
     tags: [...page.tags],
+    linkedRelPaths: [...new Set(resolvePageWikilinks(page, index)
+      .flatMap((link) => link.status === "resolved" && link.page ? [link.page.relPath] : []))],
     text: plainTextForSearch(
       page.kind === "markdown" ? page.body : page.kind === "jsx" ? page.source : "",
     ),

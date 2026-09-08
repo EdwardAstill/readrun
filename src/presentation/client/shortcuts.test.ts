@@ -35,6 +35,20 @@ test("retains the page-search and shortcuts bindings", () => {
 	expect(overlayModule.getActiveOverlay()).toBe("shortcuts-overlay");
 });
 
+test("opens shortcuts when question mark is typed with Shift", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+
+	document.body.dispatchEvent(new KeyboardEvent("keydown", {
+		key: "?",
+		code: "Slash",
+		shiftKey: true,
+		bubbles: true,
+		cancelable: true,
+	}));
+
+	expect(overlayModule.getActiveOverlay()).toBe("shortcuts-overlay");
+});
+
 test("does not handle an Escape already consumed by a toolkit", () => {
 	teardownShortcuts = shortcutsModule.initShortcuts();
 	const event = keydown("Escape");

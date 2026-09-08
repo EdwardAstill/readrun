@@ -36,7 +36,7 @@ function parseBinding(raw: string): ParsedBinding {
 function matchesKey(event: KeyboardEvent, parsed: ParsedBinding): boolean {
 	return (
 		event.key === parsed.key &&
-		event.shiftKey === parsed.shift &&
+		(event.shiftKey === parsed.shift || parsed.key === "?") &&
 		event.ctrlKey === parsed.ctrl &&
 		event.metaKey === parsed.meta &&
 		event.altKey === parsed.alt

@@ -5,7 +5,12 @@ Readrun has two navigation modes:
 - **Tree mode** uses the filesystem by default, or `.readrun/navigation.yaml` when you want an authored sidebar.
 - **Wiki mode** uses `.readrun/entry.txt` only to choose the first page shown at `/`; the sidebar remains a plain all-pages wiki list.
 
-Single-click a folder to expand or collapse it in tree mode. The full site search palette (`Cmd+K` / `Ctrl+K`) covers every page.
+Single-click a folder to expand or collapse it in tree mode. Press `Cmd+K` / `Ctrl+K` and choose **Search Site** to open the file browser:
+
+- **Folders** searches filenames and paths through an expandable folder tree, with a content preview beside it.
+- **WikiLinks** searches the outgoing WikiLinks in the open note. Its current column lists linked notes and the right column previews the selected note; there is no parent column.
+
+Use the arrow keys to select a result, then Enter or **Open** to read it. Selecting a result only changes its preview. Wiki projects start in WikiLinks search; both choices are available in every project.
 
 ## Pinned search
 

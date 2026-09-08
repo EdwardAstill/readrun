@@ -6,6 +6,7 @@ export interface SiteSearchDocument {
 	tags?: string[];
 	text?: string;
 	body?: string;
+	linkedRelPaths?: string[];
 }
 
 export interface SiteSearchResult {
@@ -13,9 +14,6 @@ export interface SiteSearchResult {
 	score: number;
 	snippet: string;
 }
-
-let indexUrl: string | null = null;
-let indexPromise: Promise<SiteSearchDocument[]> | null = null;
 
 export function scoreSearchText(
 	query: string,
@@ -64,17 +62,13 @@ export function searchDocuments(
 		.slice(0, limit);
 }
 
-export function loadSearchIndex(url: string): Promise<SiteSearchDocument[]> {
-	if (indexPromise && indexUrl === url) {
-		return indexPromise;
-	}
-
-	indexUrl = url;
-	indexPromise = fetch(url)
-		.then((response) => (response.ok ? response.json() : []))
-		.then((value) => (Array.isArray(value) ? value.map(normalizeDocument) : []))
-		.catch(() => []);
-	return indexPromise;
+export async function loadSearchIndex(url: string): Promise<SiteSearchDocument[]> {
+	// Reopening search must reflect edited notes and their current outgoing links.
+	const response = await fetch(url, { cache: "no-cache" });
+	if (!response.ok) throw new Error("Could not load the file index.");
+	const value: unknown = await response.json();
+	if (!Array.isArray(value)) throw new Error("Invalid file index.");
+	return value.map(normalizeDocument);
 }
 
 function scoreDocument(
@@ -144,6 +138,9 @@ function normalizeDocument(value: unknown): SiteSearchDocument {
 		tags,
 		text: typeof record.text === "string" ? record.text : undefined,
 		body: typeof record.body === "string" ? record.body : undefined,
+		linkedRelPaths: Array.isArray(record.linkedRelPaths)
+			? record.linkedRelPaths.filter((path): path is string => typeof path === "string")
+			: [],
 	};
 }
 

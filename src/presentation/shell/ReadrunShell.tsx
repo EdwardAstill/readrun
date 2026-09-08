@@ -12,7 +12,7 @@ import { Button } from "../components/ui/Button.tsx";
 import { PageNavPanel } from "./PageNavPanel.tsx";
 import { TocPanel } from "./TocPanel.tsx";
 import { ResourcePanel } from "./ResourcePanel.tsx";
-import { Folder, List, Images, X } from "lucide-react";
+import { X } from "lucide-react";
 
 export interface ReadrunShellProps {
 	navigation: Navigation;
@@ -29,17 +29,6 @@ export interface ReadrunShellProps {
 export function ReadrunShell(props: ReadrunShellProps): React.JSX.Element {
 	return (
 		<SidebarProvider className="h-svh min-h-0 overflow-hidden readrun-shell flex flex-col" data-readrun-root="true">
-			<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4" aria-label="Reading tools">
-				{([
-					["files", "Files", Folder],
-					["outline", "Outline", List],
-					["resources", "Resources", Images],
-				] as const).map(([id, label, Icon]) => (
-					<Button key={id} variant="ghost" size="sm" data-open-overlay={`${id}-overlay`} aria-haspopup="dialog" aria-controls={`${id}-overlay`}>
-						<Icon aria-hidden="true" />{label}
-					</Button>
-				))}
-			</header>
 			<div className="readrun-content flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4">
 				<div className="readrun-layout mx-auto w-full max-w-(--readrun-content-width)">
 					<section className="readrun-article min-w-0">

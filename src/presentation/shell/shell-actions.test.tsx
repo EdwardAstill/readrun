@@ -14,10 +14,11 @@ test("renders centered navigation dialogs and client dialog islands", () => {
 		/>,
 	);
 
+	expect(html).not.toContain("<header");
 	expect(html).not.toContain('data-slot="sidebar"');
 	expect(html).not.toContain('data-island="resizable-shell"');
 	for (const id of ["files", "outline", "resources"]) {
-		expect(html).toContain(`data-open-overlay="${id}-overlay"`);
+		expect(html).not.toContain(`data-open-overlay="${id}-overlay"`);
 		expect(html).toContain(`<dialog id="${id}-overlay"`);
 		expect(html).toContain(`aria-labelledby="${id}-overlay-title"`);
 	}
