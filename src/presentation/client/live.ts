@@ -15,6 +15,7 @@ export interface LiveClientOptions {
   runtime: ReadrunRuntimeConfig;
   navigation?: ShellNavigationState;
   connect?: (url: string) => EventSource;
+  eventTarget?: EventTarget;
 }
 
 export interface LiveClient {
@@ -28,7 +29,7 @@ export function createLiveClient(options: LiveClientOptions): LiveClient {
   }
 
   const navigation = options.navigation ?? createShellNavigation();
-  const source = (options.connect ?? ((url) => new EventSource(url)))(
+  const source = options.eventTarget ?? (options.connect ?? ((url) => new EventSource(url)))(
     options.runtime.liveEventsUrl,
   );
 
@@ -43,13 +44,15 @@ export function createLiveClient(options: LiveClientOptions): LiveClient {
     }
     void refreshCurrentPage(navigation, parsed);
   };
-  source.addEventListener("snapshot", handleEvent);
-  source.addEventListener("reload", handleEvent);
+  source.addEventListener("snapshot", handleEvent as EventListener);
+  source.addEventListener("reload", handleEvent as EventListener);
 
   return {
     status: "connected",
     disconnect() {
-      source.close();
+      source.removeEventListener("snapshot", handleEvent as EventListener);
+      source.removeEventListener("reload", handleEvent as EventListener);
+      if (!options.eventTarget) (source as EventSource).close();
     },
   };
 }

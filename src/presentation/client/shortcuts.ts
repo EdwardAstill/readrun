@@ -54,7 +54,8 @@ function openPageSearch(): void {
 }
 
 function getMainScrollContainer(): HTMLElement | null {
-	return document.querySelector<HTMLElement>(".readrun-content");
+	const frame = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-active]");
+	return (frame?.contentDocument ?? document).querySelector<HTMLElement>(".readrun-content");
 }
 
 function getNavLinks(): HTMLAnchorElement[] {

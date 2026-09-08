@@ -77,12 +77,19 @@ cannot be decided at build time:
 - Runnable Python blocks
 - JSX blocks and bundled widgets
 - File viewers that need client-side behavior
+- Workspace tabs, split panes, and floating windows
 - Scoped feature remounting after in-shell navigation
 
-The browser runtime is intentionally small and DOM-based. Its composition root
-registers application-scoped features once and page-scoped features through a
-single lifecycle. It does not use a framework router or a global app state
-store.
+The workspace uses edcn's React layout components and workspace store. Each
+open file runs its existing DOM-based presentation runtime in an independent
+document frame. Frames stay mounted outside the changing layout tree, so
+moving a tab preserves its browsing context and interactive state.
+
+Within each document, the composition root registers application-scoped
+features once and page-scoped features through a single lifecycle. Internal
+page links open workspace tabs; live content updates use the document's
+existing remount lifecycle. The workspace does not use a framework router.
+In serve mode, one live-update connection is shared by all open documents.
 
 ## Python execution
 

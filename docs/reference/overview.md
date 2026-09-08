@@ -77,6 +77,26 @@ folder. `rr build` defaults to `dist/`; `rr deploy` uses `site/dist/` alongside
 its generated deploy package, lockfile, and installed dependencies in `site/`.
 The deployed site does not need a readrun server.
 
+## Reading several files
+
+Opening a page from **Files**, search, or a document link adds a workspace tab.
+Selecting an already open page returns to its tab. Each file keeps its scroll
+position, code edits, quiz answers, and running widgets while you switch tabs
+or rearrange panes.
+
+- **Split right** or **Split down** opens another instance of the selected file.
+- Drag a tab to a pane's edge to split it, or to its center to group tabs.
+- Drag a divider to resize panes; arrow keys resize a focused divider too.
+- **Float** moves the selected file into a floating window; **Dock** returns it.
+- Close a tab with its **×** button. Empty panes disappear automatically.
+
+**Outline**, **Resources**, page search, and reading shortcuts apply to the
+selected file. `Alt+ArrowDown` and `Alt+ArrowUp` cycle its pane's tabs; `Alt+W`
+closes the selected tab. `Alt+F` floats it and `Alt+D` docks it.
+
+Open tabs and their working state last until you close them or reload the
+workspace. Reloading starts with the file in the address bar.
+
 ## Where to go next
 
 - [Runtime flow](./runtime.md) explains what happens during serve, build, and browser execution.

@@ -26,21 +26,29 @@ import {
 } from "./shell-islands.tsx";
 import { readRuntimeConfig } from "./runtime-config.ts";
 import type { ClientFeature } from "./features.ts";
+import { mountReadingWorkspace, type ReadingWorkspaceHandle } from "./workspace/ReadingWorkspace.tsx";
+import { mountWorkspaceFrameBridge, requestWorkspaceDocument, workspaceFrame } from "./workspace/frame-bridge.ts";
 import "../styles/shadcn.css";
 
 const runtime = readRuntimeConfig();
 
 if (typeof document !== "undefined") {
-	const lifecycle = mountPresentationClient(clientFeatures());
+	const workspace = mountReadingWorkspace();
+	const lifecycle = mountPresentationClient(clientFeatures(workspace));
 	void lifecycle;
 }
 
-function clientFeatures(): ClientFeature[] {
-	return [
+function clientFeatures(workspace: ReadingWorkspaceHandle | null): ClientFeature[] {
+	const features = [
+		applicationFeature("workspace-frame", mountWorkspaceFrameBridge),
 		applicationFeature("navigation-dialogs", mountNavigationDialogs),
 		applicationFeature("shell-navigation", () => {
-			const navigation = createShellNavigation();
-			const live = runtime ? createLiveClient({ runtime, navigation }) : null;
+			const navigation = createShellNavigation({
+				onNavigate: workspace?.navigate ?? (workspaceFrame() ? requestWorkspaceDocument : undefined),
+			});
+			const live = runtime && !workspace ? createLiveClient({
+				runtime, navigation, eventTarget: workspaceFrame() ?? undefined,
+			}) : null;
 			const handlePopstate = (): void => {
 				void navigation.handlePopstate();
 			};
@@ -49,10 +57,16 @@ function clientFeatures(): ClientFeature[] {
 				window.removeEventListener("popstate", handlePopstate);
 				live?.disconnect();
 				navigation.teardown();
+				workspace?.teardown();
 			};
 		}),
 		applicationFeature("settings", () => {
 			applySettings(loadSettings());
+			const sync = (event: StorageEvent) => {
+				if (event.key === "readrun:settings") applySettings(loadSettings());
+			};
+			window.addEventListener("storage", sync);
+			return () => window.removeEventListener("storage", sync);
 		}),
 		applicationFeature("shell-islands", () => {
 			const handle = mountApplicationShellIslands();
@@ -77,6 +91,10 @@ function clientFeatures(): ClientFeature[] {
 		pageFeature("nav-focus", initNavFocus),
 		pageFeature("nav-collapse", initNavCollapse),
 	];
+	// Each document frame owns its interactive page lifecycle. The host keeps
+	// only the shared shell controls and file tree mounted.
+	return workspace ? features.filter((feature) => feature.scope === "application" ||
+		["page-nav-tree", "nav-focus", "nav-collapse"].includes(feature.name)) : features;
 }
 
 function applicationFeature(

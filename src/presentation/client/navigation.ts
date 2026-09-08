@@ -29,6 +29,7 @@ export interface ShellSwapSnapshot {
 
 export interface ShellNavigationOptions {
   root?: ParentNode;
+  onNavigate?: (url: string, reason: "navigation" | "popstate") => Promise<boolean>;
   fetchPage?: (request: PageSwapRequest) => Promise<Document>;
   onRemount?: (detail: ReadrunRemountDetail) => void;
 }
@@ -132,6 +133,9 @@ export function createShellNavigation(
     url: string,
     reason: PageSwapRequest["reason"],
   ): Promise<boolean> {
+    if (options.onNavigate && reason !== "live-update") {
+      return options.onNavigate(url, reason);
+    }
     const request: PageSwapRequest = {
       id: state.reserveRequestId(),
       url,
