@@ -25,7 +25,6 @@ import {
   QuestionnaireActions,
   QuestionnaireNext,
   QuestionnairePrevious,
-  QuestionnaireProgress,
   QuestionnaireSubmit,
 } from "./Questionnaire";
 import { QuizResults } from "./QuizResults";
@@ -134,6 +133,10 @@ function QuizSession(props: {
     (item) => item.id === state.activeItemId,
   );
   const activeItem = props.quiz.items[activeIndex];
+  const questions = props.quiz.items.filter((item) => item.type !== "info");
+  const activeQuestionIndex = activeItem && activeItem.type !== "info"
+    ? activeItem.index ?? questions.findIndex((question) => question.id === activeItem.id) + 1
+    : undefined;
   const nextItem = props.quiz.items[activeIndex + 1];
   const questionnaireItems = props.quiz.items.map((item) =>
     toQuestionnaireItem(
@@ -142,6 +145,9 @@ function QuizSession(props: {
       formName(props.idPrefix, item.id),
       state.skipped.includes(item.id),
     ),
+  );
+  const canComplete = props.quiz.items.filter((item) => item.type !== "info").every(
+    (item) => state.grades[item.id] !== undefined || state.skipped.includes(item.id),
   );
   const activeAnswer = activeItem ? state.answers[activeItem.id] : undefined;
   const activeGrade = activeItem ? state.grades[activeItem.id] : undefined;
@@ -221,16 +227,27 @@ function QuizSession(props: {
         <CardHeader>
           <CardTitle>{props.quiz.title}</CardTitle>
           <CardAction>
-            <QuestionnaireProgress
-              render={(progressProps, progressState) => (
-                <span {...progressProps}>
-                  Step {progressState.current} of {progressState.total}
-                </span>
-              )}
-            />
+            <span className="font-medium text-muted-foreground tabular-nums">
+              {activeQuestionIndex === undefined ? "Information" : `Question ${activeQuestionIndex}`}
+            </span>
           </CardAction>
         </CardHeader>
         <CardContent>
+          <nav aria-label="Quiz questions" className="mb-6 grid grid-cols-[repeat(auto-fill,2.75rem)] gap-2">
+            {questions.map((question, index) => (
+              <Button
+                key={question.id}
+                type="button"
+                variant={state.activeItemId === question.id ? "default" : "outline"}
+                className="size-11 p-0 tabular-nums"
+                aria-label={`Question ${question.index ?? index + 1}`}
+                aria-current={state.activeItemId === question.id ? "step" : undefined}
+                onClick={() => dispatch({ type: "jump-to", itemId: question.id })}
+              >
+                {question.index ?? index + 1}
+              </Button>
+            ))}
+          </nav>
           {props.quiz.items.map((item, index) => (
             <QuizStep
               key={item.id}
@@ -250,7 +267,12 @@ function QuizSession(props: {
             />
           ))}
         </CardContent>
-        <CardFooter className="border-t pt-6">
+        <CardFooter className="flex-col gap-3 border-t pt-6">
+          {canComplete && nextItem ? (
+            <Button type="button" className="self-end" onClick={complete}>
+              View results
+            </Button>
+          ) : null}
           <QuestionnaireActions>
             <QuestionnairePrevious />
             {activeItem && activeItem.type !== "info" && !activeGrade && (
@@ -267,7 +289,7 @@ function QuizSession(props: {
               nextItem ? (
                 <QuestionnaireNext onClick={goNext}>Continue</QuestionnaireNext>
               ) : (
-                <QuestionnaireSubmit type="button" onClick={complete}>
+                <QuestionnaireSubmit type="button" disabled={!canComplete} onClick={complete}>
                   View results
                 </QuestionnaireSubmit>
               )
@@ -275,7 +297,7 @@ function QuizSession(props: {
               nextItem ? (
                 <QuestionnaireNext onClick={goNext}>Next</QuestionnaireNext>
               ) : (
-                <QuestionnaireSubmit type="button" onClick={complete}>
+                <QuestionnaireSubmit type="button" disabled={!canComplete} onClick={complete}>
                   View results
                 </QuestionnaireSubmit>
               )

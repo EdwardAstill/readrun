@@ -1,3 +1,4 @@
+import { isLoopback, selectionCommandResponse } from "./selection-command-routes.ts";
 import { createFilesystemContentSource } from "../filesystem/content-source.ts";
 import { readProjectConfigDocuments } from "../filesystem/project-config-source.ts";
 import {
@@ -59,6 +60,7 @@ export async function startServer(
 	);
 	const uvPythonAvailable = await isUvPythonAvailable(options.uvCommand);
 	const runtimeConfig = {
+		enableSelectionCommands: true,
 		...options.runtimeConfig,
 		enableLocalPython:
 			options.runtimeConfig?.enableLocalPython ?? uvPythonAvailable,
@@ -80,7 +82,13 @@ export async function startServer(
 		Bun.serve({
 			port,
 			hostname: options.host,
-			fetch: async (request) => {
+			fetch: async (request, server) => {
+				if (new URL(request.url).pathname.startsWith("/_readrun/selection-commands")) {
+					const address = server.requestIP(request)?.address;
+					if (!address || !isLoopback(address)) return new Response("Local access required", { status: 403 });
+					const response = await selectionCommandResponse(request, options.root);
+					if (response) return response;
+				}
 				const runtimeResponse = await dispatchRuntimeRequest(request);
 				return (
 					runtimeResponse ?? dispatchSnapshotRequest(request, snapshotRoutes)

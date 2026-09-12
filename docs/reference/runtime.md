@@ -137,3 +137,25 @@ pages cannot update later.
 
 This lets the app keep global browser state, such as theme and Pyodide, while
 still refreshing page-specific behavior.
+
+## Selection commands
+
+When serving readrun locally on Linux, highlight text in a document and
+right-click **Explain with OMP**. A terminal opens with the selected text and
+source file's absolute path in OMP's editor. The prompt is a draft: review or
+edit it, then press Enter to submit it yourself.
+
+In **Settings → Selection commands**, choose a terminal and the OMP executable,
+and add, rename, disable, or remove commands. Prompt templates support
+`{selection}` and `{file}`. Click **Save commands** to persist changes across
+local readrun projects. Settings are stored in
+`$XDG_CONFIG_HOME/readrun/selection-commands.json` (normally
+`~/.config/readrun/selection-commands.json`).
+
+Automatic terminal detection supports Kitty, Ghostty, Foot, Alacritty,
+GNOME Terminal, Konsole, and `x-terminal-emulator`. OMP must support the
+`session_start` extension event and `ctx.ui.setEditorText`. Readrun starts a
+fresh interactive session with its draft extension; automatic discovery of
+other OMP extensions is disabled for that launch. The temporary draft file
+is removed once OMP fills the editor. No prompt is submitted automatically.
+Selection commands are unavailable on static exports and remote connections.

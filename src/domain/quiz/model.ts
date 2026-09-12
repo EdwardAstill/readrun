@@ -33,6 +33,7 @@ export interface ChoiceDefinition {
 }
 
 interface QuizQuestionBase {
+  index?: number;
 	id: string;
 	prompt: RichTextSource;
 	hint?: RichTextSource;

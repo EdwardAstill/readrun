@@ -1,3 +1,4 @@
+import { useSelectionCommands } from "../selection-commands.tsx";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -24,6 +25,7 @@ export function ContextMenuIsland(): React.JSX.Element {
 	const openMethodRef = useRef<"keyboard" | "pointer">("pointer");
 	const returnFocusRef = useRef<HTMLElement | null>(null);
 	const close = useCallback(() => setOpen(false), []);
+	const selectionCommands = useSelectionCommands(close);
 	const anchor = useMemo(
 		() => ({
 			contextElement: returnFocusRef.current ?? undefined,
@@ -38,13 +40,15 @@ export function ContextMenuIsland(): React.JSX.Element {
 			nextPoint: AnchorPoint,
 			method: "keyboard" | "pointer",
 		): void => {
+			selectionCommands.capture();
 			returnFocusRef.current = target;
 			openMethodRef.current = method;
 			setPoint(nextPoint);
 			setOpen(true);
 		};
 		const isContentTarget = (target: HTMLElement): boolean =>
-			Boolean(target.closest(".readrun-article, .readrun-main, .markdown-body"));
+			Boolean(target.closest(".readrun-article, .readrun-main, .markdown-body")) &&
+			!target.closest("input, textarea, [contenteditable=true]");
 
 		const handleContextMenu = (event: MouseEvent): void => {
 			const target = event.target;
@@ -96,6 +100,7 @@ export function ContextMenuIsland(): React.JSX.Element {
 	};
 
 	return (
+		<>
 		<DropdownMenu
 			open={open}
 			modal={false}
@@ -119,6 +124,7 @@ export function ContextMenuIsland(): React.JSX.Element {
 						finalFocus={false}
 						ref={popupRef}
 					>
+						{selectionCommands.items}
 						<DropdownMenuItem
 							onClick={() =>
 								runAction(() => openOverlay("settings-overlay"))
@@ -167,5 +173,7 @@ export function ContextMenuIsland(): React.JSX.Element {
 				</DropdownMenuPositioner>
 			</DropdownMenuPortal>
 		</DropdownMenu>
+		{selectionCommands.status}
+		</>
 	);
 }

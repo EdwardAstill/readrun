@@ -184,7 +184,7 @@ function parseQuestion(
 ): QuizQuestionDefinition | undefined {
 	const attrs = readAttributes(
 		block,
-		new Set(["id", "type", "case-sensitive"]),
+		new Set(["id", "index", "type", "case-sensitive"]),
 		diagnostics,
 		"error",
 		context,
@@ -220,11 +220,19 @@ function parseQuestion(
 		return undefined;
 	}
 
+	const rawIndex = stringAttribute(attrs, "index");
+	const questionIndex = rawIndex === undefined ? undefined : Number(rawIndex);
+	if (attrs.has("index") && (questionIndex === undefined || !Number.isSafeInteger(questionIndex) || questionIndex < 1)) {
+		diagnostics.push(diagnostic("error", "quiz.question.index", "Question index must be a positive integer.", context, block.source.startLine));
+		return undefined;
+	}
+
 	const nested = parseQuestionChildren(block, context, diagnostics);
 	const lines = directTextLines(block);
 	const parsedBody = parseQuestionBody(lines, type, id, context, source, diagnostics);
 	const common = {
 		id,
+		...(questionIndex === undefined ? {} : { index: questionIndex }),
 		prompt: parsedBody.prompt,
 		hint: nested.hint,
 		explanation: nested.explanation,

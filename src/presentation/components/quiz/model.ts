@@ -19,6 +19,7 @@ export interface QuizChoice {
 }
 
 interface QuizQuestionBase {
+  index?: number;
   id: string;
   prompt: ReactNode;
   hint?: ReactNode;

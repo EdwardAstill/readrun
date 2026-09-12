@@ -148,7 +148,7 @@ test("quiz rich text renders math when content is mounted and revealed", async (
 
 	expect(document.querySelectorAll(".katex").length).toBe(3);
 	await act(async () => {
-		document.querySelector<HTMLButtonElement>("button[aria-expanded='false']")?.click();
+		document.querySelector<HTMLButtonElement>("button[aria-controls$='-hint']")?.click();
 	});
 	expect(document.body.textContent).toContain("Hint:");
 	expect(document.querySelectorAll(".katex").length).toBe(4);
@@ -325,9 +325,9 @@ test("skip advances unanswered questions, allows returning, and finishes with sk
 	const host = document.querySelector<HTMLElement>('[data-island="quiz"]')!;
 	try {
 		await act(async () => button(host, "Skip").click());
-		expect(host.textContent).toContain("Step 2 of 2");
+		expect(host.textContent).toContain("Question 2");
 		await act(async () => button(host, "Previous").click());
-		expect(host.textContent).toContain("Step 1 of 2");
+		expect(host.textContent).toContain("Question 1");
 		const input = host.querySelector<HTMLInputElement>('input[type="radio"][value="a"]')!;
 		await act(async () => input.click());
 		await act(async () => button(host, "Check answer").click());

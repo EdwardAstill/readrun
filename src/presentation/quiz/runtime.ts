@@ -69,9 +69,13 @@ function parseItem(value: unknown, index: number): RenderedQuizItem {
 function parseQuestion(
 	value: Record<string, unknown> & { id: string; type: string },
 ): RenderedQuizQuestion {
+	if (value.index !== undefined && (typeof value.index !== "number" || !Number.isSafeInteger(value.index) || value.index < 1)) {
+		throw new Error("Question index must be a positive integer.");
+	}
 	const common = {
 		id: value.id,
 		prompt: parseRich(value.prompt),
+		...(value.index === undefined ? {} : { index: value.index }),
 		hint: value.hint === undefined ? undefined : parseRich(value.hint),
 		explanation:
 			value.explanation === undefined

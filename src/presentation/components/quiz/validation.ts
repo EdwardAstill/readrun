@@ -46,6 +46,9 @@ function validateQuestion(
   question: QuizQuestion,
   issues: QuizValidationIssue[],
 ): void {
+  if (question.index !== undefined && (!Number.isSafeInteger(question.index) || question.index < 1)) {
+    issues.push(issue("quiz.question.index", "Question index must be a positive integer."));
+  }
   if (question.type === "freetext") {
     if (!question.answer.expected.trim()) {
       issues.push(

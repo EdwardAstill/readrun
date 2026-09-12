@@ -7,6 +7,12 @@ static build.
 A quiz can contain reading steps plus single-choice, multiple-choice,
 true/false, and free-text questions. Readers answer deliberately, see feedback,
 move backward without losing answers, receive a score, and can restart.
+Use the numbered question grid to jump directly to any question. Answers are
+preserved when moving between questions. The header shows **Question 1**, etc.,
+counting questions only. Set an explicit positive integer index to match a worksheet
+or question bank: `[question id=force-unit index=8 type=single]`. This displays
+**8** in the grid and **Question 8** in the header, and uses **8** in results.
+Omitted indices use the question’s position, starting at 1.
 
 ## Live example
 

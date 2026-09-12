@@ -58,7 +58,7 @@ test("settings panel uses the approved controls and omits sidebar visibility", (
 		</Dialog>,
 	);
 
-	expect(html).toContain("Changes are saved automatically.");
+	expect(html).toContain("Appearance and reading changes are saved automatically.");
 	expect(html).toContain("Appearance");
 	expect(html).toContain("Reading");
 	expect(html).toContain("Behaviour");

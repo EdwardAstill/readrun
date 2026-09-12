@@ -11,6 +11,7 @@ export interface ReadrunRuntimeConfig {
 	enableLiveReload: boolean;
 	enableLocalPython: boolean;
 	enableBrowserPython?: boolean;
+	enableSelectionCommands?: boolean;
 }
 
 export const DEFAULT_RUNTIME_CONFIG: ReadrunRuntimeConfig = {

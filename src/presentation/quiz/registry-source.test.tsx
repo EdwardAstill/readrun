@@ -71,3 +71,45 @@ function button(container: HTMLElement, label: string): HTMLButtonElement {
 	if (!match) throw new Error(`Expected button "${label}"`);
 	return match;
 }
+
+test("number grid jumps to unanswered questions, preserves drafts, and completes out of order", async () => {
+  const question = definition.items[0]!;
+  if (question.type === "info") throw new Error("Expected a question");
+  const quiz: QuizDefinition = {
+    ...definition,
+    items: [
+      { type: "info", id: "intro", content: "Introduction" },
+      question,
+      { ...question, id: "second" },
+      { ...question, id: "third", index: 42 },
+    ],
+  };
+  const container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  await act(async () => root?.render(<Quiz quiz={quiz} />));
+  const grid = container.querySelector('nav[aria-label="Quiz questions"]')!;
+  expect([...grid.querySelectorAll("button")].map((item) => item.textContent)).toEqual(["1", "2", "42"]);
+  const jump = async (number: number) => {
+    await act(async () => button(grid as HTMLElement, String(number)).click());
+    expect(button(grid as HTMLElement, String(number)).getAttribute("aria-current")).toBe("step");
+  };
+  const answer = () => container.querySelector<HTMLInputElement>('[data-quiz-step]:not([hidden]) input[value="right"]')!;
+  await jump(1);
+  await act(async () => answer().click());
+  await jump(42);
+  expect(container.textContent).toContain("Question 42");
+  expect(container.textContent).not.toContain("Step ");
+  expect(answer().checked).toBe(false);
+  await act(async () => answer().click());
+  await act(async () => button(container, "Check answer").click());
+  expect(button(container, "View results").disabled).toBe(true);
+  await jump(1);
+  expect(answer().checked).toBe(true);
+  await act(async () => button(container, "Check answer").click());
+  await jump(2);
+  await act(async () => answer().click());
+  await act(async () => button(container, "Check answer").click());
+  await act(async () => button(container, "View results").click());
+  expect(container.textContent).toContain("3 / 3");
+});

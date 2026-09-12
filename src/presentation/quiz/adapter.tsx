@@ -34,6 +34,7 @@ function toQuizItem(item: RenderedQuizItem): QuizItem {
 	const common = {
 		id: item.id,
 		prompt: richText(item.prompt),
+		...(item.index === undefined ? {} : { index: item.index }),
 		hint: item.hint ? richText(item.hint) : undefined,
 		explanation: item.explanation ? richText(item.explanation) : undefined,
 	};

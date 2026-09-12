@@ -47,6 +47,7 @@ function renderQuestion(
 ): RenderedQuizQuestion {
 	const common = {
 		id: question.id,
+		...(question.index === undefined ? {} : { index: question.index }),
 		prompt: renderRich(question.prompt, renderer.block),
 		hint: question.hint
 			? renderRich(question.hint, renderer.block)

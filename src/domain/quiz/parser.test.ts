@@ -166,3 +166,27 @@ Question without a type
 		"quiz.question.type",
 	]);
 });
+
+test("question indices survive parsing, rendering, transport, and the React adapter", async () => {
+  const { renderQuizDefinition } = await import("../../presentation/quiz/render.ts");
+  const { serializeQuizPayload, parseQuizPayload } = await import("../../presentation/quiz/runtime.ts");
+  const { toQuizDefinition } = await import("../../presentation/quiz/adapter.tsx");
+  const source = (index: string) => `[quiz]
+[question type=freetext index=${index}]
+Name it.
+= Earth
+[/question]
+[/quiz]`;
+  const parsed = parseQuiz(quizBlock(source("42")), context);
+  expect(parsed.diagnostics).toEqual([]);
+  const rendered = renderQuizDefinition(parsed.definition!, {
+    instanceId: "indices",
+    richText: { block: (text) => text, inline: (text) => text },
+  });
+  const payload = parseQuizPayload(serializeQuizPayload(rendered));
+  const question = toQuizDefinition(payload).items[0];
+  expect(question?.type !== "info" && question?.index).toBe(42);
+  for (const invalid of ["0", "-1", "1.5", "abc"]) {
+    expect(parseQuiz(quizBlock(source(invalid)), context).diagnostics.some((item) => item.code === "quiz.question.index")).toBe(true);
+  }
+});

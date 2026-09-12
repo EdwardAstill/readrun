@@ -24,6 +24,7 @@ export interface RenderedQuizChoice {
 }
 
 interface RenderedQuizQuestionBase {
+  index?: number;
 	id: string;
 	prompt: RenderedRichText;
 	hint?: RenderedRichText;

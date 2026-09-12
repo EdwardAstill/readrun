@@ -1,3 +1,4 @@
+import { SelectionCommandSettings } from "./SelectionCommandSettings.tsx";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -129,7 +130,7 @@ export function SettingsPanel({
 			<DialogHeader className="pr-8">
 				<DialogTitle id="settings-dialog-title">Settings</DialogTitle>
 				<DialogDescription>
-					Personalise your reading experience. Changes are saved automatically.
+					Personalise your reading experience. Appearance and reading changes are saved automatically.
 				</DialogDescription>
 			</DialogHeader>
 
@@ -271,6 +272,7 @@ export function SettingsPanel({
 						}
 					/>
 				</section>
+				<SelectionCommandSettings />
 			</div>
 
 			<DialogFooter className="border-t pt-4 sm:justify-between">
