@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 import { createRoot } from "react-dom/client";
-import { Columns2, Rows2, PictureInPicture2, PanelTop, FolderOpen } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import { Button } from "../../components/ui/Button.tsx";
 import { WorkspaceProvider, useWorkspaceState, useWorkspaceStore, type WorkspaceViewProps } from "../../components/workspace/hooks/use-workspace.ts";
 import { useWorkspaceDrag } from "../../components/workspace/hooks/use-workspace-drag.ts";
@@ -171,7 +171,6 @@ function ReadingWorkspace({ controller, errors }: { controller: ReadingWorkspace
 	const views = Object.fromEntries(Object.values(state.views).map((view) => [view.type, DocumentSlot]));
 	return (
 		<WorkspaceProvider store={controller.store} views={views}>
-			<WorkspaceToolbar controller={controller} />
 			{error && <p role="alert" className="px-3 py-2 text-sm text-destructive">{error}</p>}
 			<WorkspaceSurface />
 		</WorkspaceProvider>
@@ -182,21 +181,6 @@ function useWorkspaceSnapshot(controller: ReadingWorkspaceController) {
 	return useSyncExternalStore(controller.store.subscribe, controller.store.getState, controller.store.getState);
 }
 
-function WorkspaceToolbar({ controller }: { controller: ReadingWorkspaceController }) {
-	const state = useWorkspaceState();
-	const view = activeView(state);
-	const floating = Object.values(state.floating).some((surface) => surface.stackId === state.activeStackId);
-	return (
-		<div aria-label="Workspace tools" className="flex shrink-0 flex-wrap items-center gap-1 border-b px-3 py-1">
-			<Button variant="ghost" size="sm" disabled={!view || floating} onClick={() => controller.split("horizontal")}><Columns2 />Split right</Button>
-			<Button variant="ghost" size="sm" disabled={!view || floating} onClick={() => controller.split("vertical")}><Rows2 />Split down</Button>
-			<Button variant="ghost" size="sm" disabled={!view} onClick={() => controller.store.applyCommand(floating ? "view/dock" : "view/float")}>
-				{floating ? <PanelTop /> : <PictureInPicture2 />}{floating ? "Dock" : "Float"}
-			</Button>
-			<span className="ml-auto text-xs text-muted-foreground">Drag tabs to arrange files</span>
-		</div>
-	);
-}
 
 function WorkspaceSurface() {
 	const surface = useRef<HTMLDivElement>(null);

@@ -84,10 +84,9 @@ Selecting an already open page returns to its tab. Each file keeps its scroll
 position, code edits, quiz answers, and running widgets while you switch tabs
 or rearrange panes.
 
-- **Split right** or **Split down** opens another instance of the selected file.
 - Drag a tab to a pane's edge to split it, or to its center to group tabs.
 - Drag a divider to resize panes; arrow keys resize a focused divider too.
-- **Float** moves the selected file into a floating window; **Dock** returns it.
+- `Alt+F` moves the selected file into a floating window; `Alt+D` returns it.
 - Close a tab with its **×** button. Empty panes disappear automatically.
 
 **Outline**, **Resources**, page search, and reading shortcuts apply to the
