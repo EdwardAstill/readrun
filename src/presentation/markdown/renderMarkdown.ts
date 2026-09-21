@@ -19,6 +19,7 @@ import { CodeBlock } from "./components/CodeBlock.tsx";
 import { ExecBlock } from "./components/ExecBlock.tsx";
 import { QueryBlock } from "./components/QueryBlock.tsx";
 import { ViewerBlock } from "./components/ViewerBlock.tsx";
+import { annotateBlockLine, annotateSourceLines } from "./source-lines.ts";
 import {
 	renderMarkdownFragment,
 	type MarkdownRenderEnvironment,
@@ -37,6 +38,7 @@ export interface RenderMarkdownResult {
 
 interface PageRenderEnvironment extends MarkdownRenderEnvironment {
 	relPath: string;
+	lineOffset: number;
 }
 
 let execBlockCounter = 0;
@@ -63,11 +65,16 @@ export function renderMarkdown(
 		collectHeadings: true,
 		headingIds: new Set(),
 		relPath: input.page.relPath,
+		lineOffset: (input.page.bodyStartLine ?? 1) - 1,
 	};
 	const html = renderNodes(parsed.tree, env, pageSlug);
+	const sourceInfo = JSON.stringify({
+		startLine: env.lineOffset + 1,
+		endLine: env.lineOffset + input.page.body.split(/\r?\n/).length,
+	}).replace(/</g, "\\u003c");
 
 	return {
-		html,
+		html: html + `<script type="application/json" id="readrun-source-lines">${sourceInfo}</script>`,
 		toc,
 		plainText: input.page.body.replace(/\s+/g, " ").trim(),
 	};
@@ -80,8 +87,10 @@ function renderNodes(
 ): string {
 	return joinHtml(
 		nodes.map((node) => {
-			if (node.type === "block") return renderBlock(node, env, pageSlug);
-			return renderMarkdownFragment(node.text, env, { mode: "block" });
+			if (node.type === "block") return annotateBlockLine(renderBlock(node, env, pageSlug),
+				env.lineOffset + node.source.startLine, env.lineOffset + node.source.endLine);
+			return annotateSourceLines(renderMarkdownFragment(node.text, env, { mode: "block" }),
+				node.text, env.lineOffset + (node.position?.line ?? 1));
 		}),
 	);
 }

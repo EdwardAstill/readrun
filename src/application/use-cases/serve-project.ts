@@ -6,6 +6,8 @@ export interface ServerHandle {
 	host: string;
 	stop(): void;
 	reload(): Promise<void>;
+	pageUrlForFile?(filePath: string): string | undefined;
+	setPreviewSource?(filePath: string, source: string | null): Promise<void>;
 }
 
 export interface ServeProjectInput {

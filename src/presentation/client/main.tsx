@@ -1,4 +1,5 @@
 import { createLiveClient } from "./live.ts";
+import { mountEditorSync } from "./editor-sync.ts";
 import { mountPresentationClient } from "./lifecycle.ts";
 import { createShellNavigation } from "./navigation.ts";
 import { initShortcuts } from "./shortcuts.ts";
@@ -90,6 +91,7 @@ function clientFeatures(workspace: ReadingWorkspaceHandle | null): ClientFeature
 		pageFeature("flowcharts", initFlowcharts),
 		pageFeature("nav-focus", initNavFocus),
 		pageFeature("nav-collapse", initNavCollapse),
+		pageFeature("editor-sync", mountEditorSync),
 	];
 	// Each document frame owns its interactive page lifecycle. The host keeps
 	// only the shared shell controls and file tree mounted.

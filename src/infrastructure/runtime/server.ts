@@ -48,7 +48,14 @@ interface ReloadChange {
 export async function startServer(
 	options: StartServerOptions,
 ): Promise<ServerHandle> {
-	const contentSource = createFilesystemContentSource(options.root);
+	const filesystemSource = createFilesystemContentSource(options.root);
+	const previewSources = new Map<string, string>();
+	const contentSource = {
+		...filesystemSource,
+		async readText(relPath: string) {
+			return previewSources.get(relPath) ?? filesystemSource.readText(relPath);
+		},
+	};
 	const readConfig =
 		options.readProjectConfigDocuments ?? readProjectConfigDocuments;
 	const liveChannel = options.liveChannel ?? createLiveRuntime();
@@ -61,6 +68,7 @@ export async function startServer(
 	const uvPythonAvailable = await isUvPythonAvailable(options.uvCommand);
 	const runtimeConfig = {
 		enableSelectionCommands: true,
+		enableLiveReload: options.watch === true,
 		...options.runtimeConfig,
 		enableLocalPython:
 			options.runtimeConfig?.enableLocalPython ?? uvPythonAvailable,
@@ -130,8 +138,11 @@ export async function startServer(
 		});
 	};
 
-	const queueReload = (change: ReloadChange): Promise<void> => {
-		const reload = reloadQueue.then(() => performReload(change));
+	const queueReload = (change: ReloadChange, update?: () => void): Promise<void> => {
+		const reload = reloadQueue.then(() => {
+			update?.();
+			return performReload(change);
+		});
 		reloadQueue = reload.catch(() => undefined);
 		return reload;
 	};
@@ -155,6 +166,17 @@ export async function startServer(
 	return {
 		port: server.port ?? options.port,
 		host: server.hostname ?? options.host ?? "localhost",
+		pageUrlForFile(filePath) {
+			return [...snapshot.contentIndex.byRelPath.values()].find((page) => page.filePath === filePath)?.url;
+		},
+		async setPreviewSource(filePath, source) {
+			const page = [...snapshot.contentIndex.byRelPath.values()].find((page) => page.filePath === filePath);
+			if (!page || page.kind !== "markdown") throw new Error("Editor preview requires a Markdown file in this project.");
+			await queueReload({ reason: "content-updated", relPath: page.relPath }, () => {
+				if (source === null) previewSources.delete(page.relPath);
+				else previewSources.set(page.relPath, source);
+			});
+		},
 		stop() {
 			watcher?.stop();
 			server.stop(true);

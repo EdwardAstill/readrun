@@ -19,6 +19,24 @@ function page(body: string): MarkdownPage {
 	};
 }
 
+test("source anchors preserve frontmatter offsets and skip fenced headings", () => {
+	const result = renderMarkdown({ page: {
+		...page("# Start\n\n```md\n# Not a heading\ntext\n```\n\n[image=test.png]\n\n## End"),
+		bodyStartLine: 5,
+	} });
+	expect(result.html).toContain('id="start" data-source-line="5"');
+	expect(result.html).toContain('<pre data-source-line="7">');
+	expect(result.html).toContain('data-source-line="12" data-source-end="12"');
+	expect(result.html).toContain('id="end" data-source-line="14"');
+	expect(result.html).toContain('{"startLine":5,"endLine":14}');
+});
+
+test("indented code does not steal the following fence's source anchor", () => {
+	const result = renderMarkdown({ page: page("# Start\n\n    indented\n\n```\nfenced\n```\n\n# End") });
+	expect(result.html).not.toContain('<pre data-source-line="5">');
+	expect(result.html).toContain('id="end" data-source-line="9"');
+});
+
 test("renderMarkdown renders headings, tables, wikilinks, and TOC", () => {
 	const result = renderMarkdown({
 		page: page(
@@ -40,7 +58,7 @@ test("renderMarkdown renders headings, tables, wikilinks, and TOC", () => {
 		],
 	});
 
-	expect(result.html).toContain('<h1 id="intro">Intro</h1>');
+	expect(result.html).toContain('<h1 id="intro" data-source-line="1">Intro</h1>');
 	expect(result.html).toContain('<a href="/other">Other</a>');
 	expect(result.html).toContain("<table>");
 	expect(result.html).toContain("<thead>");
@@ -86,7 +104,7 @@ test("renderMarkdown renders readrun blocks and leaves code fences display-only"
 		),
 	});
 
-	expect(result.html).toContain('<pre><code class="language-python">');
+	expect(result.html).toContain('<pre data-source-line="1"><code class="language-python">');
 	expect(result.html).toContain('data-slot="card"');
 	expect(result.html).toContain('data-slot="card-header"');
 	expect(result.html).toContain('data-slot="card-content"');
@@ -165,7 +183,7 @@ test("renderMarkdown renders mixed math and text", () => {
 		),
 	});
 
-	expect(result.html).toContain('<h1 id="intro">Intro</h1>');
+	expect(result.html).toContain('<h1 id="intro" data-source-line="1">Intro</h1>');
 	expect(result.html).toContain("$E = mc^2$");
 	expect(result.html).toContain("$$\\sum_{i=1}^n i = \\frac{n(n+1)}{2}$$");
 	expect(result.html).not.toContain('class="katex"');

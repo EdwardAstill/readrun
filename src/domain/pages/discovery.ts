@@ -160,6 +160,7 @@ export function pageFromDiscoveredFile(file: DiscoveredFile, _config: ConfigLike
       kind: "markdown",
       ext: ".md",
       body: parsed.body,
+      bodyStartLine: (file.source ?? "").split(/\r?\n/).length - parsed.body.split(/\r?\n/).length + 1,
       tags,
       outboundLinks: extractOutboundWikilinks(parsed.body),
     };

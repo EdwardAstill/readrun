@@ -4,6 +4,7 @@ import { defineCommand } from "citty";
 import type { ProjectConfigDocuments } from "../../domain/project/config-schema.ts";
 import { launchDesktop, type LaunchDesktopOptions } from "../../infrastructure/desktop/launcher.ts";
 import { startServer } from "../../infrastructure/runtime/server.ts";
+import { attachEditorInput } from "../../infrastructure/runtime/editor-input.ts";
 import {
 	serveProject,
 	type ServeProjectPorts,
@@ -109,7 +110,8 @@ export async function runServeCommand(
 		},
 		{ startServer: options.startServer ?? startServer },
 	);
-	const url = serverUrl(handle.host, handle.port, input.openPath);
+	const openPath = (input.filePath && handle.pageUrlForFile?.(input.filePath)) || input.openPath;
+	const url = serverUrl(handle.host, handle.port, openPath.split("/").map(encodeURIComponent).join("/"));
 
 	console.log(`readrun ${input.source} running at ${url}`);
 	console.log(`Serving content from: ${input.contentDir}`);
@@ -121,9 +123,13 @@ export async function runServeCommand(
 		return;
 	}
 
+	const stopEditorInput = process.env.READRUN_NVIM_SESSION && input.filePath && handle.setPreviewSource
+		? attachEditorInput(process.stdin, (source) => handle.setPreviewSource!(input.filePath!, source))
+		: undefined;
 	try {
 		await (options.launchDesktop ?? launchDesktop)(url, { floating: args.floating });
 	} finally {
+		stopEditorInput?.();
 		handle.stop();
 	}
 }

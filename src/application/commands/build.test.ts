@@ -36,7 +36,7 @@ test("runBuildCommand honors --output alias and emits rendered markdown", async 
   const clientCss = await Bun.file(
     path.join(project.out, "_readrun", "client.css"),
   ).text();
-  expect(html).toContain('<h1 id="hello">Hello</h1>');
+  expect(html).toContain('<h1 id="hello" data-source-line="1">Hello</h1>');
   expect(html).not.toContain("# Hello");
   expect(html).not.toContain("cdn.jsdelivr.net/npm/katex");
   expect(html).not.toContain("fonts/KaTeX");

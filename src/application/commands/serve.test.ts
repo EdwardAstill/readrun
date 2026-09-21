@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
 import path from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 
 import type {
 	ServeProjectPorts,
@@ -9,6 +11,24 @@ import { parseArgs } from "citty";
 import { runServeCommand, serveArgs } from "./serve.ts";
 
 const contentDir = path.resolve(import.meta.dirname, "../../../docs");
+
+test("single-file previews open the discovered route, including index and URL punctuation", async () => {
+	const root = await mkdtemp(path.join(tmpdir(), "rr-editor-route-"));
+	try {
+		for (const name of ["index.md", "notes #1.md"]) {
+			const file = path.join(root, name);
+			await Bun.write(file, "---\ntitle: Preview\n---\n\n# Source\n");
+			await runServeCommand({ path: file, port: 0 }, {
+				async launchDesktop(url) {
+					const response = await fetch(url);
+					expect(response.status).toBe(200);
+					expect(await response.text()).toContain('data-source-line="5"');
+					expect(new URL(url).pathname).toBe(name === "index.md" ? "/" : "/notes%20%231");
+				},
+			});
+		}
+	} finally { await rm(root, { recursive: true, force: true }); }
+});
 
 function fakeServer(
 	host: string,

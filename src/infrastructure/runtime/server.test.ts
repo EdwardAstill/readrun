@@ -403,6 +403,8 @@ test("watched changes update live status once with the actual change reason", as
 		watch: true,
 		liveChannel: recording.channel,
 	});
+	const initialHtml = await (await fetch(server.baseUrl)).text();
+	expect(initialHtml).toContain('"enableLiveReload":true');
 
 	await Bun.write(path.join(root, "index.md"), "# Updated\n");
 	const status = await waitFor(
@@ -435,6 +437,26 @@ test("watched changes update live status once with the actual change reason", as
 			relPath: "index.md",
 		},
 	]);
+	expect(await (await fetch(server.baseUrl)).text()).toContain(">Updated</h1>");
+});
+
+test("unsaved editor previews stay in memory and release back to watched files on save", async () => {
+	const root = await makeProject();
+	const file = path.join(root, "index.md");
+	const handle = await startServer({ root, port: 0, host: "localhost", watch: true });
+	servers.push(handle);
+	const url = `http://${handle.host}:${handle.port}/`;
+	await handle.setPreviewSource!(file, "# Unsaved draft\n\n- New bullet\n");
+	expect(await (await fetch(url)).text()).toContain(">Unsaved draft</h1>");
+	expect(await Bun.file(file).text()).toBe("# Hello\n\nTest page.\n");
+	await Bun.write(file, "# Saved version\n");
+	await handle.reload();
+	expect(await (await fetch(url)).text()).toContain(">Unsaved draft</h1>");
+	await handle.setPreviewSource!(file, null);
+	expect(await (await fetch(url)).text()).toContain(">Saved version</h1>");
+	await Bun.write(file, "# External change\n");
+	await waitFor(async () => (await fetch(url)).text(), (html) => html.includes(">External change</h1>"));
+	await expect(handle.setPreviewSource!(path.join(root, "../outside.md"), "invalid")).rejects.toThrow("in this project");
 });
 
 test("concurrent reload requests are queued and each publishes one completed snapshot", async () => {

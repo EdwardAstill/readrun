@@ -15,6 +15,8 @@ export const markdownStyles = `
 
 .readrun-main p { margin-bottom: 16px; }
 .readrun-main ul, .readrun-main ol { padding-left: 2em; margin-bottom: 16px; }
+.readrun-main ul { list-style-type: disc; }
+.readrun-main ol { list-style-type: decimal; }
 .readrun-main li + li { margin-top: 4px; }
 
 .readrun-main blockquote {

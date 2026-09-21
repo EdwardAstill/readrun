@@ -16,7 +16,7 @@ export type DesktopEnvironment = Record<string, string | undefined>;
 
 export interface DesktopProcessOptions {
 	cwd: string;
-	stdin: "inherit";
+	stdin: "inherit" | "ignore";
 	stdout: "inherit";
 	stderr: "inherit";
 	env: DesktopEnvironment;
@@ -106,7 +106,7 @@ export async function launchDesktop(
 	const launch = desktopLaunch(url, options);
 	const child = (options.spawnDesktop ?? spawnDesktop)(launch.command, {
 		cwd: launch.cwd,
-		stdin: "inherit",
+		stdin: launch.environment.READRUN_NVIM_SESSION ? "ignore" : "inherit",
 		stdout: "inherit",
 		stderr: "inherit",
 		env: launch.environment,

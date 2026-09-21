@@ -38,6 +38,7 @@ export interface MarkdownPage extends BasePage {
   kind: "markdown";
   ext: ".md";
   body: string;
+  bodyStartLine?: number;
   tags: string[];
   outboundLinks: OutboundWikilink[];
 }

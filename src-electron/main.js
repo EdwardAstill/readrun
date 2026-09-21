@@ -1,9 +1,11 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
+import { fileURLToPath } from "node:url";
 
 import { viewerUrl } from "./viewer-url.js";
 import { configureDesktopGraphics } from "./graphics.js";
 import { enableWheelZoom } from "./zoom.js";
 import { floatDesktopWindow } from "./floating.js";
+import { editorConnection } from "./editor.js";
 
 configureDesktopGraphics(app);
 
@@ -16,6 +18,14 @@ try {
 }
 
 let mainWindow;
+const editor = editorConnection(process.env, url.toString());
+const trustedEditorEvent = (event) => event.sender === mainWindow?.webContents &&
+	event.senderFrame === mainWindow.webContents.mainFrame &&
+	new URL(event.senderFrame.url).origin === url.origin;
+ipcMain.handle("readrun:editor-initial", (event) => trustedEditorEvent(event) ? editor?.initial ?? null : null);
+ipcMain.on("readrun:editor-scroll", (event, pathname, line) => {
+	if (trustedEditorEvent(event)) void editor?.scroll(pathname, line);
+});
 
 async function createWindow() {
 	mainWindow = new BrowserWindow({
@@ -26,6 +36,7 @@ async function createWindow() {
 		minHeight: 480,
 		frame: false,
 		webPreferences: {
+			preload: fileURLToPath(new URL("./preload.cjs", import.meta.url)),
 			contextIsolation: true,
 			nodeIntegration: false,
 			sandbox: true,
@@ -44,6 +55,7 @@ async function createWindow() {
 		}
 	});
 	mainWindow.on("closed", () => {
+		editor?.close();
 		mainWindow = undefined;
 	});
 
