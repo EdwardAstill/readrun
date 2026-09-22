@@ -105,6 +105,7 @@ local function start_server(target)
     vim.deepcopy(cmd),
     { "serve", target, "--port", tostring(port) }
   )
+  if vim.g.readrun_floating then table.insert(launch, "--floating") end
   local env = { READRUN_NVIM_SERVER = "", READRUN_NVIM_SESSION = "" }
   generation = generation + 1
   local session = tostring(vim.fn.getpid()) .. "-" .. tostring(generation)

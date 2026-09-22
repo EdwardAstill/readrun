@@ -47,9 +47,11 @@ assert(vim.fn.line("w0") == 70)
 assert(ReadrunScroll("wrong-session", 80) == 0)
 assert(vim.fn.line(".") == 70)
 
+vim.g.readrun_floating = true
 vim.cmd.Readrun()
 assert(stopped[1])
 local second = launches[2]
+assert(vim.tbl_contains(second.command, "--floating"))
 first.options.on_exit(1, 0)
 assert(ReadrunScroll(second.options.env.READRUN_NVIM_SESSION, 90) == 1)
 assert(ReadrunScroll(session, 10) == 0)
