@@ -18,6 +18,8 @@ export interface ReadingWorkspaceHandle {
 	teardown(): void;
 }
 
+interface InitialDocument { id: string; html: string }
+
 export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 	if (window.self !== window.top) return null;
 	const content = document.querySelector<HTMLElement>(".readrun-content");
@@ -25,6 +27,10 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 	const initialUrl = window.location.pathname + window.location.search + window.location.hash;
 	const initialTitle = document.querySelector("#main-content h1")?.textContent ?? document.title;
 	const controller = createReadingWorkspace(initialUrl, initialTitle);
+	const initialDocument: InitialDocument = {
+		id: activeView(controller.store.getState())!.id,
+		html: "<!doctype html>" + document.documentElement.outerHTML,
+	};
 	let navigatingHistory = false;
 	let disposed = false;
 	let navigationVersion = 0;
@@ -139,7 +145,7 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 	});
 	content.className = "readrun-content flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden";
 	const root = createRoot(content);
-	root.render(<ReadingWorkspace controller={controller} errors={errors} />);
+	root.render(<ReadingWorkspace controller={controller} errors={errors} initialDocument={initialDocument} />);
 	return {
 		controller,
 		navigate,
@@ -160,7 +166,7 @@ function DocumentSlot({ view }: WorkspaceViewProps) {
 	return <div data-document-slot={view.id} className="h-full min-h-0 w-full" />;
 }
 
-function ReadingWorkspace({ controller, errors }: { controller: ReadingWorkspaceController; errors: EventTarget }) {
+function ReadingWorkspace({ controller, errors, initialDocument }: { controller: ReadingWorkspaceController; errors: EventTarget; initialDocument: InitialDocument }) {
 	const [error, setError] = useState("");
 	const state = useWorkspaceSnapshot(controller);
 	useEffect(() => {
@@ -172,7 +178,7 @@ function ReadingWorkspace({ controller, errors }: { controller: ReadingWorkspace
 	return (
 		<WorkspaceProvider store={controller.store} views={views}>
 			{error && <p role="alert" className="px-3 py-2 text-sm text-destructive">{error}</p>}
-			<WorkspaceSurface />
+			<WorkspaceSurface initialDocument={initialDocument} />
 		</WorkspaceProvider>
 	);
 }
@@ -182,7 +188,7 @@ function useWorkspaceSnapshot(controller: ReadingWorkspaceController) {
 }
 
 
-function WorkspaceSurface() {
+function WorkspaceSurface({ initialDocument }: { initialDocument: InitialDocument }) {
 	const surface = useRef<HTMLDivElement>(null);
 	const store = useWorkspaceStore();
 	const state = useWorkspaceState();
@@ -195,7 +201,7 @@ function WorkspaceSurface() {
 		<div ref={surface} data-reading-workspace className="relative isolate min-h-0 min-w-0 flex-1 overflow-hidden">
 			<WorkspaceTiled />
 			<WorkspaceFloating />
-			<DocumentFrames surface={surface} />
+			<DocumentFrames surface={surface} initialDocument={initialDocument} />
 			{Object.keys(state.views).length === 0 && <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background">
 				<p className="text-sm text-muted-foreground">No files open</p>
 				<Button variant="outline" data-open-overlay="files-overlay"><FolderOpen />Open a file</Button>
@@ -223,7 +229,7 @@ function runWorkspaceKey(event: KeyboardEvent, store: ReadingWorkspaceController
  * Moving an iframe in the DOM reloads its browsing context. Instead, position
  * each frame over its current edcn view slot and hide inactive tabs.
  */
-function DocumentFrames({ surface }: { surface: RefObject<HTMLDivElement | null> }) {
+function DocumentFrames({ surface, initialDocument }: { surface: RefObject<HTMLDivElement | null>; initialDocument: InitialDocument }) {
 	const state = useWorkspaceState();
 	const drag = useWorkspaceDrag();
 	useEffect(() => {
@@ -256,13 +262,25 @@ function DocumentFrames({ surface }: { surface: RefObject<HTMLDivElement | null>
 		mounts.observe(root, { childList: true, subtree: true });
 		return () => { observer.disconnect(); mounts.disconnect(); };
 	}, [state, drag?.drag, surface]);
-	return Object.values(state.views).map((view) => <DocumentFrame key={view.id} view={view} active={activeView(state)?.id === view.id} />);
+	return Object.values(state.views).map((view) => <DocumentFrame key={view.id} view={view} active={activeView(state)?.id === view.id}
+		initialDocument={view.id === initialDocument.id ? initialDocument : undefined} />);
 }
 
-function DocumentFrame({ view, active }: WorkspaceViewProps & { active: boolean }) {
+function DocumentFrame({ view, active, initialDocument }: WorkspaceViewProps & { active: boolean; initialDocument?: InitialDocument }) {
 	const store = useWorkspaceStore();
 	const frame = useRef<HTMLIFrameElement>(null);
 	const [failed, setFailed] = useState(false);
+	const seeded = useRef(false);
+	useLayoutEffect(() => {
+		if (!initialDocument || seeded.current) return;
+		seeded.current = true;
+		// Reuse the server-rendered page. Opening from the host preserves its URL
+		// for relative links, source scrolling, and live updates inside this frame.
+		const page = frame.current!.contentDocument!;
+		page.open();
+		page.write(initialDocument.html);
+		page.close();
+	}, [initialDocument]);
 	useLayoutEffect(() => {
 		const element = frame.current!;
 		const focus = () => {
@@ -289,7 +307,7 @@ function DocumentFrame({ view, active }: WorkspaceViewProps & { active: boolean 
 	}, [store, view.id]);
 	return (
 		<div data-document-frame-host={view.id} className="absolute overflow-hidden rounded-b-md bg-background" hidden>
-			<iframe ref={frame} data-workspace-view={view.id} data-workspace-active={active || undefined} src={view.type} title={view.title} className="h-full w-full border-0"
+			<iframe ref={frame} data-workspace-view={view.id} data-workspace-active={active || undefined} src={initialDocument ? undefined : view.type} title={view.title} className="h-full w-full border-0"
 				onLoad={() => setFailed(!frame.current?.contentDocument?.querySelector("#main-content"))} />
 			{failed && <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background p-4 text-sm">
 				<p>Could not load {view.title}.</p>

@@ -99,6 +99,7 @@ export async function runServeCommand(
 	const handle = await serveProject(
 		{
 			root: input.contentDir,
+			filePath: input.filePath,
 			port: input.port,
 			host: input.host,
 			watch: true,

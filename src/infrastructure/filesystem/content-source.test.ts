@@ -83,3 +83,28 @@ test("prunes excluded directories without hiding project pages and assets", asyn
     ".readrun/assets/data/__pycache__",
   ]));
 });
+
+test("file previews read only the selected page and its assets without walking sibling projects", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "rr-single-file-test-"));
+  tempDirs.push(root);
+  for (const relPath of ["note.md", "sibling.md", "project/docs/unrelated.md", ".readrun/assets/images/logo.svg"]) {
+    const file = path.join(root, relPath);
+    await mkdir(path.dirname(file), { recursive: true });
+    await Bun.write(file, relPath);
+  }
+  const visited: string[] = [];
+  const source = createFilesystemContentSource(root, {
+    filePath: path.join(root, "note.md"),
+    async readDirectory(dir) {
+      const relPath = normaliseRelPath(path.relative(root, dir));
+      visited.push(relPath);
+      expect(relPath.startsWith(".readrun/assets")).toBe(true);
+      return readdir(dir, { withFileTypes: true });
+    },
+  });
+  const scope = createContentScope({ contentDir: root, mode: "tree", treeSource: "filesystem", ignorePatterns: [], issues: [] });
+  expect((await source.listFiles(scope)).map(file => file.relPath)).toEqual([".readrun/assets/images/logo.svg", "note.md"]);
+  expect(visited).toEqual([".readrun/assets", ".readrun/assets/images"]);
+  await rm(path.join(root, ".readrun"), { recursive: true });
+  expect((await source.listFiles(scope)).map(file => file.relPath)).toEqual(["note.md"]);
+});

@@ -15,6 +15,7 @@ import {
 import { safeJoin } from "./project-config-source.ts";
 
 interface FilesystemContentSourceOptions {
+  filePath?: string;
   readDirectory?: (dirPath: string) => Promise<Dirent[]>;
 }
 
@@ -27,7 +28,7 @@ export function createFilesystemContentSource(
 
   return {
     async listFiles(scope) {
-      const files = await walkFiles(normalisedRoot, scope, readDirectory);
+      const files = await walkFiles(normalisedRoot, scope, readDirectory, options.filePath);
       const visible: ContentFile[] = [];
 
       for (const filePath of files) {
@@ -67,13 +68,18 @@ async function walkFiles(
   root: string,
   scope: ContentScope,
   readDirectory: (dirPath: string) => Promise<Dirent[]>,
+  filePath?: string,
 ): Promise<string[]> {
-  const files: string[] = [];
-  const queue = [root];
+  // A file preview still needs its project's assets, but never scans sibling projects.
+  const files: string[] = filePath ? [path.resolve(root, filePath)] : [];
+  const queue = [filePath ? path.join(root, READRUN_ASSETS_DIR) : root];
 
   while (queue.length > 0) {
     const current = queue.shift()!;
-    const entries = await readDirectory(current);
+    const entries = await readDirectory(current).catch((error) => {
+      if (filePath && error.code === "ENOENT") return [];
+      throw error;
+    });
 
     for (const entry of entries) {
       const filePath = path.join(current, entry.name);

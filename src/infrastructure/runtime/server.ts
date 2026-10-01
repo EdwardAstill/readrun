@@ -28,6 +28,7 @@ const MAX_PORT = 65535;
 
 export interface StartServerOptions {
 	root: string;
+	filePath?: string;
 	port: number;
 	host?: string;
 	watch?: boolean;
@@ -48,7 +49,7 @@ interface ReloadChange {
 export async function startServer(
 	options: StartServerOptions,
 ): Promise<ServerHandle> {
-	const filesystemSource = createFilesystemContentSource(options.root);
+	const filesystemSource = createFilesystemContentSource(options.root, { filePath: options.filePath });
 	const previewSources = new Map<string, string>();
 	const contentSource = {
 		...filesystemSource,
@@ -150,6 +151,7 @@ export async function startServer(
 	if (options.watch) {
 		watcher = startFileWatcher({
 			root: options.root,
+			filePath: options.filePath,
 			getScope: () => snapshot.scope,
 			onChange: (change) => {
 				void queueReload(change).catch((error) => {

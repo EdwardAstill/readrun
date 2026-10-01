@@ -15,6 +15,7 @@ const contentDir = path.resolve(import.meta.dirname, "../../../docs");
 test("single-file previews open the discovered route, including index and URL punctuation", async () => {
 	const root = await mkdtemp(path.join(tmpdir(), "rr-editor-route-"));
 	try {
+		await Bun.write(path.join(root, "unrelated.md"), "# Unrelated file\n");
 		for (const name of ["index.md", "notes #1.md"]) {
 			const file = path.join(root, name);
 			await Bun.write(file, "---\ntitle: Preview\n---\n\n# Source\n");
@@ -22,7 +23,11 @@ test("single-file previews open the discovered route, including index and URL pu
 				async launchDesktop(url) {
 					const response = await fetch(url);
 					expect(response.status).toBe(200);
-					expect(await response.text()).toContain('data-source-line="5"');
+					const html = await response.text();
+					expect(html).toContain('data-source-line="5"');
+					expect(html).not.toContain("Unrelated file");
+					expect(html).not.toContain("fonts.googleapis.com");
+					expect((await fetch(new URL("/unrelated", url))).status).toBe(404);
 					expect(new URL(url).pathname).toBe(name === "index.md" ? "/" : "/notes%20%231");
 				},
 			});

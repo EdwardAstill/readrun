@@ -42,6 +42,8 @@ test("the production client bundle includes preflight before shadcn utilities", 
 	);
 
 	expect(bundle.warnings).toEqual([]);
+	expect(bundle.style).toContain("Inter Variable");
+	expect(bundle.style).not.toContain("fonts.googleapis.com");
 	expect([...bundle.style.matchAll(/@layer properties;/g)]).toHaveLength(1);
 	expect(bundle.script).not.toContain("react-dom-client.development");
 	expect(bundle.script).not.toContain("react.development");

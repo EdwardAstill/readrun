@@ -20,6 +20,8 @@ the preview do not move the original buffer. The preview updates while you type,
 including unsaved changes; buffer contents stay in memory and are never saved by
 Readrun. Saving with `:write` returns the preview to the file on disk. External
 file changes update automatically when there are no unsaved preview edits.
+File previews load just that document and its assets. Use `:Readrun .` to browse
+the whole working folder.
 
 | Command | Action |
 | --- | --- |

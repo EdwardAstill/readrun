@@ -7,6 +7,11 @@ This page explains how readrun turns a folder into an interactive site.
 When you run `rr` or `rr serve`, readrun starts a local server for the selected
 folder.
 
+Passing a single `.md` or `.pdf` file indexes only that document and the
+containing folder's `.readrun/assets`. It watches that file and `.readrun`,
+without scanning or watching sibling projects. Pass the folder instead when
+you want its full file navigation and links between documents.
+
 ```text
 content folder
   -> resolve .readrun/navigation.yaml, .readrun/entry.txt, and .readrun/ignore
@@ -84,6 +89,9 @@ The workspace uses edcn's React layout components and workspace store. Each
 open file runs its existing DOM-based presentation runtime in an independent
 document frame. Frames stay mounted outside the changing layout tree, so
 moving a tab preserves its browsing context and interactive state.
+The first frame reuses the HTML already loaded by the host, avoiding a second
+request and server render. Inter ships in the client stylesheet, so displaying
+the reader does not wait for Google Fonts.
 
 Within each document, the composition root registers application-scoped
 features once and page-scoped features through a single lifecycle. Internal

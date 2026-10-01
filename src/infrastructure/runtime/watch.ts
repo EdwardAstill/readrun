@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { watch } from "node:fs";
+import { watch, type FSWatcher } from "node:fs";
 
 import type { ContentChangeReason } from "../../application/read-models/project-snapshot.ts";
 import {
@@ -14,6 +14,7 @@ export interface WatchHandle {
 
 export interface StartFileWatcherOptions {
   root: string;
+  filePath?: string;
   scope?: ContentScope;
   getScope?: () => ContentScope;
   onChange?: (change: { relPath: string; reason: ContentChangeReason }) => void;
@@ -22,16 +23,14 @@ export interface StartFileWatcherOptions {
 
 export function startFileWatcher(options: StartFileWatcherOptions): WatchHandle {
   const root = path.resolve(options.root);
+  const selectedFile = options.filePath
+    ? normaliseRelPath(path.relative(root, path.resolve(root, options.filePath)))
+    : undefined;
   const debounceMs = options.debounceMs ?? 100;
   let timer: Timer | null = null;
   let pending: { relPath: string; reason: ContentChangeReason } | null = null;
 
-  const watcher = watch(root, { recursive: true }, (_eventType, filename) => {
-    if (!filename) {
-      return;
-    }
-
-    const relPath = normaliseRelPath(String(filename));
+  const changed = (relPath: string) => {
     if (relPath === "") {
       return;
     }
@@ -46,6 +45,10 @@ export function startFileWatcher(options: StartFileWatcherOptions): WatchHandle 
     if (!scope) {
       throw new Error("startFileWatcher requires scope or getScope.");
     }
+    if (selectedFile && relPath !== selectedFile && !relPath.startsWith(".readrun/")) return;
+    const decision = explainScopeDecision(relPath, scope);
+    if (decision.kind === "ignored" || decision.kind === "generated" ||
+      decision.kind === "private" && !relPath.startsWith(".readrun/")) return;
     const reason = classifyChangeReason(relPath, scope);
     pending = { relPath, reason };
 
@@ -62,11 +65,34 @@ export function startFileWatcher(options: StartFileWatcherOptions): WatchHandle 
       pending = null;
       timer = null;
     }, debounceMs);
+  };
+
+  let metadataWatcher: FSWatcher | undefined;
+  const watchMetadata = () => {
+    metadataWatcher?.close();
+    metadataWatcher = undefined;
+    try {
+      metadataWatcher = watch(path.join(root, ".readrun"), { recursive: true }, (_event, filename) => {
+        if (filename) changed(normaliseRelPath(path.join(".readrun", String(filename))));
+      });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  };
+  const watcher = watch(root, { recursive: !selectedFile }, (_event, filename) => {
+    if (!filename) return;
+    const relPath = normaliseRelPath(String(filename));
+    if (selectedFile && relPath === ".readrun") {
+      watchMetadata();
+      changed(".readrun/navigation.yaml");
+    } else changed(relPath);
   });
+  if (selectedFile) watchMetadata();
 
   return {
     stop() {
       watcher.close();
+      metadataWatcher?.close();
       if (timer) {
         clearTimeout(timer);
       }

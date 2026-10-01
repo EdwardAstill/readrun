@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { chmod, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rename, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -438,6 +438,38 @@ test("watched changes update live status once with the actual change reason", as
 		},
 	]);
 	expect(await (await fetch(server.baseUrl)).text()).toContain(">Updated</h1>");
+});
+
+test("single-file previews watch atomic saves and assets without reacting to sibling projects", async () => {
+	const root = await makeProjectWithFiles({
+		"note.md": "# Selected\n\n[python=example.py]\n",
+		"other.md": "# Other\n",
+		"project/.git/index.lock": "",
+		".readrun/assets/scripts/example.py": "print(1)",
+	});
+	const recording = createRecordingLiveChannel();
+	const server = await startTestServer({ root, filePath: path.join(root, "note.md"), watch: true, liveChannel: recording.channel });
+	const page = () => fetch(`${server.baseUrl}/note`).then(response => response.text());
+	expect(await page()).toContain("print(1)");
+	expect((await fetch(`${server.baseUrl}/other`)).status).toBe(404);
+	await Bun.write(path.join(root, "other.md"), "# Sibling changed\n");
+	await Bun.write(path.join(root, "project/.git/index.lock"), "unrelated change");
+	await Bun.sleep(250);
+	expect(recording.events).toHaveLength(0);
+	await Bun.write(path.join(root, "replacement.tmp"), "# Saved atomically\n\n[python=example.py]\n");
+	await rename(path.join(root, "replacement.tmp"), path.join(root, "note.md"));
+	expect(await waitFor(page, html => html.includes(">Saved atomically</h1>"))).toContain(">Saved atomically</h1>");
+	await Bun.write(path.join(root, ".readrun/assets/scripts/example.py"), "print(2)");
+	expect(await waitFor(page, html => html.includes("print(2)"))).toContain("print(2)");
+});
+
+test("single-file PDF previews keep the selected PDF asset available", async () => {
+	const pdf = "%PDF-1.4\n% selected\n";
+	const root = await makeProjectWithFiles({ "Week 1.pdf": pdf, "other.md": "# Other\n" });
+	const server = await startTestServer({ root, filePath: path.join(root, "Week 1.pdf") });
+	expect(await (await fetch(`${server.baseUrl}/Week%201/`)).text()).toContain('class="viewer viewer-pdf viewer-pdf-page"');
+	expect(await (await fetch(`${server.baseUrl}/Week%201.pdf`)).text()).toBe(pdf);
+	expect((await fetch(`${server.baseUrl}/other`)).status).toBe(404);
 });
 
 test("unsaved editor previews stay in memory and release back to watched files on save", async () => {

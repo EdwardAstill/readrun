@@ -12,6 +12,7 @@ export interface ServerHandle {
 
 export interface ServeProjectInput {
 	root: string;
+	filePath?: string;
 	port: number;
 	host?: string;
 	watch?: boolean;

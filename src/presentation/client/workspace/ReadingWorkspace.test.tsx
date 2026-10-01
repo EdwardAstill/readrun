@@ -37,12 +37,15 @@ function host(id: string) {
 	return document.querySelector<HTMLElement>(`[data-document-frame-host="${id}"]`)!;
 }
 
-test("initial document is visible, and tab switches retain the same iframe node", async () => {
+test("the initial document is reused without a second URL request and survives tab switches", async () => {
 	const { controller } = await mount();
 	const first = activeView(controller.store.getState())!.id;
 	const frame = host(first).querySelector("iframe");
+	expect(frame!.hasAttribute("src")).toBe(false);
+	expect(frame!.contentDocument?.querySelector("#main-content h1")?.textContent).toBe("First file");
 	expect(host(first).hidden).toBe(false);
 	await act(async () => { controller.open("/second", "Second file"); });
+	expect(document.querySelector('iframe[src="/second"]')).not.toBeNull();
 	expect(host(first).hidden).toBe(true);
 	expect(host(first).querySelector("iframe")).toBe(frame);
 	await act(async () => { frame!.dispatchEvent(new CustomEvent(WORKSPACE_FOCUS)); });
