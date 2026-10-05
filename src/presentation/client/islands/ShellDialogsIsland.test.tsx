@@ -26,6 +26,7 @@ afterEach(async () => {
 	await act(async () => root?.unmount());
 	root = undefined;
 	await act(async () => overlayModule.closeAllOverlays());
+	delete window.readrunDesktop;
 	document.body.replaceChildren();
 });
 
@@ -59,6 +60,18 @@ test("mounts site search only when search is enabled", async () => {
 	expect(
 		document.querySelector('input[aria-label="Search all pages"]'),
 	).toBeTruthy();
+});
+
+test("the Open a file action uses the desktop file manager", async () => {
+	await renderShell([]);
+	let opened = 0;
+	window.readrunDesktop = { openFiles: () => { opened += 1; } };
+	const button = document.createElement("button");
+	button.dataset.openOverlay = "files-overlay";
+	document.body.append(button);
+	await act(async () => button.click());
+	expect(opened).toBe(1);
+	expect(overlayModule.getActiveOverlay()).toBeNull();
 });
 
 test("the default shell offers only search commands and no toolkit windows", async () => {

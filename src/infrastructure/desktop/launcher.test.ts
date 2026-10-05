@@ -34,7 +34,7 @@ test("desktopLaunch constructs the Electron command", () => {
 			"/repo/node_modules/electron/dist/electron",
 			"/repo/src-electron/main.js",
 		],
-		cwd: "/repo",
+		cwd: process.cwd(),
 		environment: {
 			PATH: "/bin",
 			READRUN_DESKTOP_FLOATING: "0",
@@ -48,6 +48,7 @@ test("launchDesktop resolves after one successful viewer process", async () => {
 	await launchDesktop("http://127.0.0.1:3001/", {
 		packageRoot: "/repo",
 		electronExecutable: "/repo/node_modules/electron/dist/electron",
+		cwd: "/notes",
 		environment: { PATH: "/bin" },
 		spawnDesktop(command, options) {
 			spawned += 1;
@@ -56,7 +57,7 @@ test("launchDesktop resolves after one successful viewer process", async () => {
 				"/repo/src-electron/main.js",
 			]);
 			expect(options).toEqual({
-				cwd: "/repo",
+				cwd: "/notes",
 				stdin: "inherit",
 				stdout: "inherit",
 				stderr: "inherit",

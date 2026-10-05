@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { fileURLToPath } from "node:url";
 
 import { viewerUrl } from "./viewer-url.js";
@@ -19,12 +19,21 @@ try {
 
 let mainWindow;
 const editor = editorConnection(process.env, url.toString());
-const trustedEditorEvent = (event) => event.sender === mainWindow?.webContents &&
+const trustedDesktopEvent = (event) => event.sender === mainWindow?.webContents &&
 	event.senderFrame === mainWindow.webContents.mainFrame &&
 	new URL(event.senderFrame.url).origin === url.origin;
-ipcMain.handle("readrun:editor-initial", (event) => trustedEditorEvent(event) ? editor?.initial ?? null : null);
+ipcMain.handle("readrun:editor-initial", (event) => trustedDesktopEvent(event) ? editor?.initial ?? null : null);
 ipcMain.on("readrun:editor-scroll", (event, pathname, line) => {
-	if (trustedEditorEvent(event)) void editor?.scroll(pathname, line);
+	if (trustedDesktopEvent(event)) void editor?.scroll(pathname, line);
+});
+ipcMain.on("readrun:open-files", async (event) => {
+	if (!trustedDesktopEvent(event)) return;
+	try {
+		const error = await shell.openPath(process.cwd());
+		if (error) dialog.showErrorBox("Could not open file manager", error);
+	} catch (error) {
+		dialog.showErrorBox("Could not open file manager", error instanceof Error ? error.message : String(error));
+	}
 });
 
 async function createWindow() {

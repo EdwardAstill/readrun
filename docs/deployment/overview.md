@@ -227,7 +227,9 @@ one second.
 | Scroll up | `Shift+Space` | Scroll up one screen |
 | Scroll to top | `g g` | Jump to top of page |
 | Scroll to bottom | `G` | Jump to bottom of page |
-| Toggle sidebar | `b` | Show/hide nav sidebar |
+| Open files | `b` | Open the default file manager in the native window; browse pages in a web browser |
+| Outline | `o` | Open the selected file's outline |
+| Links | `l` | Browse the selected file's outgoing WikiLinks with previews |
 | Focus mode | `f` | Hide both sidebars |
 | Next theme | `t` | Cycle to next theme |
 | Previous theme | `T` | Cycle to previous theme |

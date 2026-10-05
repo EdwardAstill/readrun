@@ -79,18 +79,23 @@ The deployed site does not need a readrun server.
 
 ## Reading several files
 
-Opening a page from **Files**, search, or a document link adds a workspace tab.
+Opening a page from search or a document link adds a workspace tab.
 Selecting an already open page returns to its tab. Each file keeps its scroll
 position, code edits, quiz answers, and running widgets while you switch tabs
 or rearrange panes.
+
+Press `b` in the native window to open your default file manager in readrun's
+working directory. In a web browser, `b` opens the **Files** dialog, where
+selecting a page adds a workspace tab.
 
 - Drag a tab to a pane's edge to split it, or to its center to group tabs.
 - Drag a divider to resize panes; arrow keys resize a focused divider too.
 - `Alt+F` moves the selected file into a floating window; `Alt+D` returns it.
 - Close a tab with its **×** button. Empty panes disappear automatically.
 
-**Outline**, **Resources**, page search, and reading shortcuts apply to the
-selected file. `Alt+ArrowDown` and `Alt+ArrowUp` cycle its pane's tabs; `Alt+W`
+**Outline** (`o`), **Links** (`l`), **Resources**, page search, and reading shortcuts
+apply to the selected file. **Links** shows its outgoing WikiLinks with previews.
+`Alt+ArrowDown` and `Alt+ArrowUp` cycle its pane's tabs; `Alt+W`
 closes the selected tab. `Alt+F` floats it and `Alt+D` docks it.
 
 Open tabs and their working state last until you close them or reload the

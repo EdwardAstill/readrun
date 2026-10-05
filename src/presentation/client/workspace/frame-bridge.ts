@@ -18,6 +18,12 @@ export function requestWorkspaceDocument(url: string): Promise<boolean> {
 	return Promise.resolve(event.defaultPrevented);
 }
 
+export function requestWorkspaceOverlay(id: string): boolean {
+	const event = new CustomEvent(WORKSPACE_OVERLAY, { detail: id, cancelable: true });
+	workspaceFrame()?.dispatchEvent(event);
+	return event.defaultPrevented;
+}
+
 /** Bridge only our own frames. Other sites can still embed a normal reader. */
 export function mountWorkspaceFrameBridge(): () => void {
 	const frame = workspaceFrame();

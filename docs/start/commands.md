@@ -6,12 +6,13 @@ rr serve|docs|docs-wiki|web|init|validate|build|deploy|auth rotate|widgets-build
 
 ## Server options
 
-These options apply to `rr serve`, `rr docs`, and `rr docs-wiki`.
+These options apply to `rr serve`, `rr docs`, `rr docs-wiki`, and `rr web`.
 
 ```
 --port=<n>     Port (default: 3001)
 --host=<name>  Hostname (default: 127.0.0.1)
 --no-open      Run only the HTTP server; do not open a window
+--cwd=<path>   Working directory for relative paths and the native file manager
 ```
 
 ---
@@ -30,6 +31,15 @@ Equivalent to `rr serve .`
 By default, normal serve-family commands open exactly one native readrun window
 and keep the local server alive until that window closes. Closing the window
 stops the server. Use `--no-open` when you want a server without a window.
+
+In the native window, press `b` to open your default file manager. It starts in
+the directory that launched `rr`. When opening a single file without `--cwd`,
+it starts in that file's parent folder. An explicit `--cwd` takes precedence
+and also sets the base for relative content paths; without a content path,
+readrun serves that directory.
+
+Press `o` for the selected file's outline and `l` for its outgoing WikiLinks
+with linked-note previews.
 
 ---
 
@@ -58,6 +68,8 @@ rr serve                 # serve cwd
 rr serve my-notes/       # serve a folder
 rr serve guide.md        # serve a single file
 rr serve lecture.pdf     # serve a PDF in the full-page viewer
+rr --cwd ~/notes         # serve notes and use it as the file manager directory
+rr --cwd ~/notes chapter/guide.md  # preview a file, keeping notes as the working directory
 ```
 
 ---

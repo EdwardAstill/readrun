@@ -156,7 +156,10 @@ export function ShellDialogsIsland(
 				onOpenToolkit={openToolkit}
 			/>
 			{props.searchEnabled ? (
-				<SiteSearchIsland open={activeOverlay === "site-search-overlay"} />
+				<>
+					<SiteSearchIsland open={activeOverlay === "site-search-overlay"} />
+					<SiteSearchIsland open={activeOverlay === "links-overlay"} linksOnly />
+				</>
 			) : null}
 			<ToolkitWorkspace
 				definitions={toolkitDefinitions}

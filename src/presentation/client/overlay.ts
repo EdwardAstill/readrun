@@ -2,9 +2,16 @@
 
 import { clearNavFocus } from "./nav-focus.ts";
 
+declare global {
+	interface Window {
+		readrunDesktop?: { openFiles(): void };
+	}
+}
+
 export const OVERLAY_IDS = [
 	"files-overlay",
 	"outline-overlay",
+	"links-overlay",
 	"resources-overlay",
 	"settings-overlay",
 	"shortcuts-overlay",
@@ -34,6 +41,15 @@ export function subscribeOverlays(listener: OverlayListener): () => void {
 }
 
 export function openOverlay(id: string): void {
+	if (id === "files-overlay" && typeof window !== "undefined") {
+		let desktop: Window["readrunDesktop"];
+		try { desktop = window.top?.readrunDesktop; } catch { /* External embed. */ }
+		if (desktop) {
+			closeAllOverlays();
+			desktop.openFiles();
+			return;
+		}
+	}
 	if (!isOverlayId(id) || activeOverlay === id) return;
 	returnOverlay =
 		activeOverlay === "settings-overlay" && id === "shortcuts-overlay"

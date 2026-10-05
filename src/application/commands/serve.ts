@@ -13,6 +13,7 @@ import {
 	fail,
 	httpOptions,
 	openBrowser,
+	resolveDirectory,
 	resolveServeContentTarget,
 	serverArgs,
 	type ServerArgsValues,
@@ -73,7 +74,11 @@ export async function runServeCommand(
 	args: ServeCommandArgs,
 	options: RunServeCommandOptions = {},
 ): Promise<void> {
-	const target = await resolveServeContentTarget(args.path);
+	const cwd = args.cwd == null ? undefined : await resolveDirectory(args.cwd);
+	const target = await resolveServeContentTarget(
+		path.resolve(cwd ?? process.cwd(), args.path ?? "."),
+	);
+	const workingDirectory = cwd ?? (target.filePath ? target.contentDir : process.cwd());
 	const http = httpOptions(args);
 	const viewer: ServeViewer = http.noOpen
 		? null
@@ -128,7 +133,10 @@ export async function runServeCommand(
 		? attachEditorInput(process.stdin, (source) => handle.setPreviewSource!(input.filePath!, source))
 		: undefined;
 	try {
-		await (options.launchDesktop ?? launchDesktop)(url, { floating: args.floating });
+		await (options.launchDesktop ?? launchDesktop)(url, {
+			floating: args.floating,
+			cwd: workingDirectory,
+		});
 	} finally {
 		stopEditorInput?.();
 		handle.stop();

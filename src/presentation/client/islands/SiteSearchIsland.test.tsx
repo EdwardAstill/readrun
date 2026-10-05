@@ -28,7 +28,7 @@ afterEach(async () => {
 });
 afterAll(() => restoreDom());
 
-async function render() {
+async function render(linksOnly = false) {
 	globalThis.fetch = Object.assign(async () => Response.json(documents), { preconnect: originalFetch.preconnect });
 	const config = document.createElement("script");
 	config.id = "readrun-runtime-config";
@@ -37,7 +37,7 @@ async function render() {
 	const container = document.createElement("div");
 	document.body.append(container);
 	root = createRoot(container);
-	await act(async () => root?.render(<module.SiteSearchIsland open />));
+	await act(async () => root?.render(<module.SiteSearchIsland open linksOnly={linksOnly} />));
 }
 async function key(element: Element, key: string) {
 	await act(async () => element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })));
@@ -94,6 +94,32 @@ test("WikiLinks has only current and preview panes, and keyboard selection updat
 	try { await key(document.querySelector("input")!, "Enter"); }
 	finally { document.removeEventListener("click", intercept); }
 	expect(opened).toBe("/beta/");
+});
+
+test("the links shortcut view opens linked notes with previews without folder navigation", async () => {
+	await render(true);
+	expect(document.querySelector('[role="dialog"]')?.id).toBe("links-overlay");
+	expect(document.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Links");
+	expect(document.querySelector('[aria-label="Search mode"]')).toBeNull();
+	expect(rows()).toEqual(["Alpha", "Beta"]);
+	expect(preview()).toContain("Alpha preview text");
+	await type("beta");
+	expect(rows()).toEqual(["Beta"]);
+	await act(async () => root?.render(<module.SiteSearchIsland open={false} linksOnly />));
+	window.history.replaceState(null, "", "/alpha/");
+	await act(async () => root?.render(<module.SiteSearchIsland open linksOnly />));
+	expect(rows()).toEqual(["Home"]);
+});
+
+test("links identify a page served at an alias using its file metadata", async () => {
+	const data = document.createElement("script");
+	data.id = "readrun-files";
+	data.textContent = JSON.stringify({ page: { relPath: "research/alpha.md" } });
+	document.body.append(data);
+	window.history.replaceState(null, "", "/alias/");
+	await render(true);
+	expect(rows()).toEqual(["Home"]);
+	expect(preview()).toContain("Home contents");
 });
 
 test("WikiLinks follows the open page after navigation and handles notes with no links", async () => {

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { defineCommand, runMain } from "citty";
+import { defineCommand, parseArgs, runMain } from "citty";
 import path from "node:path";
 import packageJson from "../package.json" with { type: "json" };
 import { authRotateCommand } from "./application/commands/auth-rotate.ts";
@@ -44,14 +44,24 @@ const KNOWN_TOP_LEVEL_COMMANDS = new Set([
 	"-v",
 ]);
 
-if (process.argv[2] === "--floating") process.argv.splice(2, 0, "serve");
+if (
+	process.argv[2] === "--floating" ||
+	process.argv[2] === "--cwd" ||
+	process.argv[2]?.startsWith("--cwd=")
+) {
+	process.argv.splice(2, 0, "serve");
+}
 
 const firstArgument = process.argv[2];
 if (
 	firstArgument &&
 	!firstArgument.startsWith("-") &&
 	!KNOWN_TOP_LEVEL_COMMANDS.has(firstArgument) &&
-	(await pathExists(path.resolve(process.cwd(), firstArgument)))
+	(await pathExists(path.resolve(
+		process.cwd(),
+		parseArgs<typeof serveArgs>(process.argv.slice(2), serveArgs).cwd ?? ".",
+		firstArgument,
+	)))
 ) {
 	process.argv.splice(2, 0, "serve");
 }

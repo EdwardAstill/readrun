@@ -22,6 +22,8 @@ export const DEFAULT_SHORTCUTS: ShortcutConfig = {
   scrollToTop: "g g",
   scrollToBottom: "G",
   toggleSidebar: "s",
+  showOutline: "o",
+  showLinks: "l",
   focusMode: "f",
   nextTheme: "t",
   prevTheme: "T",

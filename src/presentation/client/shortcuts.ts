@@ -7,6 +7,7 @@ import {
 	type Settings,
 } from "./settings.ts";
 import { openOverlay, isAnyOverlayOpen, escapeSequence } from "./overlay.ts";
+import { requestWorkspaceOverlay } from "./workspace/frame-bridge.ts";
 
 // --- Binding parser ---
 
@@ -51,6 +52,10 @@ function getSettings(): Settings {
 
 function openPageSearch(): void {
 	openOverlay("page-search-overlay");
+}
+
+function openPageOverlay(id: string): void {
+	if (!requestWorkspaceOverlay(id)) openOverlay(id);
 }
 
 function getMainScrollContainer(): HTMLElement | null {
@@ -100,6 +105,8 @@ export interface ShortcutActions {
 	scrollToTop: () => void;
 	scrollToBottom: () => void;
 	toggleSidebar: () => void;
+	showOutline: () => void;
+	showLinks: () => void;
 	focusMode: () => void;
 	nextTheme: () => void;
 	prevTheme: () => void;
@@ -145,6 +152,8 @@ const actions: ShortcutActions = {
 	toggleSidebar: () => {
 		openOverlay("files-overlay");
 	},
+	showOutline: () => openPageOverlay("outline-overlay"),
+	showLinks: () => openPageOverlay("links-overlay"),
 	focusMode: () => {
 		const s = getSettings();
 		s.focusMode = !s.focusMode;
@@ -194,6 +203,8 @@ export const SHORTCUT_BINDINGS: Record<keyof ShortcutActions, string> = {
 	scrollToTop: "g g",
 	scrollToBottom: "G",
 	toggleSidebar: "b",
+	showOutline: "o",
+	showLinks: "l",
 	focusMode: "f",
 	nextTheme: "t",
 	prevTheme: "T",
@@ -219,6 +230,8 @@ export const SHORTCUT_GROUPS = [
 		label: "Reading",
 		items: [
 			["Open files", "toggleSidebar"],
+			["Show outline", "showOutline"],
+			["Show links", "showLinks"],
 			["Focus mode", "focusMode"],
 			["Next theme", "nextTheme"],
 			["Previous theme", "prevTheme"],

@@ -38,6 +38,8 @@ test("shows the display-only command palette shortcut", async () => {
 	expect(document.body.textContent).toContain("Ctrl/Cmd+K");
 	expect(document.body.textContent).toContain("Search page");
 	expect(document.body.textContent).toContain("Show shortcuts");
+	expect(document.body.textContent).toContain("Show outline");
+	expect(document.body.textContent).toContain("Show links");
 });
 
 async function nextAnimationFrame(): Promise<void> {

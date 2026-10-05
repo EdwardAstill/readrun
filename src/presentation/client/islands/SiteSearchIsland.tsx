@@ -11,9 +11,10 @@ import { loadSearchIndex, type SiteSearchDocument } from "../search/site.ts";
 
 export interface SiteSearchIslandProps {
 	open: boolean;
+	linksOnly?: boolean;
 }
 
-export function SiteSearchIsland({ open }: SiteSearchIslandProps) {
+export function SiteSearchIsland({ open, linksOnly = false }: SiteSearchIslandProps) {
 	const [documents, setDocuments] = useState<SiteSearchDocument[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [loadFailed, setLoadFailed] = useState(false);
@@ -21,11 +22,20 @@ export function SiteSearchIsland({ open }: SiteSearchIslandProps) {
 		typeof document !== "undefined" && document.querySelector('[aria-label="Wiki navigation"]') ? "wiki" : "folders",
 	);
 	const [currentUrl, setCurrentUrl] = useState("");
-	const close = useCallback(() => closeOverlay("site-search-overlay"), []);
+	const [currentRelPath, setCurrentRelPath] = useState<string>();
+	const overlayId = linksOnly ? "links-overlay" : "site-search-overlay";
+	const activeMode = linksOnly ? "wiki" : mode;
+	const close = useCallback(() => closeOverlay(overlayId), [overlayId]);
 
 	useEffect(() => {
 		if (!open) return;
-		const syncPage = () => setCurrentUrl(window.location.pathname);
+		const syncPage = () => {
+			setCurrentUrl(window.location.pathname);
+			try {
+				const data = JSON.parse(document.getElementById("readrun-files")?.textContent || "{}");
+				setCurrentRelPath(typeof data.page?.relPath === "string" ? data.page.relPath : undefined);
+			} catch { setCurrentRelPath(undefined); }
+		};
 		syncPage();
 		document.addEventListener("readrun:remount", syncPage);
 		return () => document.removeEventListener("readrun:remount", syncPage);
@@ -50,7 +60,8 @@ export function SiteSearchIsland({ open }: SiteSearchIslandProps) {
 		return () => { cancelled = true; };
 	}, [open]);
 
-	const current = currentSearchDocument(documents, currentUrl);
+	const current = currentSearchDocument(documents, currentUrl) ??
+		(currentRelPath ? documents.find((entry) => entry.relPath === currentRelPath) : undefined);
 	const folders = useMemo(() => folderSearchItems(documents), [documents]);
 	const links = useMemo(() => wikiSearchItems(documents, current), [documents, current]);
 	const selectResult = useCallback((item: SearchItem<SiteSearchDocument>) => {
@@ -64,16 +75,16 @@ export function SiteSearchIsland({ open }: SiteSearchIslandProps) {
 		anchor.remove();
 	}, [close]);
 
-	return <Modal id="site-search-overlay" open={open} onClose={close} ariaLabel="Search files"
+	return <Modal id={overlayId} open={open} onClose={close} ariaLabel={linksOnly ? "Links" : "Search files"}
 		contentClassName="gap-0 overflow-hidden p-0 sm:max-w-5xl">
 		<header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 pr-12">
-			<h2 className="text-sm font-medium">Search files</h2>
-			<div role="group" aria-label="Search mode" className="flex gap-1 rounded-lg bg-muted p-1">
+			<h2 className="text-sm font-medium">{linksOnly ? "Links" : "Search files"}</h2>
+			{!linksOnly && <div role="group" aria-label="Search mode" className="flex gap-1 rounded-lg bg-muted p-1">
 				<Button size="sm" variant={mode === "folders" ? "outline" : "ghost"} aria-pressed={mode === "folders"} onClick={() => setMode("folders")}><ListTree />Folders</Button>
 				<Button size="sm" variant={mode === "wiki" ? "outline" : "ghost"} aria-pressed={mode === "wiki"} onClick={() => setMode("wiki")}><Link />WikiLinks</Button>
-			</div>
+			</div>}
 		</header>
-		{loadFailed ? <p role="alert" className="p-6 text-sm text-muted-foreground">Could not load files. Close and reopen search to try again.</p> : open && <SearchBrowser key={`${mode}:${currentUrl}:${loading}`} mode={mode} items={mode === "wiki" ? links : folders}
-			currentTitle={current?.title} defaultSelectedId={mode === "folders" ? current?.url : undefined} loading={loading} onOpen={selectResult} />}
+		{loadFailed ? <p role="alert" className="p-6 text-sm text-muted-foreground">Could not load files. Close and reopen search to try again.</p> : open && <SearchBrowser key={`${activeMode}:${currentUrl}:${loading}`} mode={activeMode} items={activeMode === "wiki" ? links : folders}
+			currentTitle={current?.title} defaultSelectedId={activeMode === "folders" ? current?.url : undefined} loading={loading} onOpen={selectResult} />}
 	</Modal>;
 }

@@ -36,6 +36,7 @@ export interface DesktopSignals {
 
 export interface LaunchDesktopOptions {
 	floating?: boolean;
+	cwd?: string;
 	packageRoot?: string;
 	electronExecutable?: string;
 	spawnDesktop?: SpawnDesktop;
@@ -76,7 +77,7 @@ export function desktopLaunch(
 	url: string,
 	options: Pick<
 		LaunchDesktopOptions,
-		"packageRoot" | "electronExecutable" | "environment" | "floating"
+		"packageRoot" | "electronExecutable" | "environment" | "floating" | "cwd"
 	> = {},
 ): DesktopLaunch {
 	const environment = options.environment ?? process.env;
@@ -90,7 +91,7 @@ export function desktopLaunch(
 			options.electronExecutable ?? installedElectronExecutable(),
 			path.join(packageRoot, "src-electron", "main.js"),
 		],
-		cwd: packageRoot,
+		cwd: options.cwd ?? process.cwd(),
 		environment: {
 			...environment,
 			READRUN_DESKTOP_FLOATING: options.floating ? "1" : "0",

@@ -7,6 +7,7 @@ export type BuildPlatform = DeployPlatform | null;
 
 export interface ServerArgsValues {
   path?: string | null;
+  cwd?: string | null;
   port?: string | number | null;
   host?: string | null;
   open?: boolean | null;
@@ -38,6 +39,10 @@ export function serverArgsWithPort(defaultPort: string | number) {
   const port = String(defaultPort);
 
   return {
+    cwd: {
+      type: "string",
+      description: "Working directory (default: caller's cwd, or a supplied file's folder)",
+    },
     port: {
       type: "string",
       default: port,

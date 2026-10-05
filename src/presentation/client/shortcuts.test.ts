@@ -17,6 +17,7 @@ afterEach(() => {
 	teardownShortcuts?.();
 	teardownShortcuts = undefined;
 	overlayModule.closeAllOverlays();
+	delete window.readrunDesktop;
 	document.body.replaceChildren();
 });
 
@@ -49,6 +50,57 @@ test("opens shortcuts when question mark is typed with Shift", () => {
 	);
 
 	expect(overlayModule.getActiveOverlay()).toBe("shortcuts-overlay");
+});
+
+test("o opens the outline and l opens links, consuming the opening key", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	for (const [key, overlay] of [["o", "outline-overlay"], ["l", "links-overlay"]] as const) {
+		const event = keydown(key);
+		document.body.dispatchEvent(event);
+		expect(event.defaultPrevented).toBe(true);
+		expect(overlayModule.getActiveOverlay()).toBe(overlay);
+		overlayModule.closeAllOverlays();
+	}
+});
+
+test("file, outline, and links shortcuts leave typing, modifiers, and open dialogs alone", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	let opened = 0;
+	window.readrunDesktop = { openFiles: () => { opened += 1; } };
+	for (const key of ["b", "o", "l"]) {
+		for (const tag of ["input", "textarea", "select", "div"]) {
+			const editable = document.createElement(tag);
+			if (tag === "div") editable.contentEditable = "true";
+			document.body.append(editable);
+			const event = keydown(key);
+			editable.dispatchEvent(event);
+			expect(event.defaultPrevented).toBe(false);
+			expect(overlayModule.getActiveOverlay()).toBeNull();
+			editable.remove();
+		}
+		for (const modifier of ["ctrlKey", "metaKey", "altKey", "shiftKey"]) {
+			const event = new KeyboardEvent("keydown", { key, [modifier]: true, bubbles: true, cancelable: true });
+			document.body.dispatchEvent(event);
+			expect(event.defaultPrevented).toBe(false);
+			expect(overlayModule.getActiveOverlay()).toBeNull();
+		}
+		overlayModule.openOverlay("settings-overlay");
+		document.body.dispatchEvent(keydown(key));
+		expect(overlayModule.getActiveOverlay()).toBe("settings-overlay");
+		overlayModule.closeAllOverlays();
+	}
+	expect(opened).toBe(0);
+});
+
+test("b opens the desktop file manager without a Files dialog", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	let opened = 0;
+	window.readrunDesktop = { openFiles: () => { opened += 1; } };
+	const event = keydown("b");
+	document.body.dispatchEvent(event);
+	expect(event.defaultPrevented).toBe(true);
+	expect(opened).toBe(1);
+	expect(overlayModule.getActiveOverlay()).toBeNull();
 });
 
 test("does not handle an Escape already consumed by a toolkit", () => {

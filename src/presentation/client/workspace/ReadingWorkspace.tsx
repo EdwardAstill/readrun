@@ -9,7 +9,7 @@ import { WorkspaceFloating } from "../../components/workspace/components/workspa
 import { defaultKeymap, eventMatchesCombo, type WorkspaceCommand } from "../../components/workspace/lib/keymap.ts";
 import { activeView, createReadingWorkspace, documentUrl, type ReadingWorkspaceController } from "./controller.ts";
 import { WORKSPACE_FOCUS, WORKSPACE_KEY, WORKSPACE_OPEN, WORKSPACE_OVERLAY, WORKSPACE_REMOUNT } from "./frame-bridge.ts";
-import { closeOverlay, getActiveOverlay, subscribeOverlays } from "../overlay.ts";
+import { closeOverlay, getActiveOverlay, openOverlay, subscribeOverlays } from "../overlay.ts";
 import { readRuntimeConfig } from "../runtime-config.ts";
 
 export interface ReadingWorkspaceHandle {
@@ -133,9 +133,18 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 	};
 	// Frame events don't bubble by default, so listen in the capture phase.
 	content.addEventListener(WORKSPACE_OPEN, openFromFrame, true);
+	const pageOverlays = ["outline-overlay", "links-overlay", "resources-overlay", "page-search-overlay"];
+	const openOverlayFromFrame = (event: Event) => {
+		if (!(event.target as Element).matches("iframe[data-workspace-view]")) return;
+		const overlay = (event as CustomEvent<string>).detail;
+		if (!pageOverlays.includes(overlay)) return;
+		event.preventDefault();
+		openOverlay(overlay);
+	};
+	content.addEventListener(WORKSPACE_OVERLAY, openOverlayFromFrame, true);
 	const unsubscribeOverlays = subscribeOverlays(() => {
 		const overlay = getActiveOverlay();
-		if (!overlay || !["outline-overlay", "resources-overlay", "page-search-overlay"].includes(overlay)) return;
+		if (!overlay || !pageOverlays.includes(overlay)) return;
 		const view = activeView(controller.store.getState());
 		const frame = view ? content.querySelector<HTMLIFrameElement>(`iframe[data-workspace-view="${CSS.escape(view.id)}"]`) : null;
 		if (frame?.contentDocument) {
@@ -155,6 +164,7 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 			for (const request of requests) request.abort();
 			unsubscribe();
 			content.removeEventListener(WORKSPACE_OPEN, openFromFrame, true);
+			content.removeEventListener(WORKSPACE_OVERLAY, openOverlayFromFrame, true);
 			content.removeEventListener(WORKSPACE_REMOUNT, syncLiveNavigation, true);
 			unsubscribeOverlays();
 			root.unmount();

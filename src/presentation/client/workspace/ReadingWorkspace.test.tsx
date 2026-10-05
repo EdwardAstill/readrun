@@ -3,7 +3,8 @@ import { act } from "react";
 import { installHappyDom } from "../../../test/happy-dom.ts";
 import { activeView } from "./controller.ts";
 import type { ReadingWorkspaceHandle } from "./ReadingWorkspace.tsx";
-import { WORKSPACE_FOCUS } from "./frame-bridge.ts";
+import { WORKSPACE_FOCUS, WORKSPACE_OVERLAY } from "./frame-bridge.ts";
+import { closeAllOverlays, getActiveOverlay, openOverlay } from "../overlay.ts";
 import { createLiveClient } from "../live.ts";
 import { DEFAULT_RUNTIME_CONFIG } from "../../../shared/runtime-config.ts";
 
@@ -22,6 +23,7 @@ beforeAll(async () => {
 afterEach(async () => {
 	await act(async () => workspace?.teardown());
 	workspace = null;
+	closeAllOverlays();
 	document.body.replaceChildren();
 	window.history.replaceState({}, "", "/");
 });
@@ -79,6 +81,35 @@ test("closing the final tab releases its iframe and shows a way to open another 
 	await act(async () => controller.store.applyCommand("view/close"));
 	expect(document.querySelector("iframe")).toBeNull();
 	expect(document.querySelector('[data-open-overlay="files-overlay"]')?.textContent).toBe("Open a file");
+});
+
+test("outline and links actions target the selected document frame", async () => {
+	const { controller } = await mount();
+	const first = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-view]")!;
+	await act(async () => { controller.open("/second", "Second file"); });
+	const selected = activeView(controller.store.getState())!.id;
+	const received: Array<{ id: string; overlay: string }> = [];
+	for (const frame of document.querySelectorAll<HTMLIFrameElement>("iframe[data-workspace-view]")) {
+		frame.contentDocument!.addEventListener(WORKSPACE_OVERLAY, (event) => {
+			received.push({ id: frame.dataset.workspaceView!, overlay: (event as CustomEvent<string>).detail });
+		});
+	}
+	await act(async () => {
+		openOverlay("outline-overlay");
+		openOverlay("links-overlay");
+		// A closing search dialog can leave browser focus in the previous tab.
+		const request = new CustomEvent(WORKSPACE_OVERLAY, { detail: "outline-overlay", cancelable: true });
+		first.dispatchEvent(request);
+		expect(request.defaultPrevented).toBe(true);
+		first.dispatchEvent(new CustomEvent(WORKSPACE_OVERLAY, { detail: "links-overlay", cancelable: true }));
+	});
+	expect(received).toEqual([
+		{ id: selected, overlay: "outline-overlay" },
+		{ id: selected, overlay: "links-overlay" },
+		{ id: selected, overlay: "outline-overlay" },
+		{ id: selected, overlay: "links-overlay" },
+	]);
+	expect(getActiveOverlay()).toBeNull();
 });
 
 test("keyboard resizing changes the layout without replacing document frames", async () => {

@@ -20,7 +20,8 @@ test("single-file previews open the discovered route, including index and URL pu
 			const file = path.join(root, name);
 			await Bun.write(file, "---\ntitle: Preview\n---\n\n# Source\n");
 			await runServeCommand({ path: file, port: 0 }, {
-				async launchDesktop(url) {
+				async launchDesktop(url, options) {
+					expect(options?.cwd).toBe(root);
 					const response = await fetch(url);
 					expect(response.status).toBe(200);
 					const html = await response.text();
@@ -60,8 +61,9 @@ test("runServeCommand opens one desktop window then stops the server", async () 
 		{ path: contentDir, host: "127.0.0.1", port: "43123" },
 		{
 			startServer,
-			async launchDesktop(url) {
+			async launchDesktop(url, options) {
 				expect(stops).toBe(0);
+				expect(options?.cwd).toBe(process.cwd());
 				launches.push(url);
 			},
 		},
@@ -90,6 +92,41 @@ test("runServeCommand stops the server when desktop launch fails", async () => {
 	).rejects.toThrow("viewer failed");
 
 	expect(stops).toBe(1);
+});
+
+test("--cwd resolves relative serve paths and overrides a file's parent for the desktop", async () => {
+	const root = await mkdtemp(path.join(tmpdir(), "rr-cwd-"));
+	const file = path.join(root, "nested", "notes.md");
+	await Bun.write(file, "# Notes\n");
+	try {
+		for (const argv of [
+			["--cwd", root],
+			["--cwd", root, "nested/notes.md"],
+			["nested/notes.md", `--cwd=${root}`],
+		]) {
+			const args = parseArgs<typeof serveArgs>(argv, serveArgs);
+			await runServeCommand(args, {
+				async startServer(input) {
+					expect(input.root).toBe(args.path ? path.dirname(file) : root);
+					expect(input.filePath).toBe(args.path ? file : undefined);
+					return fakeServer("127.0.0.1", 43123, () => undefined);
+				},
+				async launchDesktop(url, options) {
+					expect(options?.cwd).toBe(root);
+					expect(new URL(url).pathname).toBe(args.path ? "/notes" : "/");
+				},
+			});
+		}
+	} finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("invalid --cwd fails before starting a server", async () => {
+	await expect(runServeCommand({ cwd: path.join(contentDir, "missing-directory") }, {
+		startServer: async () => { throw new Error("must not start"); },
+	})).rejects.toThrow("Folder not found:");
+	await expect(runServeCommand({ cwd: path.join(contentDir, "start", "commands.md") }, {
+		startServer: async () => { throw new Error("must not start"); },
+	})).rejects.toThrow("Not a folder:");
 });
 
 test("runServeCommand opens a browser once and leaves its server running", async () => {
@@ -218,6 +255,21 @@ test("CLI accepts floating folder shorthand and rejects no-open without starting
 		["serve", contentDir, "--floating", "--no-open"],
 	]) {
 		const result = Bun.spawnSync([process.execPath, cli, ...argv]);
+		expect(result.exitCode).toBe(1);
+		expect(result.stderr.toString()).toContain("--floating requires the desktop viewer");
+		expect(result.stdout.toString()).not.toContain("running at");
+	}
+});
+
+test("CLI accepts --cwd before and after relative file shorthand", async () => {
+	const cli = path.resolve(import.meta.dirname, "../../cli.ts");
+	for (const argv of [
+		["--cwd", contentDir, "start/commands.md"],
+		[`--cwd=${contentDir}`, "start/commands.md"],
+		["start/commands.md", "--cwd", contentDir],
+		["--cwd", contentDir],
+	]) {
+		const result = Bun.spawnSync([process.execPath, cli, ...argv, "--floating", "--no-open"]);
 		expect(result.exitCode).toBe(1);
 		expect(result.stderr.toString()).toContain("--floating requires the desktop viewer");
 		expect(result.stdout.toString()).not.toContain("running at");
