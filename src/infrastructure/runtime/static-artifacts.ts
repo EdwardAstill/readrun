@@ -63,7 +63,7 @@ export async function writeStaticArtifacts(
 	return emitted;
 }
 
-function prefixArtifactUrls(
+export function prefixArtifactUrls(
 	body: string | Blob | ArrayBuffer,
 	contentType: string,
 	basePath?: string,

@@ -91,6 +91,7 @@ export async function runServeCommand(
 			"Desktop mode requires a loopback host; use rr web or --no-open for remote hosts.",
 		);
 	}
+	const desktopToken = viewer === "desktop" ? crypto.randomUUID() : undefined;
 
 	const input: ServeProjectInput = {
 		...target,
@@ -105,6 +106,7 @@ export async function runServeCommand(
 		{
 			root: input.contentDir,
 			filePath: input.filePath,
+			desktopToken,
 			port: input.port,
 			host: input.host,
 			watch: true,
@@ -136,6 +138,7 @@ export async function runServeCommand(
 		await (options.launchDesktop ?? launchDesktop)(url, {
 			floating: args.floating,
 			cwd: workingDirectory,
+			openFileToken: desktopToken,
 		});
 	} finally {
 		stopEditorInput?.();

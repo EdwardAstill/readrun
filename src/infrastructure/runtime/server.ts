@@ -1,4 +1,7 @@
 import { isLoopback, selectionCommandResponse } from "./selection-command-routes.ts";
+import path from "node:path";
+import { stat } from "node:fs/promises";
+import { createFilePreview, type FilePreview } from "./file-preview.ts";
 import { createFilesystemContentSource } from "../filesystem/content-source.ts";
 import { readProjectConfigDocuments } from "../filesystem/project-config-source.ts";
 import {
@@ -29,6 +32,7 @@ const MAX_PORT = 65535;
 export interface StartServerOptions {
 	root: string;
 	filePath?: string;
+	desktopToken?: string;
 	port: number;
 	host?: string;
 	watch?: boolean;
@@ -77,6 +81,44 @@ export async function startServer(
 	let snapshotRoutes = createSnapshotRouteLookup({ snapshot, runtimeConfig });
 	let watcher: WatchHandle | undefined;
 	let reloadQueue = Promise.resolve();
+	const openedFiles = new Map<string, Promise<FilePreview>>();
+	const filePreviews = new Map<string, FilePreview>();
+	let stopped = false;
+	const publishChange = (change: ReloadChange) => {
+		runtimeState = updateProjectRuntimeState(runtimeState, change.reason, change.relPath);
+		liveChannel.publish({
+			type: "snapshot",
+			at: runtimeState.lastChange?.at ?? Date.now(),
+			version: runtimeState.version,
+			reason: change.reason,
+			relPath: change.relPath,
+		});
+	};
+	const openFile = async (filePath: string): Promise<string> => {
+		if (stopped) throw new Error("The readrun window has closed.");
+		if (!path.isAbsolute(filePath) || !/\.(md|pdf)$/i.test(filePath) || !(await stat(filePath)).isFile()) {
+			throw new Error("Choose a Markdown or PDF file.");
+		}
+		filePath = path.resolve(filePath);
+		const existing = [...snapshot.contentIndex.byRelPath.values()].find((page) => page.filePath === filePath);
+		if (existing) return existing.url.split("/").map(encodeURIComponent).join("/");
+		let preview = openedFiles.get(filePath);
+		if (!preview) {
+			preview = createFilePreview({
+				filePath, watch: options.watch, runtimeConfig, liveChannel,
+				getRuntimeState: () => runtimeState, onChange: publishChange,
+				clientEntry: options.clientEntry, uvPythonAvailable, uvCommand: options.uvCommand,
+			}).then((opened) => {
+				filePreviews.set(opened.basePath, opened);
+				return opened;
+			});
+			openedFiles.set(filePath, preview);
+			void preview.catch(() => openedFiles.delete(filePath));
+		}
+		const opened = await preview;
+		if (stopped) { opened.stop(); throw new Error("The readrun window has closed."); }
+		return opened.url;
+	};
 
 	const dispatchRuntimeRequest = createRuntimeRequestHandler({
 		root: options.root,
@@ -92,7 +134,29 @@ export async function startServer(
 			port,
 			hostname: options.host,
 			fetch: async (request, server) => {
-				if (new URL(request.url).pathname.startsWith("/_readrun/selection-commands")) {
+				const url = new URL(request.url);
+				if (url.pathname === "/_readrun/desktop/open-file" && options.desktopToken) {
+					const address = server.requestIP(request)?.address;
+					if (!address || !isLoopback(address) || request.headers.get("Authorization") !== `Bearer ${options.desktopToken}` ||
+						(request.headers.has("origin") && request.headers.get("origin") !== url.origin)) {
+						return new Response("Desktop access required", { status: 403 });
+					}
+					if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+					try {
+						const input = await request.json();
+						if (typeof input?.filePath !== "string" || input.filePath.length > 4096) throw new Error("Expected a file path.");
+						return Response.json({ url: await openFile(input.filePath) });
+					} catch (error) {
+						return Response.json({ error: error instanceof Error ? error.message : String(error) }, { status: 400 });
+					}
+				}
+				if (url.pathname.startsWith("/_readrun/opened/")) {
+					const address = server.requestIP(request)?.address;
+					if (!address || !isLoopback(address)) return new Response("Local access required", { status: 403 });
+					const preview = filePreviews.get(url.pathname.split("/").slice(0, 4).join("/"));
+					if (preview) return preview.fetch(request);
+				}
+				if (url.pathname.startsWith("/_readrun/selection-commands")) {
 					const address = server.requestIP(request)?.address;
 					if (!address || !isLoopback(address)) return new Response("Local access required", { status: 403 });
 					const response = await selectionCommandResponse(request, options.root);
@@ -125,18 +189,7 @@ export async function startServer(
 		// or the complete new snapshot and lookup.
 		snapshot = nextSnapshot;
 		snapshotRoutes = nextRoutes;
-		runtimeState = updateProjectRuntimeState(
-			runtimeState,
-			change.reason,
-			change.relPath,
-		);
-		liveChannel.publish({
-			type: "snapshot",
-			at: runtimeState.lastChange?.at ?? Date.now(),
-			version: runtimeState.version,
-			reason: change.reason,
-			relPath: change.relPath,
-		});
+		publishChange(change);
 	};
 
 	const queueReload = (change: ReloadChange, update?: () => void): Promise<void> => {
@@ -171,6 +224,7 @@ export async function startServer(
 		pageUrlForFile(filePath) {
 			return [...snapshot.contentIndex.byRelPath.values()].find((page) => page.filePath === filePath)?.url;
 		},
+		openFile,
 		async setPreviewSource(filePath, source) {
 			const page = [...snapshot.contentIndex.byRelPath.values()].find((page) => page.filePath === filePath);
 			if (!page || page.kind !== "markdown") throw new Error("Editor preview requires a Markdown file in this project.");
@@ -180,6 +234,8 @@ export async function startServer(
 			});
 		},
 		stop() {
+			stopped = true;
+			for (const preview of openedFiles.values()) void preview.then((opened) => opened.stop(), () => {});
 			watcher?.stop();
 			server.stop(true);
 		},

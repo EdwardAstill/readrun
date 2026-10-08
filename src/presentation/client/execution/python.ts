@@ -70,7 +70,7 @@ async function runLocalPythonBlock(
 	appendStatus(outputEl, "Running locally...", "loading");
 
 	try {
-		const response = await fetch("/api/exec/python", {
+		const response = await fetch(readRuntimeConfig()?.pythonExecutionUrl ?? "/api/exec/python", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ code }),

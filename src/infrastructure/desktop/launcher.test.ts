@@ -43,6 +43,13 @@ test("desktopLaunch constructs the Electron command", () => {
 	});
 });
 
+test("desktopLaunch passes the file-opening token only to the desktop process", () => {
+	const launch = desktopLaunch("http://127.0.0.1:3001/", {
+		packageRoot: "/repo", electronExecutable: "/electron", environment: {}, openFileToken: "desktop-token",
+	});
+	expect(launch.environment.READRUN_DESKTOP_OPEN_FILE_TOKEN).toBe("desktop-token");
+});
+
 test("launchDesktop resolves after one successful viewer process", async () => {
 	let spawned = 0;
 	await launchDesktop("http://127.0.0.1:3001/", {

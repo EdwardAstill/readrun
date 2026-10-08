@@ -12,6 +12,7 @@ import { doctorCommand } from "./application/commands/doctor.ts";
 import { initCommand } from "./application/commands/init.ts";
 import { newCommand } from "./application/commands/new.ts";
 import { serveCommand, serveArgs, runServeCommand } from "./application/commands/serve.ts";
+import { resolveWikilinkCommand } from "./application/commands/resolve-wikilink.ts";
 import { todayCommand } from "./application/commands/today.ts";
 import { validateCommand } from "./application/commands/validate.ts";
 import { deployCommand } from "./application/commands/deploy.ts";
@@ -24,6 +25,7 @@ import {
 
 const KNOWN_TOP_LEVEL_COMMANDS = new Set([
 	"serve",
+	"resolve-wikilink",
 	"init",
 	"validate",
 	"build",
@@ -84,6 +86,7 @@ const main = defineCommand({
 	},
 	subCommands: {
 		serve: serveCommand,
+		"resolve-wikilink": resolveWikilinkCommand,
 		init: initCommand,
 		validate: validateCommand,
 		build: buildCommand,

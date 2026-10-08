@@ -36,6 +36,7 @@ export interface DesktopSignals {
 
 export interface LaunchDesktopOptions {
 	floating?: boolean;
+	openFileToken?: string;
 	cwd?: string;
 	packageRoot?: string;
 	electronExecutable?: string;
@@ -77,7 +78,7 @@ export function desktopLaunch(
 	url: string,
 	options: Pick<
 		LaunchDesktopOptions,
-		"packageRoot" | "electronExecutable" | "environment" | "floating" | "cwd"
+		"packageRoot" | "electronExecutable" | "environment" | "floating" | "cwd" | "openFileToken"
 	> = {},
 ): DesktopLaunch {
 	const environment = options.environment ?? process.env;
@@ -96,6 +97,7 @@ export function desktopLaunch(
 			...environment,
 			READRUN_DESKTOP_FLOATING: options.floating ? "1" : "0",
 			READRUN_DESKTOP_URL: url,
+			...(options.openFileToken ? { READRUN_DESKTOP_OPEN_FILE_TOKEN: options.openFileToken } : {}),
 		},
 	};
 }

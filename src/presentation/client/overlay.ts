@@ -4,7 +4,10 @@ import { clearNavFocus } from "./nav-focus.ts";
 
 declare global {
 	interface Window {
-		readrunDesktop?: { openFiles(): void };
+		readrunDesktop?: {
+			openFiles(): void;
+			onFilesOpened?(listener: (urls: string[]) => void): () => void;
+		};
 	}
 }
 

@@ -23,6 +23,7 @@ beforeAll(async () => {
 afterEach(async () => {
 	await act(async () => workspace?.teardown());
 	workspace = null;
+	delete window.readrunDesktop;
 	closeAllOverlays();
 	document.body.replaceChildren();
 	window.history.replaceState({}, "", "/");
@@ -144,6 +145,32 @@ test("a failed request leaves open documents intact and displays an error", asyn
 		expect(document.querySelectorAll("iframe")).toHaveLength(1);
 		expect(activeView(handle.controller.store.getState())?.type).toBe("/");
 		expect(document.querySelector('[role="alert"]')?.textContent).toContain("404");
+	} finally { globalThis.fetch = originalFetch; }
+});
+
+test("a native multi-file selection opens each tab and releases its listener on teardown", async () => {
+	let receive!: (urls: string[]) => void;
+	let unsubscribed = false;
+	window.readrunDesktop = {
+		openFiles() {},
+		onFilesOpened(listener) { receive = listener; return () => { unsubscribed = true; }; },
+	};
+	const handle = await mount();
+	const first = document.querySelector("iframe");
+	const originalFetch = globalThis.fetch;
+	const urls = ["/_readrun/opened/preview/first/", "/_readrun/opened/preview/second/"];
+	globalThis.fetch = Object.assign(async (url: string | URL | Request) => new Response(`<main id="main-content"><h1>${url === urls[0] ? "First selected file" : "Second selected file"}</h1></main>`), { preconnect: originalFetch.preconnect });
+	try {
+		await act(async () => { receive(urls); });
+		expect(activeView(handle.controller.store.getState())?.title).toBe("Second selected file");
+		expect(Object.values(handle.controller.store.getState().views).map((view) => view.title)).toEqual(["First file", "First selected file", "Second selected file"]);
+		expect(document.querySelectorAll("iframe")).toHaveLength(3);
+		expect(first?.isConnected).toBe(true);
+		await act(async () => { receive(urls); });
+		expect(document.querySelectorAll("iframe")).toHaveLength(3);
+		await act(async () => handle.teardown());
+		workspace = null;
+		expect(unsubscribed).toBe(true);
 	} finally { globalThis.fetch = originalFetch; }
 });
 

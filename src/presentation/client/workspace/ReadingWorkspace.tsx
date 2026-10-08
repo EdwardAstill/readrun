@@ -133,6 +133,11 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 	};
 	// Frame events don't bubble by default, so listen in the capture phase.
 	content.addEventListener(WORKSPACE_OPEN, openFromFrame, true);
+	const unsubscribeFiles = window.readrunDesktop?.onFilesOpened?.((urls) => {
+		void (async () => {
+			for (const url of urls) await navigate(url, "navigation");
+		})();
+	});
 	const pageOverlays = ["outline-overlay", "links-overlay", "resources-overlay", "page-search-overlay"];
 	const openOverlayFromFrame = (event: Event) => {
 		if (!(event.target as Element).matches("iframe[data-workspace-view]")) return;
@@ -163,6 +168,7 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 			live?.close();
 			for (const request of requests) request.abort();
 			unsubscribe();
+			unsubscribeFiles?.();
 			content.removeEventListener(WORKSPACE_OPEN, openFromFrame, true);
 			content.removeEventListener(WORKSPACE_OVERLAY, openOverlayFromFrame, true);
 			content.removeEventListener(WORKSPACE_REMOUNT, syncLiveNavigation, true);

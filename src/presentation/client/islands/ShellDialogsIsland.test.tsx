@@ -62,7 +62,7 @@ test("mounts site search only when search is enabled", async () => {
 	).toBeTruthy();
 });
 
-test("the Open a file action uses the desktop file manager", async () => {
+test("the Open a file action uses the system file picker", async () => {
 	await renderShell([]);
 	let opened = 0;
 	window.readrunDesktop = { openFiles: () => { opened += 1; } };

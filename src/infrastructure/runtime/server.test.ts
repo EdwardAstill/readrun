@@ -79,6 +79,7 @@ async function startTestServer(
 	baseUrl: string;
 	port: number;
 	reload(): Promise<void>;
+	openFile(filePath: string): Promise<string>;
 	stop(): void;
 }> {
 	const root = options.root ?? (await makeProject());
@@ -94,6 +95,7 @@ async function startTestServer(
 		baseUrl: `http://${handle.host}:${handle.port}`,
 		port: handle.port,
 		reload: handle.reload,
+		openFile: (filePath) => handle.openFile!(filePath),
 		stop: handle.stop,
 	};
 }
@@ -244,7 +246,7 @@ test("startServer renders and serves PDFs whose paths contain spaces", async () 
 	expect(page.status).toBe(200);
 	const html = await page.text();
 	expect(html).toContain('class="viewer viewer-pdf viewer-pdf-page"');
-	expect(html).toContain('src="/slides/Week 1.pdf"');
+	expect(html).toContain('src="/slides/Week%201.pdf"');
 
 	const source = await fetch(`${server.baseUrl}/slides/Week%201.pdf`);
 	expect(source.status).toBe(200);
@@ -470,6 +472,89 @@ test("single-file PDF previews keep the selected PDF asset available", async () 
 	expect(await (await fetch(`${server.baseUrl}/Week%201/`)).text()).toContain('class="viewer viewer-pdf viewer-pdf-page"');
 	expect(await (await fetch(`${server.baseUrl}/Week%201.pdf`)).text()).toBe(pdf);
 	expect((await fetch(`${server.baseUrl}/other`)).status).toBe(404);
+});
+
+test("desktop file opening requires its token and is unavailable in browser mode", async () => {
+	const root = await makeProjectWithFiles({ "notes #1.md": "# Selected\n" });
+	const server = await startTestServer({ root, desktopToken: "desktop-token" });
+	const endpoint = `${server.baseUrl}/_readrun/desktop/open-file`;
+	const request = { method: "POST", headers: { Authorization: "Bearer desktop-token", "Content-Type": "application/json" },
+		body: JSON.stringify({ filePath: path.join(root, "notes #1.md") }) };
+	expect((await fetch(endpoint, { ...request, headers: {} })).status).toBe(403);
+	expect((await fetch(endpoint, { ...request, headers: { ...request.headers, Origin: "https://example.org" } })).status).toBe(403);
+	expect((await fetch(endpoint, { headers: request.headers })).status).toBe(405);
+	const response = await fetch(endpoint, request);
+	expect(response.status).toBe(200);
+	const opened = await response.json();
+	expect(opened.url).toBe("/notes%20%231");
+	expect(await (await fetch(`${server.baseUrl}${opened.url}`)).text()).toContain(">Selected</h1>");
+	const browser = await startTestServer({ root });
+	expect((await fetch(`${browser.baseUrl}/_readrun/desktop/open-file`, request)).status).toBe(404);
+});
+
+test("selected files outside a single-file preview open with isolated assets and stable URLs", async () => {
+	const root = await makeProjectWithFiles({ "index.md": "# Original\n", "sibling.md": "# Sibling\n" });
+	const outside = await makeProjectWithFiles({
+		"notes #1.md": "# Outside\n\n![Diagram](/_readrun/assets/images/diagram.svg)\n",
+		"unrelated.md": "# Do not scan\n",
+		".readrun/assets/images/diagram.svg": "<svg>outside</svg>",
+		"notes #1.pdf": "%PDF-1.7\nselected PDF\n",
+	});
+	const server = await startTestServer({ root, filePath: path.join(root, "index.md") });
+	const [first, again] = await Promise.all([server.openFile(path.join(outside, "notes #1.md")), server.openFile(path.join(outside, "notes #1.md"))]);
+	expect(again).toBe(first);
+	expect(first).toEndWith("/notes%20%231");
+	const base = first.slice(0, first.lastIndexOf("/notes"));
+	const html = await (await fetch(`${server.baseUrl}${first}`)).text();
+	expect(html).toContain(">Outside</h1>");
+	expect(html).not.toContain("Do not scan");
+	expect(html).toContain(`${base}/_readrun/assets/images/diagram.svg`);
+	expect(html).toContain(`${base}/api/exec/python`);
+	expect(html).toContain(`${base}/_readrun/selection-commands`);
+	expect(await (await fetch(`${server.baseUrl}${base}/_readrun/assets/images/diagram.svg`)).text()).toBe("<svg>outside</svg>");
+	expect((await fetch(`${server.baseUrl}${base}/unrelated/`)).status).toBe(404);
+	expect((await fetch(`${server.baseUrl}/sibling/`)).status).toBe(404);
+	const sibling = await server.openFile(path.join(root, "sibling.md"));
+	expect(await (await fetch(`${server.baseUrl}${sibling}`)).text()).toContain(">Sibling</h1>");
+	const pdfUrl = await server.openFile(path.join(outside, "notes #1.pdf"));
+	expect(pdfUrl).not.toBe(first);
+	const pdfHtml = await (await fetch(`${server.baseUrl}${pdfUrl}`)).text();
+	expect(pdfHtml).toContain('class="viewer viewer-pdf viewer-pdf-page"');
+	const source = pdfHtml.match(/src="([^"]+\.pdf)"/);
+	expect(source).not.toBeNull();
+	expect(await (await fetch(`${server.baseUrl}${source![1]}`)).text()).toBe("%PDF-1.7\nselected PDF\n");
+	expect(await (await fetch(server.baseUrl)).text()).toContain(">Original</h1>");
+	await expect(server.openFile(path.join(outside, "missing.md"))).rejects.toThrow();
+	await expect(server.openFile(path.join(outside, ".readrun/assets/images/diagram.svg"))).rejects.toThrow("Choose a Markdown or PDF file");
+});
+
+test("selected outside files watch atomic saves and stop with the main server", async () => {
+	const outside = await makeProjectWithFiles({ "note.md": "# Before\n", "sibling.md": "# Unrelated\n" });
+	const recording = createRecordingLiveChannel();
+	const server = await startTestServer({ watch: true, liveChannel: recording.channel });
+	const url = await server.openFile(path.join(outside, "note.md"));
+	await Bun.write(path.join(outside, "replacement.tmp"), "# After\n");
+	await rename(path.join(outside, "replacement.tmp"), path.join(outside, "note.md"));
+	await waitFor(() => fetch(`${server.baseUrl}${url}`).then((response) => response.text()), (html) => html.includes(">After</h1>"));
+	expect(recording.events.some((event) => event.type === "snapshot")).toBe(true);
+	server.stop();
+	const count = recording.events.length;
+	await Bun.write(path.join(outside, "note.md"), "# Closed\n");
+	await Bun.sleep(200);
+	expect(recording.events).toHaveLength(count);
+});
+
+test("selected outside files run local Python with their own data assets", async () => {
+	const root = await makeProject();
+	const outside = await makeProjectWithFiles({ "note.md": "# Outside\n", ".readrun/assets/data/input.txt": "Outside data\n" });
+	const server = await startTestServer({ root, uvCommand: await makeFakeUv(root) });
+	const url = await server.openFile(path.join(outside, "note.md"));
+	const base = url.slice(0, url.lastIndexOf("/note"));
+	const response = await fetch(`${server.baseUrl}${base}/api/exec/python`, {
+		method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: "from pathlib import Path; print(Path('data/input.txt').read_text())" }),
+	});
+	expect(response.status).toBe(200);
+	expect((await response.json()).stdout.trim()).toBe("Outside data");
 });
 
 test("unsaved editor previews stay in memory and release back to watched files on save", async () => {

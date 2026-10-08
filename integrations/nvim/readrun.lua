@@ -16,24 +16,19 @@ _G.ReadrunScroll = function(session, line)
   return 1
 end
 
-local function bundled_cli()
-  local source = debug.getinfo(1, "S").source
-  if source:sub(1, 1) ~= "@" then return nil end
-
-  local integration_dir = vim.fn.fnamemodify(source:sub(2), ":p:h")
-  return vim.fn.fnamemodify(integration_dir .. "/../../src/cli.ts", ":p")
-end
+-- Resolve this before the editor changes cwd; source paths from dofile can be relative.
+local source_file = debug.getinfo(1, "S").source:match("^@(.+)")
+local cli_path = source_file and vim.fs.normalize(vim.fn.fnamemodify(source_file, ":p:h") .. "/../../src/cli.ts")
 
 local function bin_cmd()
   if vim.env.READRUN_BIN and #vim.env.READRUN_BIN > 0 then
     return { vim.env.READRUN_BIN }
   end
+  if cli_path and vim.fn.executable("bun") == 1 and vim.fn.filereadable(cli_path) == 1 then
+    return { "bun", cli_path }
+  end
   if vim.fn.executable("rr") == 1 then
     return { "rr" }
-  end
-  local fallback = bundled_cli()
-  if fallback and vim.fn.executable("bun") == 1 and vim.fn.filereadable(fallback) == 1 then
-    return { "bun", fallback }
   end
   return nil
 end
@@ -182,6 +177,67 @@ local function build_target(arg)
   })
 end
 
+-- Page discovery, matching, and heading IDs belong to Readrun, not the editor.
+local function follow_wikilink()
+  local line, column = vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(0)[2] + 1
+  local target
+  for start_pos, inner, end_pos in line:gmatch("()%[%[([^%[%]]-)%]%]()") do
+    if column >= start_pos and column < end_pos then target = inner; break end
+  end
+  if not target then
+    local ok, err = pcall(vim.cmd, "normal! gf")
+    if not ok then notify(tostring(err), vim.log.levels.WARN) end
+    return
+  end
+
+  local cmd = bin_cmd()
+  if not cmd then notify("readrun not found", vim.log.levels.ERROR); return end
+  local file, cwd = vim.api.nvim_buf_get_name(0), vim.fn.getcwd()
+  local directory = file ~= "" and vim.fs.dirname(file) or cwd
+  local config = vim.fs.find(".readrun", { path = directory, upward = true, type = "directory" })[1]
+  local root = config and vim.fs.dirname(config)
+    or (file:sub(1, #cwd + 1) == cwd .. "/" and cwd or directory)
+  vim.list_extend(cmd, { "resolve-wikilink", target, "--root", root })
+  local launched, result = pcall(function() return vim.system(cmd, { text = true }):wait(10000) end)
+  if not launched then notify("could not run readrun: " .. tostring(result), vim.log.levels.ERROR); return end
+  if result.code ~= 0 then
+    notify("wikilink resolution failed; install a Readrun version with resolve-wikilink. "
+      .. vim.trim(result.stderr or ""), vim.log.levels.ERROR)
+    return
+  end
+  local ok, resolved = pcall(vim.json.decode, result.stdout)
+  if not ok or type(resolved) ~= "table" or type(resolved.candidates) ~= "table" then
+    notify("invalid resolve-wikilink response; update Readrun", vim.log.levels.ERROR)
+    return
+  end
+  if #resolved.candidates == 0 then
+    notify("unresolved wikilink [[" .. target .. "]]", vim.log.levels.WARN)
+    return
+  end
+
+  local function open_page(page)
+    if not page then return end
+    vim.cmd.edit(vim.fn.fnameescape(page.file))
+    if page.line then
+      vim.api.nvim_win_set_cursor(0, { math.min(page.line, vim.api.nvim_buf_line_count(0)), 0 })
+      vim.cmd("normal! zvzz")
+    elseif resolved.anchor then
+      notify("opened page, but anchor not found: #" .. resolved.anchor, vim.log.levels.WARN)
+    end
+  end
+  if #resolved.candidates == 1 then open_page(resolved.candidates[1])
+  else
+    vim.ui.select(resolved.candidates, {
+      prompt = "Readrun wikilink is ambiguous:",
+      format_item = function(page) return page.relPath .. "  (" .. page.title .. ")" end,
+    }, open_page)
+  end
+end
+
+vim.api.nvim_create_user_command("ReadrunFollowWikilink", follow_wikilink, {
+  desc = "Open a Readrun wikilink or use native gf",
+})
+
 vim.api.nvim_create_user_command("Readrun", function(opts)
   start_server(resolve_target(opts.args))
 end, { nargs = "?", complete = "file", desc = "Serve markdown via readrun" })
@@ -206,6 +262,9 @@ vim.api.nvim_create_autocmd("VimLeavePre", {
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "markdown",
   callback = function(args)
+    vim.keymap.set("n", "gf", follow_wikilink, {
+      buffer = args.buf, desc = "Open Readrun wikilink or file", silent = true,
+    })
     vim.keymap.set("n", "<leader>R", "<cmd>Readrun<cr>", {
       buffer = args.buf, desc = "Readrun: preview", silent = true, nowait = true,
     })

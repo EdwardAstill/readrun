@@ -6,7 +6,7 @@ export function selectionCommandsAvailable(): boolean {
 		["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
 }
 export async function selectionCommandsRequest<T = SelectionCommandSettings>(suffix = "", body?: unknown): Promise<T> {
-	const response = await fetch(`${SELECTION_COMMANDS_URL}${suffix}`, {
+	const response = await fetch(`${readRuntimeConfig()?.selectionCommandsUrl ?? SELECTION_COMMANDS_URL}${suffix}`, {
 		method: body === undefined ? "GET" : "POST",
 		headers: { "X-Readrun-Commands": "1", ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
 		body: body === undefined ? undefined : JSON.stringify(body),

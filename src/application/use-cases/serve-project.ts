@@ -7,12 +7,14 @@ export interface ServerHandle {
 	stop(): void;
 	reload(): Promise<void>;
 	pageUrlForFile?(filePath: string): string | undefined;
+	openFile?(filePath: string): Promise<string>;
 	setPreviewSource?(filePath: string, source: string | null): Promise<void>;
 }
 
 export interface ServeProjectInput {
 	root: string;
 	filePath?: string;
+	desktopToken?: string;
 	port: number;
 	host?: string;
 	watch?: boolean;

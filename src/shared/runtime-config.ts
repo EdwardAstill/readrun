@@ -8,6 +8,8 @@ export interface ReadrunRuntimeConfig {
 	liveEventsUrl: string;
 	liveRenderUrl: string;
 	liveStatusUrl: string;
+	pythonExecutionUrl?: string;
+	selectionCommandsUrl?: string;
 	enableLiveReload: boolean;
 	enableLocalPython: boolean;
 	enableBrowserPython?: boolean;
@@ -22,6 +24,8 @@ export const DEFAULT_RUNTIME_CONFIG: ReadrunRuntimeConfig = {
 	liveEventsUrl: "/_readrun/live/events",
 	liveRenderUrl: "/_readrun/live/render",
 	liveStatusUrl: "/_readrun/live/status",
+	pythonExecutionUrl: "/api/exec/python",
+	selectionCommandsUrl: "/_readrun/selection-commands",
 	enableLiveReload: false,
 	enableLocalPython: false,
 	enableBrowserPython: true,

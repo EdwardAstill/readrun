@@ -92,7 +92,7 @@ test("file, outline, and links shortcuts leave typing, modifiers, and open dialo
 	expect(opened).toBe(0);
 });
 
-test("b opens the desktop file manager without a Files dialog", () => {
+test("b opens the system file picker without a Files dialog", () => {
 	teardownShortcuts = shortcutsModule.initShortcuts();
 	let opened = 0;
 	window.readrunDesktop = { openFiles: () => { opened += 1; } };

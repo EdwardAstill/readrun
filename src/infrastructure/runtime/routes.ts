@@ -10,6 +10,7 @@ import { runUvPython } from "../execution/uv-python.ts";
 import { bundleClient } from "./client-bundle.ts";
 import { createSseResponse } from "./live.ts";
 import { dataFileAliases } from "./data-files.ts";
+import { prefixArtifactUrls } from "./static-artifacts.ts";
 
 type RouteHandler = (request: Request) => Response | Promise<Response>;
 type RouteMethods = Partial<Record<"GET" | "POST", RouteHandler>>;
@@ -28,6 +29,7 @@ export interface CreateRuntimeRequestHandlerOptions {
 export interface CreateSnapshotRouteLookupOptions {
 	snapshot: ContentProjectSnapshot;
 	runtimeConfig?: Partial<ReadrunRuntimeConfig>;
+	basePath?: string;
 }
 
 export function createRuntimeRequestHandler(
@@ -99,7 +101,7 @@ export function createSnapshotRouteLookup(
 					url: route.url,
 					runtimeConfig: options.runtimeConfig,
 				});
-				return new Response(rendered.body, {
+				return new Response(prefixArtifactUrls(rendered.body, rendered.contentType, options.basePath), {
 					status: rendered.status,
 					headers: { "Content-Type": rendered.contentType },
 				});

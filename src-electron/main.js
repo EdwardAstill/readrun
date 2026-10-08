@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 
 import { viewerUrl } from "./viewer-url.js";
@@ -6,6 +6,7 @@ import { configureDesktopGraphics } from "./graphics.js";
 import { enableWheelZoom } from "./zoom.js";
 import { floatDesktopWindow } from "./floating.js";
 import { editorConnection } from "./editor.js";
+import { createFilePicker } from "./file-picker.js";
 
 configureDesktopGraphics(app);
 
@@ -18,6 +19,7 @@ try {
 }
 
 let mainWindow;
+let openFiles;
 const editor = editorConnection(process.env, url.toString());
 const trustedDesktopEvent = (event) => event.sender === mainWindow?.webContents &&
 	event.senderFrame === mainWindow.webContents.mainFrame &&
@@ -27,12 +29,12 @@ ipcMain.on("readrun:editor-scroll", (event, pathname, line) => {
 	if (trustedDesktopEvent(event)) void editor?.scroll(pathname, line);
 });
 ipcMain.on("readrun:open-files", async (event) => {
-	if (!trustedDesktopEvent(event)) return;
+	if (!trustedDesktopEvent(event) || !openFiles) return;
 	try {
-		const error = await shell.openPath(process.cwd());
-		if (error) dialog.showErrorBox("Could not open file manager", error);
+		const urls = await openFiles();
+		if (urls.length && trustedDesktopEvent(event)) event.sender.send("readrun:files-opened", urls);
 	} catch (error) {
-		dialog.showErrorBox("Could not open file manager", error instanceof Error ? error.message : String(error));
+		dialog.showErrorBox("Could not open file", error instanceof Error ? error.message : String(error));
 	}
 });
 
@@ -51,6 +53,7 @@ async function createWindow() {
 			sandbox: true,
 		},
 	});
+	openFiles = createFilePicker(mainWindow, dialog, url, process.env.READRUN_DESKTOP_OPEN_FILE_TOKEN);
 
 	enableWheelZoom(mainWindow.webContents);
 	mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));

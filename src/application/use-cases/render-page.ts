@@ -3,6 +3,7 @@ import { resolvePageWikilinks } from "../../domain/pages/wikilinks.ts";
 import { findRouteByUrl } from "../../domain/routes/generate.ts";
 import type { SiteRoute, TagRoute } from "../../domain/routes/model.ts";
 import { escapeHtml } from "../../shared/html.ts";
+import { encodeUrlPath } from "../../shared/paths.ts";
 import { renderMarkdown } from "../../presentation/markdown/renderMarkdown.ts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PdfViewer } from "../../presentation/viewers/PdfViewer.tsx";
@@ -130,7 +131,7 @@ export async function renderPage(
 						: {
 							html: renderToStaticMarkup(
 								PdfViewer({
-									src: page.sourceUrl,
+									src: encodeUrlPath(page.sourceUrl),
 									title: page.title,
 									standalone: true,
 								}),

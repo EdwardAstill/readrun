@@ -84,8 +84,10 @@ Selecting an already open page returns to its tab. Each file keeps its scroll
 position, code edits, quiz answers, and running widgets while you switch tabs
 or rearrange panes.
 
-Press `b` in the native window to open your default file manager in readrun's
-working directory. In a web browser, `b` opens the **Files** dialog, where
+Press `b` in the native window to select one or more Markdown or PDF files with
+your system's default file picker. Each selected file opens in a workspace tab,
+including files outside the current content folder. On Linux, this uses the configured desktop
+portal (for example, Yazi). In a web browser, `b` opens the **Files** dialog, where
 selecting a page adds a workspace tab.
 
 - Drag a tab to a pane's edge to split it, or to its center to group tabs.
