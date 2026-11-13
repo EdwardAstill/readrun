@@ -59,15 +59,12 @@ export function createShellNavigation(
     if (!(link instanceof HTMLAnchorElement)) {
       return;
     }
-    if (!shouldHandleShellNavigation(event, link)) {
+    if (!shouldHandleShellNavigation(event, link, !!options.onNavigate)) {
       return;
     }
-    const href = link.getAttribute("href");
-    if (!href) {
-      return;
-    }
+    const url = new URL(link.getAttribute("href")!, link.baseURI);
     event.preventDefault();
-    const url = new URL(href, window.location.href);
+    // Workspace navigation opens/selects a foreground tab, including Ctrl/Cmd-click.
     void state.navigate(url.pathname + url.search + url.hash).then((ok) => {
       if (!ok) {
         window.location.href = url.href;
@@ -206,37 +203,36 @@ export function dispatchReadrunRemount(detail: ReadrunRemountDetail): void {
   document.dispatchEvent(new CustomEvent<ReadrunRemountDetail>("readrun:remount", { detail }));
 }
 
-function isExternalHref(href: string): boolean {
-  return href.startsWith("http://") || href.startsWith("https://") || href.startsWith("mailto:");
-}
-
 function shouldHandleShellNavigation(
   event: Event,
   link: HTMLAnchorElement,
+  workspaceNavigation: boolean,
 ): boolean {
   if (event.defaultPrevented) return false;
   const mouseEvent = event instanceof MouseEvent ? event : null;
   if (mouseEvent) {
     if (mouseEvent.button !== 0) return false;
-    if (
-      mouseEvent.metaKey ||
-      mouseEvent.ctrlKey ||
-      mouseEvent.shiftKey ||
-      mouseEvent.altKey
-    ) {
-      return false;
-    }
+    if (mouseEvent.shiftKey || mouseEvent.altKey) return false;
+    if ((mouseEvent.metaKey || mouseEvent.ctrlKey) && !workspaceNavigation) return false;
   }
-  if (link.target && link.target !== "_self") return false;
+  const target = link.target || link.ownerDocument.querySelector("base[target]")?.getAttribute("target");
+  if (target && target !== "_self") return false;
   if (link.hasAttribute("download") || link.dataset.resourceFile !== undefined) {
     return false;
   }
   const href = link.getAttribute("href");
-  if (!href || isExternalHref(href)) return false;
-  const url = new URL(link.href, window.location.href);
-  if (url.origin !== window.location.origin) return false;
+  if (!href || href.startsWith("#")) return false;
+  let url: URL;
+  try { url = new URL(href, link.baseURI); } catch { return false; }
+  if (!["http:", "https:"].includes(url.protocol) || url.origin !== window.location.origin) return false;
+  // Generated document routes have no extension (or end in .html in static exports).
+  // The sidebar also identifies documents whose names themselves contain dots.
+  if (/\.[^/]+$/.test(url.pathname) && !/\.html$/i.test(url.pathname) &&
+      ![...document.querySelectorAll<HTMLAnchorElement>(".sidebar-nav a[href]")]
+        .some((entry) => new URL(entry.getAttribute("href")!, entry.baseURI).pathname === url.pathname)) return false;
   if (
-    url.hash &&
+    url.href.includes("#") &&
+    url.search === window.location.search &&
     normalizePath(url.pathname) === normalizePath(window.location.pathname)
   ) {
     return false;

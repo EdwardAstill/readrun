@@ -44,8 +44,17 @@ export function PageSearchIsland(
 
 	useEffect(() => {
 		if (props.open) {
-			stateRef.current = highlightPageMatches(query);
-			bump();
+			const highlight = () => {
+				stateRef.current = highlightPageMatches(query);
+				bump();
+			};
+			highlight();
+			document.addEventListener("readrun:remount", highlight);
+			wasOpenRef.current = true;
+			return () => {
+				document.removeEventListener("readrun:remount", highlight);
+				clearPageSearchHighlights();
+			};
 		} else if (wasOpenRef.current) {
 			reset();
 		}
@@ -60,6 +69,7 @@ export function PageSearchIsland(
 			open={props.open}
 			onClose={close}
 			ariaLabel="Search this page"
+			contentClassName="pr-12"
 			initialFocusRef={inputRef}
 		>
 			<SearchBar
@@ -75,7 +85,6 @@ export function PageSearchIsland(
 					total: stateRef.current.marks.length,
 				}}
 				onNavigate={navigate}
-				onClose={close}
 			/>
 		</Modal>
 	);

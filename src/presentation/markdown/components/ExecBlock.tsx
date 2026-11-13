@@ -39,7 +39,7 @@ export function ExecBlock(props: ExecBlockProps): React.JSX.Element {
 				data-source={blockId}
 				dangerouslySetInnerHTML={{ __html: encodeSource(props.source) }}
 			/>
-			<output className="exec-output" data-output={blockId} />
+			<output className="exec-output" data-output={blockId} aria-live="polite" />
 		</>
 	);
 

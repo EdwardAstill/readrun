@@ -1,6 +1,7 @@
 import type React from "react";
 
 import type { DocumentProps } from "../contracts.ts";
+import { themeNames } from "../styles/tokens.ts";
 import { MainContent } from "./MainContent.tsx";
 import { PageMeta } from "./PageMeta.tsx";
 import { ReadrunShell } from "./ReadrunShell.tsx";
@@ -34,6 +35,14 @@ export function Document(props: DocumentProps): React.JSX.Element {
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<meta name="generator" content="readrun" />
 				{basePath ? <base href={basePath} /> : null}
+				<script
+					dangerouslySetInnerHTML={{
+						__html: `try {
+							const theme = JSON.parse(localStorage.getItem("readrun:settings") || "{}").theme;
+							if (${JSON.stringify(themeNames)}.includes(theme)) document.documentElement.dataset.theme = theme;
+						} catch {}`,
+					}}
+				/>
 				{runtime.clientStyleUrl ? (
 					<link rel="stylesheet" href={runtime.clientStyleUrl} />
 				) : null}

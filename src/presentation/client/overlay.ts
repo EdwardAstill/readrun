@@ -43,8 +43,8 @@ export function subscribeOverlays(listener: OverlayListener): () => void {
 	return () => listeners.delete(listener);
 }
 
-export function openOverlay(id: string): void {
-	if (id === "files-overlay" && typeof window !== "undefined") {
+export function openFiles(): void {
+	if (typeof window !== "undefined") {
 		let desktop: Window["readrunDesktop"];
 		try { desktop = window.top?.readrunDesktop; } catch { /* External embed. */ }
 		if (desktop) {
@@ -53,6 +53,10 @@ export function openOverlay(id: string): void {
 			return;
 		}
 	}
+	openOverlay("files-overlay");
+}
+
+export function openOverlay(id: string): void {
 	if (!isOverlayId(id) || activeOverlay === id) return;
 	returnOverlay =
 		activeOverlay === "settings-overlay" && id === "shortcuts-overlay"

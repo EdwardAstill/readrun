@@ -60,6 +60,24 @@ describe("sidebar panel search controls", () => {
 		expect(html).toContain('data-nav-path="/start"');
 	});
 
+	test("opens an authored folder when its own page is current", () => {
+		const navigation: Navigation = {
+			mode: "tree",
+			source: "filesystem",
+			tree: [{
+				kind: "branch", id: "guide", label: "Guide",
+				page: page({ url: "/guide" }),
+				children: [{ kind: "leaf", id: "intro", label: "Intro", page: page() }],
+			}],
+		};
+		const html = renderWithSidebar(<PageNavPanel navigation={navigation} currentUrl="/guide" />);
+		expect(html).toContain('data-nav-path="/guide"');
+		expect(html).toContain('open=""');
+		expect(html).toContain('aria-expanded="true"');
+		expect(html).toContain('href="/guide"');
+		expect(html).toContain('aria-current="page"');
+	});
+
 	test("renders TOC search and fold controls with stable IDs", () => {
 		const html = renderWithSidebar(
 			<TocPanel

@@ -48,7 +48,7 @@ For Python basics, imports, and package behavior, see [Code](./code.md).
 ```md
 [python]
 import pandas as pd
-df = pd.read_csv("data.csv")
+df = pd.read_csv("data/data.csv")
 print(df.head())
 [/python]
 ```

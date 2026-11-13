@@ -64,7 +64,7 @@ test("folder search expands matching ancestors and previews without opening a fi
 	expect(rows()).toEqual(["research", "alpha.md"]);
 	expect(preview()).toContain("Alpha preview text");
 	expect(window.location.pathname).toBe("/");
-	await key(document.querySelector("input")!, "Tab");
+	await act(async () => document.querySelector<HTMLElement>('[data-search-item="/alpha/"]')!.focus());
 	expect(document.activeElement?.getAttribute("aria-label")).toBe("alpha.md");
 	await key(document.activeElement!, "Escape");
 	expect(document.querySelector("input")!.value).toBe("");
@@ -163,4 +163,39 @@ test("failed index loads report an error and can recover on reopening", async ()
 	await act(async () => root?.render(<module.SiteSearchIsland open />));
 	expect(document.querySelector('[role="alert"]')).toBeNull();
 	expect(rows()).toContain("index.md");
+});
+
+test("search preserves native Tab, modified keys, and input text selection", async () => {
+	await render();
+	const input = document.querySelector("input")!;
+	for (const init of [
+		{ key: "Tab" }, { key: "ArrowDown", ctrlKey: true },
+		{ key: "ArrowUp", shiftKey: true }, { key: "Enter", metaKey: true },
+		{ key: "Enter", isComposing: true },
+	]) {
+		const event = new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true });
+		await act(async () => input.dispatchEvent(event));
+		expect(event.defaultPrevented).toBe(false);
+	}
+});
+
+test("folder arrows enter expanded folders and return from a child to its parent", async () => {
+	await render();
+	const folder = document.querySelector<HTMLElement>('[data-search-item="folder:research/"]')!;
+	await act(async () => folder.focus());
+	await key(folder, "ArrowRight");
+	await key(folder, "ArrowRight");
+	expect(document.activeElement?.getAttribute("aria-label")).toBe("alpha.md");
+	await key(document.activeElement!, "ArrowLeft");
+	expect(document.activeElement).toBe(folder);
+});
+
+test("site search resolves WikiLinks from the active document rather than the host", async () => {
+	const frame = document.createElement("iframe");
+	frame.setAttribute("data-workspace-active", "");
+	document.body.append(frame);
+	frame.contentDocument!.body.innerHTML = '<script id="readrun-files" type="application/json">{"page":{"relPath":"research/alpha.md"}}</script>';
+	await render();
+	await clickMode("WikiLinks");
+	expect(rows()).toEqual(["Home"]);
 });

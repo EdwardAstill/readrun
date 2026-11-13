@@ -12,7 +12,8 @@
 @source "../viewers/**/*.{ts,tsx}";
 
 /* Workspace chrome lives in the host; document dialogs stay with their file. */
-html[data-workspace-frame] .readrun-shell > header {
+html[data-workspace-frame] .readrun-shell > header,
+body[data-focus] .readrun-shell > header {
   display: none;
 }
 

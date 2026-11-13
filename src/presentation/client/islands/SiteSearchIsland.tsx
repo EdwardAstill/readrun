@@ -30,9 +30,10 @@ export function SiteSearchIsland({ open, linksOnly = false }: SiteSearchIslandPr
 	useEffect(() => {
 		if (!open) return;
 		const syncPage = () => {
-			setCurrentUrl(window.location.pathname);
+			const page = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-active]")?.contentDocument ?? document;
+			setCurrentUrl(page.location?.pathname ?? window.location.pathname);
 			try {
-				const data = JSON.parse(document.getElementById("readrun-files")?.textContent || "{}");
+				const data = JSON.parse(page.getElementById("readrun-files")?.textContent || "{}");
 				setCurrentRelPath(typeof data.page?.relPath === "string" ? data.page.relPath : undefined);
 			} catch { setCurrentRelPath(undefined); }
 		};
@@ -60,8 +61,8 @@ export function SiteSearchIsland({ open, linksOnly = false }: SiteSearchIslandPr
 		return () => { cancelled = true; };
 	}, [open]);
 
-	const current = currentSearchDocument(documents, currentUrl) ??
-		(currentRelPath ? documents.find((entry) => entry.relPath === currentRelPath) : undefined);
+	const current = (currentRelPath ? documents.find((entry) => entry.relPath === currentRelPath) : undefined) ??
+		currentSearchDocument(documents, currentUrl);
 	const folders = useMemo(() => folderSearchItems(documents), [documents]);
 	const links = useMemo(() => wikiSearchItems(documents, current), [documents, current]);
 	const selectResult = useCallback((item: SearchItem<SiteSearchDocument>) => {

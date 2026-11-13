@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { vizStyles } from "../../../widgets/primitives/styles.ts";
+import { decodeSource } from "./source.ts";
 
 interface BabelStandalone {
 	transform(code: string, options: object): { code: string };
@@ -13,8 +14,27 @@ interface JsxRuntime {
 let runtime: JsxRuntime | null = null;
 let runtimeLoading: Promise<JsxRuntime> | null = null;
 const mountedRoots = new Map<HTMLElement, Root>();
+const loadingTargets = new WeakSet<HTMLElement>();
+let mountGeneration = 0;
 
-export async function runJsxBlock(blockId: string, code: string): Promise<void> {
+class ExecutionErrorBoundary extends React.Component<
+	{ children: React.ReactNode },
+	{ error: string | null }
+> {
+	override state = { error: null as string | null };
+
+	static getDerivedStateFromError(error: unknown) {
+		return { error: error instanceof Error ? error.message : String(error) };
+	}
+
+	override render() {
+		return this.state.error !== null
+			? React.createElement("pre", { className: "error" }, this.state.error)
+			: this.props.children;
+	}
+}
+
+export async function runJsxBlock(blockId: string, code: string, signal?: AbortSignal): Promise<void> {
 	const outputEl = document.querySelector<HTMLElement>(
 		`.exec-output[data-output="${CSS.escape(blockId)}"]`,
 	);
@@ -22,21 +42,25 @@ export async function runJsxBlock(blockId: string, code: string): Promise<void> 
 		`.exec-run-btn[data-block-id="${CSS.escape(blockId)}"]`,
 	);
 
-	if (!outputEl) {
+	if (!outputEl || loadingTargets.has(outputEl)) {
 		return;
 	}
 
-	if (runBtn) {
-		setRunButtonState(runBtn, true, "Loading React...");
+	loadingTargets.add(outputEl);
+	if (runBtn) setRunButtonState(runBtn, true, "Loading React...");
+	if (!mountedRoots.has(outputEl)) {
+		const status = document.createElement("div");
+		status.className = "loading";
+		status.textContent = "Loading React...";
+		outputEl.replaceChildren(status);
 	}
 
-	clearElement(outputEl);
-
 	try {
-		await mountJsxSource(code, outputEl);
+		await mountJsxSource(code, outputEl, signal);
 	} catch (err) {
 		renderError(outputEl, err instanceof Error ? err.message : String(err));
 	} finally {
+		loadingTargets.delete(outputEl);
 		if (runBtn) {
 			setRunButtonState(runBtn, false, "Run");
 		}
@@ -49,6 +73,7 @@ function setRunButtonState(
 	label: string,
 ): void {
 	button.disabled = disabled;
+	button.setAttribute("aria-busy", String(disabled));
 	button.setAttribute("aria-label", label);
 	button.title = label;
 }
@@ -70,7 +95,7 @@ export async function mountJsxPages(
 			continue;
 		}
 
-		const source = document.querySelector<HTMLScriptElement>(
+		const source = root.querySelector<HTMLScriptElement>(
 			`script[data-jsx-source="${CSS.escape(relPath)}"]`,
 		);
 		if (!source?.textContent) {
@@ -108,7 +133,7 @@ export async function mountAutoJsxBlocks(
 			continue;
 		}
 
-		const source = document.querySelector<HTMLScriptElement>(
+		const source = block.querySelector<HTMLScriptElement>(
 			`script[data-source="${CSS.escape(blockId)}"]`,
 		);
 		if (!source?.textContent) {
@@ -118,7 +143,7 @@ export async function mountAutoJsxBlocks(
 
 		try {
 			const code = decodeSource(source.textContent);
-			await mountJsxSource(code, outputEl, signal);
+			await runJsxBlock(blockId, code, signal);
 		} catch (err) {
 			renderError(outputEl, err instanceof Error ? err.message : String(err));
 		}
@@ -126,6 +151,7 @@ export async function mountAutoJsxBlocks(
 }
 
 export function teardownJsxMounts(): void {
+	mountGeneration++;
 	for (const mountedRoot of mountedRoots.values()) {
 		mountedRoot.unmount();
 	}
@@ -137,8 +163,9 @@ async function mountJsxSource(
 	target: HTMLElement,
 	signal?: AbortSignal,
 ): Promise<void> {
+	const generation = mountGeneration;
 	const { Babel } = await loadJsxRuntime();
-	if (signal?.aborted || !target.isConnected) return;
+	if (signal?.aborted || !target.isConnected || generation !== mountGeneration) return;
 	ensureWidgetStyles();
 	const transformed = Babel.transform(code, {
 		presets: ["react"],
@@ -157,7 +184,8 @@ async function mountJsxSource(
 	const root = createRoot(mountEl);
 	mountedRoots.set(target, root);
 
-	const render = (element: React.ReactNode) => root.render(element);
+	const render = (element: React.ReactNode) =>
+		root.render(React.createElement(ExecutionErrorBoundary, null, element));
 	const ReactDOM = { createRoot };
 	Object.assign(globalThis, { React, ReactDOM });
 	const fn = new Function("React", "ReactDOM", "render", transformed);
@@ -185,7 +213,6 @@ export const widgetTokenCompatibilityStyles = `
   --accent: var(--rr-accent);
   --card-bg: var(--color-bg-alt);
   --input-bg: var(--color-code-bg);
-  --radius: 0;
 }
 `;
 
@@ -209,7 +236,10 @@ async function loadJsxRuntime(): Promise<JsxRuntime> {
 
 		runtime = { Babel };
 		return runtime;
-	})();
+	})().catch((error) => {
+		runtimeLoading = null;
+		throw error;
+	});
 
 	return runtimeLoading;
 }
@@ -224,48 +254,37 @@ function loadScript(src: string): Promise<void> {
 		return Promise.resolve();
 	}
 
-	return new Promise((resolve, reject) => {
-		const script = existing ?? document.createElement("script");
-		script.src = src;
-		script.onload = () => {
-			script.dataset.loaded = "true";
-			resolve();
-		};
-		script.onerror = () => reject(new Error(`Failed to load ${src}`));
-		if (!existing) {
-			document.head.appendChild(script);
-		}
-	});
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
+	const script = existing ?? document.createElement("script");
+	script.src = src;
+	script.onload = () => {
+		script.dataset.loaded = "true";
+		resolve();
+	};
+	script.onerror = () => {
+		script.remove();
+		reject(new Error(`Failed to load ${src}`));
+	};
+	if (!existing) document.head.appendChild(script);
+	return promise;
 }
 
 async function loadTailwind(): Promise<void> {
-	if (document.querySelector("script[data-readrun-tailwind-config]")) {
-		return;
+	if (!document.querySelector("style[data-readrun-tailwind]")) {
+		const style = document.createElement("style");
+		style.type = "text/tailwindcss";
+		style.dataset.readrunTailwind = "true";
+		// Match the app's Tailwind major and leave its existing base styles intact.
+		style.textContent = `
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+`;
+		document.head.appendChild(style);
 	}
-
-	await initialiseTailwind(
-		() => loadScript("https://cdn.tailwindcss.com"),
-		() => {
-			const config = document.createElement("script");
-			config.dataset.readrunTailwindConfig = "true";
-			config.textContent =
-				"globalThis.tailwind.config = { corePlugins: { preflight: false } }";
-			document.head.appendChild(config);
-		},
-	);
+	await loadScript("https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4");
 }
 
-export async function initialiseTailwind(
-	loadRuntime: () => Promise<void>,
-	applyConfig: () => void,
-): Promise<void> {
-	await loadRuntime();
-	applyConfig();
-}
-
-function decodeSource(encoded: string): string {
-	return atob(encoded.trim());
-}
 
 function clearElement(el: HTMLElement): void {
 	while (el.firstChild) {
@@ -274,6 +293,11 @@ function clearElement(el: HTMLElement): void {
 }
 
 function renderError(el: HTMLElement, message: string): void {
+	const mounted = mountedRoots.get(el);
+	if (mounted) {
+		mounted.unmount();
+		mountedRoots.delete(el);
+	}
 	clearElement(el);
 	const pre = document.createElement("pre");
 	pre.className = "error";

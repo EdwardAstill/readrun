@@ -111,11 +111,11 @@ export function commitSettings(value: Settings | Partial<Settings>): Settings {
 	const next = normaliseSettings({ ...loadSettings(), ...value });
 	saveSettings(next);
 	applySettings(next);
-	for (const listener of settingsListeners) listener(next);
 	return next;
 }
 
 export function applySettings(s: Settings): void {
+	for (const listener of settingsListeners) listener(s);
 	if (typeof document === "undefined") {
 		return;
 	}

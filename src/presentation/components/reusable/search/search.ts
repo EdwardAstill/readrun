@@ -45,12 +45,14 @@ export function fuzzyMatch(value: string, query: string): boolean {
 
 export function projectSearch<T>(entries: SearchEntry<T>[], query: string, expanded: ReadonlySet<string>) {
   const term = query.trim();
+  const lowerTerm = term.toLowerCase();
   if (!term) return {
     visible: entries.filter((entry) => entry.ancestors.every((ancestor) => expanded.has(ancestor.id))),
     included: new Set(entries.map((entry) => entry.item.id)),
     matches: new Set<string>(),
   };
-  const pathMatches = entries.filter((entry) => fuzzyMatch(entry.path, term));
+  const pathMatches = entries.filter((entry) => fuzzyMatch(entry.path, term) ||
+    (entry.item.content ?? "").toLowerCase().includes(lowerTerm));
   const nameMatches = pathMatches.filter((entry) => fuzzyMatch(entry.item.label, term));
   const matches = new Set((nameMatches.length ? nameMatches : pathMatches).map((entry) => entry.item.id));
   const included = new Set<string>();

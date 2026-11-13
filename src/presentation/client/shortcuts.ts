@@ -6,7 +6,7 @@ import {
 	cycleFontSize,
 	type Settings,
 } from "./settings.ts";
-import { openOverlay, isAnyOverlayOpen, escapeSequence } from "./overlay.ts";
+import { openFiles, openOverlay, isAnyOverlayOpen, escapeSequence } from "./overlay.ts";
 import { requestWorkspaceOverlay } from "./workspace/frame-bridge.ts";
 
 // --- Binding parser ---
@@ -37,7 +37,7 @@ function parseBinding(raw: string): ParsedBinding {
 function matchesKey(event: KeyboardEvent, parsed: ParsedBinding): boolean {
 	return (
 		event.key === parsed.key &&
-		(event.shiftKey === parsed.shift || parsed.key === "?") &&
+		(event.shiftKey === parsed.shift || /^[A-Z?]$/.test(parsed.key)) &&
 		event.ctrlKey === parsed.ctrl &&
 		event.metaKey === parsed.meta &&
 		event.altKey === parsed.alt
@@ -58,24 +58,23 @@ function openPageOverlay(id: string): void {
 	if (!requestWorkspaceOverlay(id)) openOverlay(id);
 }
 
+function getActiveDocument(): Document {
+	return document.querySelector<HTMLIFrameElement>("iframe[data-workspace-active]")?.contentDocument ?? document;
+}
+
 function getMainScrollContainer(): HTMLElement | null {
-	const frame = document.querySelector<HTMLIFrameElement>(
-		"iframe[data-workspace-active]",
-	);
-	return (frame?.contentDocument ?? document).querySelector<HTMLElement>(
-		".readrun-content",
-	);
+	return getActiveDocument().querySelector<HTMLElement>(".readrun-content");
 }
 
 function getNavLinks(): HTMLAnchorElement[] {
 	return Array.from(
-		document.querySelectorAll<HTMLAnchorElement>(".sidebar-nav a[href]"),
+		getActiveDocument().querySelectorAll<HTMLAnchorElement>(".sidebar-nav a[href]"),
 	);
 }
 
 function getCurrentPageIndex(): number {
 	const links = getNavLinks();
-	const path = normalizePath(window.location.pathname);
+	const path = normalizePath(getActiveDocument().location?.pathname ?? window.location.pathname);
 	return links.findIndex((anchor) => {
 		try {
 			return normalizePath(new URL(anchor.href).pathname) === path;
@@ -149,9 +148,7 @@ const actions: ShortcutActions = {
 			behavior: "smooth",
 		});
 	},
-	toggleSidebar: () => {
-		openOverlay("files-overlay");
-	},
+	toggleSidebar: openFiles,
 	showOutline: () => openPageOverlay("outline-overlay"),
 	showLinks: () => openPageOverlay("links-overlay"),
 	focusMode: () => {
@@ -313,25 +310,43 @@ function buildDispatchTable(): void {
 	}
 
 	const handler = (event: KeyboardEvent): void => {
-		if (event.defaultPrevented) return;
+		if (event.defaultPrevented || event.isComposing) {
+			clearChord();
+			return;
+		}
 
-		// Never fire shortcuts while editing text
 		if (isEditingInput(event.target)) {
-			// But Escape still blurs
-			if (event.key === "Escape") {
-				(event.target as HTMLElement).blur();
+			clearChord();
+			if (event.key === "Escape" && !event.ctrlKey && !event.metaKey && !event.altKey && isAnyOverlayOpen()) {
+				event.preventDefault();
+				actions.closeOverlay();
 			}
+			return;
+		}
+
+		if (event.ctrlKey || event.metaKey || event.altKey) {
+			clearChord();
+			return;
+		}
+
+		// Space must still activate focused buttons and other interactive controls.
+		if (event.key === " " && event.target instanceof Element &&
+			event.target.closest("button, a[href], summary, [role=button], [role=checkbox], [role=switch]")) {
+			clearChord();
 			return;
 		}
 
 		// Escape is special — always handled
 		if (event.key === "Escape") {
+			clearChord();
+			event.preventDefault();
 			actions.closeOverlay();
 			return;
 		}
 
 		// Skip when an overlay is open (except Escape, already handled)
 		if (isAnyOverlayOpen()) {
+			clearChord();
 			return;
 		}
 

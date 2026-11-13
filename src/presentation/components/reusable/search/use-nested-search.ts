@@ -104,37 +104,22 @@ export function useNestedSearch<T>({ items, defaultMode = "files", defaultSelect
     setMode(next);
   }
   function keyDown(event: React.KeyboardEvent, fromInput = false, entry = selected) {
-    if (event.nativeEvent.isComposing || event.altKey || event.metaKey) return;
-    if (!fromInput && !event.ctrlKey && event.key.length === 1) {
+    if (event.defaultPrevented || event.nativeEvent.isComposing || event.altKey || event.metaKey || event.ctrlKey) return;
+    if (!fromInput && event.key.length === 1) {
       event.preventDefault();
       changeQuery(query + event.key);
       input.current?.focus();
       return;
     }
-    if (event.key === "Tab" && !event.ctrlKey) {
-      // Shift+Tab from search leaves the widget; Escape returns to search.
-      if (fromInput && event.shiftKey) return;
-      const options = mode === "files" && searching
-        ? navigation.filter((node) => projection.matches.has(node.item.id)) : navigation;
-      if (!options.length) return;
-      event.preventDefault();
-      const index = navigation.findIndex((node) => node.item.id === entry?.item.id);
-      const target = fromInput && options.some((node) => node.item.id === entry?.item.id)
-        ? entry!
-        : event.shiftKey
-          ? options.findLast((node) => navigation.indexOf(node) < index) ?? options.at(-1)!
-          : options.find((node) => navigation.indexOf(node) > index) ?? options[0];
-      if (target) choose(target, true);
-      return;
-    }
-    // Keep normal text editing available; horizontal navigation belongs to the rows.
-    if (fromInput && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    // Tab follows the dialog's natural focus order, including preview and close controls.
+    // Keep caret movement and text selection in the input.
+    if (fromInput && (event.shiftKey || ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) && event.key !== "Enter") return;
     const keys = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", "Escape"];
     if (!keys.includes(event.key)) return;
     event.preventDefault();
     if (event.key === "Escape") { changeQuery(""); input.current?.focus(); return; }
     if (!entry || (fromInput && !navigation.length)) return;
-    const list = event.ctrlKey && searching ? navigation.filter((node) => projection.matches.has(node.item.id)) : navigation;
+    const list = navigation;
     const index = list.findIndex((node) => node.item.id === entry.item.id);
     let target: SearchEntry<T> | undefined;
     if (event.key === "ArrowDown") target = list[(index + 1) % list.length];
@@ -142,12 +127,15 @@ export function useNestedSearch<T>({ items, defaultMode = "files", defaultSelect
     if (event.key === "Home") target = list[0];
     if (event.key === "End") target = list.at(-1);
     if (event.key === "ArrowLeft") {
-      if (mode === "files") toggle(entry.item.id, false);
+      if (mode === "files" && entry.item.children && expanded.has(entry.item.id)) toggle(entry.item.id, false);
       else target = byId.get(entry.ancestors.at(-1)?.id ?? "");
     }
     if (event.key === "ArrowRight" || event.key === "Enter") {
       if (entry.item.children) {
-        if (mode === "files") toggle(entry.item.id, event.key === "Enter" ? !expanded.has(entry.item.id) : true);
+        if (mode === "files") {
+          if (event.key === "ArrowRight" && (searching || expanded.has(entry.item.id))) target = navigation.find((node) => node.ancestors.at(-1)?.id === entry.item.id);
+          else toggle(entry.item.id, event.key === "Enter" ? !expanded.has(entry.item.id) : true);
+        }
         else target = entry.item.children.map((item) => byId.get(item.id)!).find((node) => projection.included.has(node.item.id));
       } else if (event.key === "Enter") onOpen?.(entry.item);
     }

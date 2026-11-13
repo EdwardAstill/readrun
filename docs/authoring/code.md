@@ -8,29 +8,34 @@ page.
 
 ## How Python runs
 
-Runnable Python in this demo runs in the browser with Pyodide, which is CPython
-compiled to WebAssembly. The first time a reader runs a Python block, readrun
-loads Pyodide from a CDN, creates a Python session inside the browser tab, then
-executes the block there. Your local Python installation is not used, and the
-readrun server does not run the code.
+Python has two execution modes:
 
-All Python blocks on the same page share one session, similar to cells in a
-notebook. Variables and imports from an earlier block can be used by a later
-block if the reader runs them in that order. Reloading the page or navigating
-to another page resets the Python session.
+- **Local uv:** when `uv` is installed and the local server allows execution,
+  **Settings → Run Python locally** is enabled by default. Each run starts a
+  fresh Python process in a temporary directory, so variables are not shared
+  between blocks. This runs native code on your machine; only run trusted code.
+- **Browser Pyodide:** turn off **Run Python locally**, or use a static site.
+  readrun downloads CPython/WebAssembly from a CDN on the first run, then loads
+  packages as needed. Your local Python installation is not used.
+
+In Pyodide mode, blocks in one open document share a session: run earlier
+blocks first to make their variables and imports available. Switching or
+rearranging tabs preserves that session; other document tabs have independent
+sessions. Closing or fully reloading the document resets it.
 
 Files in `.readrun/assets/data/` are copied into Pyodide's virtual filesystem
-when Python starts. In local uv mode (`use uv for python`), the same data files
+when Python starts. In local uv mode (**Run Python locally**), the same data files
 are also copied into the temporary working directory as `data/**`. Files
 created by Python in any mode exist only in the session; readrun detects new
 files and shows download links for them.
 
-When you serve a project and `uv` is installed, the settings panel includes an
-opt-in `use uv for python` switch. With that switch on, Python blocks are sent
-to the local readrun server and run through `uv` in a temporary folder instead
-of running in Pyodide. This is a local authoring feature only: it is not
-available from static builds, and it executes native Python code on your
-machine. If `uv` is not installed, the switch stays locked.
+Local execution is unavailable on static builds. If `uv` is not installed,
+the **Run Python locally** switch stays locked and Python uses Pyodide.
+
+Click **Run** to execute a block. While it is loading or running, the button
+is disabled; failures appear in the output. Expanded code views keep live
+interactive output rather than a static copy. Rerunning JSX remounts the
+component and resets its state.
 
 ## Import methods
 
@@ -74,9 +79,9 @@ dependency in that metadata block.
 
 ## When to use local uv
 
-Use the default Pyodide mode when the page should work from a static build or
-when the package is available in Pyodide. Use local uv when you are authoring
-locally and need native Python behavior:
+Use Pyodide mode when the page should work from a static build or when the
+package is available in Pyodide. Use local uv when you are authoring locally
+and need native Python behavior:
 
 - a package has compiled native wheels but no Pyodide/wasm wheel
 - a package comes from GitHub or another direct URL
@@ -85,7 +90,7 @@ locally and need native Python behavior:
 
 For example, `mapbox_earcut` is a compiled triangulation library. It does not
 install in Pyodide, but it works when the page is served with `rr serve`, `uv`
-is installed, and `use uv for python` is enabled:
+is installed, and **Run Python locally** is enabled:
 
 [python]
 import numpy as np
@@ -129,7 +134,7 @@ print("from a GitHub dependency:", add_one(41))
 
 ## Pyodide package detection
 
-In the default Pyodide mode, readrun scans Python blocks for import statements
+In Pyodide mode, readrun scans Python blocks for import statements
 such as `import numpy as np` or `from pandas import DataFrame`. It installs the
 detected package into Pyodide with `micropip` before the block runs.
 

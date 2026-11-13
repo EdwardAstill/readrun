@@ -129,6 +129,64 @@ test("pressing b swallows the key so it never types into the files search", () =
 	expect(input.value).toBe("");
 });
 
+test("uppercase reading shortcuts accept their physical Shift modifier", () => {
+	const content = document.createElement("main");
+	content.className = "readrun-content";
+	let scrolled = false;
+	content.scrollTo = () => { scrolled = true; };
+	document.body.append(content);
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	const event = new KeyboardEvent("keydown", { key: "G", shiftKey: true, bubbles: true, cancelable: true });
+	document.body.dispatchEvent(event);
+	expect(event.defaultPrevented).toBe(true);
+	expect(scrolled).toBe(true);
+});
+
+test("Space activates focused controls and composition does not launch shortcuts", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	const button = document.createElement("button");
+	document.body.append(button);
+	const space = keydown(" ");
+	button.dispatchEvent(space);
+	expect(space.defaultPrevented).toBe(false);
+	const composing = new KeyboardEvent("keydown", { key: "s", isComposing: true, bubbles: true, cancelable: true });
+	document.body.dispatchEvent(composing);
+	expect(composing.defaultPrevented).toBe(false);
+	expect(overlayModule.getActiveOverlay()).toBeNull();
+});
+
+test("Escape dismisses a search from its input without stealing normal editing focus", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	const input = document.createElement("input");
+	document.body.append(input);
+	input.focus();
+	input.dispatchEvent(keydown("Escape"));
+	expect(document.activeElement).toBe(input);
+	expect(overlayModule.getActiveOverlay()).toBeNull();
+	overlayModule.openOverlay("page-search-overlay");
+	const escape = keydown("Escape");
+	input.dispatchEvent(escape);
+	expect(escape.defaultPrevented).toBe(true);
+	expect(overlayModule.getActiveOverlay()).toBeNull();
+});
+
+test("typing into an input cancels a pending navigation chord", () => {
+	teardownShortcuts = shortcutsModule.initShortcuts();
+	const home = document.createElement("a");
+	home.href = "/";
+	const nav = document.createElement("nav");
+	nav.className = "sidebar-nav";
+	nav.append(home);
+	const input = document.createElement("input");
+	document.body.append(nav, input);
+	let clicked = false;
+	home.addEventListener("click", (event) => { event.preventDefault(); clicked = true; });
+	document.body.dispatchEvent(keydown("g"));
+	input.dispatchEvent(keydown("x"));
+	document.body.dispatchEvent(keydown("h"));
+	expect(clicked).toBe(false);
+});
+
 function keydown(key: string): KeyboardEvent {
 	return new KeyboardEvent("keydown", {
 		key,

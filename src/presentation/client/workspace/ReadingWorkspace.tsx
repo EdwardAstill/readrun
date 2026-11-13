@@ -8,7 +8,7 @@ import { WorkspaceTiled } from "../../components/workspace/components/workspace-
 import { WorkspaceFloating } from "../../components/workspace/components/workspace-floating.tsx";
 import { defaultKeymap, eventMatchesCombo, type WorkspaceCommand } from "../../components/workspace/lib/keymap.ts";
 import { activeView, createReadingWorkspace, documentUrl, type ReadingWorkspaceController } from "./controller.ts";
-import { WORKSPACE_FOCUS, WORKSPACE_KEY, WORKSPACE_OPEN, WORKSPACE_OVERLAY, WORKSPACE_REMOUNT } from "./frame-bridge.ts";
+import { WORKSPACE_FOCUS, WORKSPACE_KEY, WORKSPACE_OPEN, WORKSPACE_OVERLAY, WORKSPACE_REMOUNT, WORKSPACE_LOCATION } from "./frame-bridge.ts";
 import { closeOverlay, getActiveOverlay, openOverlay, subscribeOverlays } from "../overlay.ts";
 import { readRuntimeConfig } from "../runtime-config.ts";
 
@@ -58,7 +58,7 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 			if (current) link.setAttribute("aria-current", "page");
 			else link.removeAttribute("aria-current");
 		}
-		if (!navigatingHistory && window.location.pathname + window.location.search !== view.type.split("#")[0]) {
+		if (!navigatingHistory && window.location.pathname + window.location.search + window.location.hash !== view.type) {
 			window.history.pushState({}, "", view.type);
 		}
 	};
@@ -84,6 +84,22 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 		document.dispatchEvent(new CustomEvent("readrun:remount"));
 	};
 	content.addEventListener(WORKSPACE_REMOUNT, syncLiveNavigation, true);
+	const syncFrameLocation = (event: Event) => {
+		const frame = event.target as HTMLIFrameElement;
+		if (!frame.matches("iframe[data-workspace-view]")) return;
+		const value = (event as CustomEvent<string>).detail;
+		if (typeof value !== "string") return;
+		const url = documentUrl(value, window.location.href);
+		const state = controller.store.getState();
+		const view = state.views[frame.dataset.workspaceView!];
+		if (!url || !view || url.split("#")[0] !== view.type.split("#")[0]) return;
+		// Native iframe anchors already add a joint-session history entry.
+		navigatingHistory = true;
+		if (url !== view.type) controller.store.hydrate({ ...state, views: { ...state.views, [view.id]: { ...view, type: url } } });
+		navigatingHistory = false;
+		if (activeView(state)?.id === view.id) window.history.replaceState({}, "", url);
+	};
+	content.addEventListener(WORKSPACE_LOCATION, syncFrameLocation, true);
 
 	async function navigate(value: string, reason: "navigation" | "popstate", stackId?: string): Promise<boolean> {
 		const url = documentUrl(value, window.location.href);
@@ -103,13 +119,21 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 			}
 			if (disposed || version !== navigationVersion) return true;
 			navigatingHistory = reason === "popstate";
+			const previousViews = controller.store.getState().views;
 			const id = controller.open(url, title, stackId);
 			navigatingHistory = false;
-			if (url.includes("#")) {
-				window.history.replaceState({}, "", url);
+			if (previousViews[id] && previousViews[id].type !== url) {
 				requestAnimationFrame(() => {
 					const frame = content!.querySelector<HTMLIFrameElement>(`iframe[data-workspace-view="${CSS.escape(id)}"]`);
-					try { frame?.contentDocument?.getElementById(decodeURIComponent(url.slice(url.indexOf("#") + 1)))?.scrollIntoView(); } catch { /* Invalid fragment. */ }
+					const page = frame?.contentDocument;
+					if (!frame || !page) return;
+					frame.contentWindow?.history.replaceState({}, "", url);
+					const hash = new URL(url, window.location.href).hash;
+					if (hash) {
+						try { page.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView(); } catch { /* Invalid fragment. */ }
+					} else {
+						page.querySelector<HTMLElement>(".readrun-content")?.scrollTo({ top: 0 });
+					}
 				});
 			}
 			errors.dispatchEvent(new CustomEvent("error", { detail: "" }));
@@ -125,11 +149,12 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 	const openFromFrame = (event: Event) => {
 		const frame = event.target as HTMLIFrameElement;
 		if (!frame.matches("iframe[data-workspace-view]")) return;
-		const value = (event as CustomEvent<{ url: string }>).detail?.url;
+		const detail = (event as CustomEvent<{ url: string; reason?: "navigation" | "popstate" }>).detail;
+		const value = detail?.url;
 		if (typeof value !== "string" || !documentUrl(value, window.location.href)) return;
 		event.preventDefault();
 		const stackId = Object.values(controller.store.getState().stacks).find((stack) => stack.viewIds.includes(frame.dataset.workspaceView!))?.id;
-		void navigate(value, "navigation", stackId);
+		void navigate(value, detail.reason === "popstate" ? "popstate" : "navigation", stackId);
 	};
 	// Frame events don't bubble by default, so listen in the capture phase.
 	content.addEventListener(WORKSPACE_OPEN, openFromFrame, true);
@@ -172,6 +197,7 @@ export function mountReadingWorkspace(): ReadingWorkspaceHandle | null {
 			content.removeEventListener(WORKSPACE_OPEN, openFromFrame, true);
 			content.removeEventListener(WORKSPACE_OVERLAY, openOverlayFromFrame, true);
 			content.removeEventListener(WORKSPACE_REMOUNT, syncLiveNavigation, true);
+			content.removeEventListener(WORKSPACE_LOCATION, syncFrameLocation, true);
 			unsubscribeOverlays();
 			root.unmount();
 		},
@@ -220,7 +246,7 @@ function WorkspaceSurface({ initialDocument }: { initialDocument: InitialDocumen
 			<DocumentFrames surface={surface} initialDocument={initialDocument} />
 			{Object.keys(state.views).length === 0 && <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background">
 				<p className="text-sm text-muted-foreground">No files open</p>
-				<Button variant="outline" data-open-overlay="files-overlay"><FolderOpen />Open a file</Button>
+				<Button variant="outline" data-open-files><FolderOpen />Open a file</Button>
 			</div>}
 		</div>
 	);
@@ -248,11 +274,17 @@ function runWorkspaceKey(event: KeyboardEvent, store: ReadingWorkspaceController
 function DocumentFrames({ surface, initialDocument }: { surface: RefObject<HTMLDivElement | null>; initialDocument: InitialDocument }) {
 	const state = useWorkspaceState();
 	const drag = useWorkspaceDrag();
+	const pendingFocus = useRef<Element | null>(null);
 	useEffect(() => {
 		const root = surface.current;
 		if (!root) return;
 		const position = () => {
 			const slots = [...root.querySelectorAll<HTMLElement>("[data-document-slot]")];
+			const focused = document.activeElement;
+			if (focused?.matches("iframe[data-workspace-view]") && root.contains(focused) &&
+				!slots.some((slot) => slot.dataset.documentSlot === focused.getAttribute("data-workspace-view"))) {
+				pendingFocus.current = focused;
+			}
 			const bounds = root.getBoundingClientRect();
 			for (const host of root.querySelectorAll<HTMLElement>("[data-document-frame-host]")) {
 				const id = host.dataset.documentFrameHost;
@@ -267,6 +299,20 @@ function DocumentFrames({ surface, initialDocument }: { surface: RefObject<HTMLD
 					width: `${rect.width}px`, height: `${rect.height}px`, zIndex: String(floating?.zIndex ?? 0),
 					pointerEvents: drag?.drag ? "none" : "auto",
 				});
+			}
+			if (pendingFocus.current) {
+				const focused = document.activeElement;
+				if ((focused !== pendingFocus.current && focused !== document.body) ||
+					slots.some((slot) => slot.dataset.documentSlot === pendingFocus.current?.getAttribute("data-workspace-view"))) {
+					pendingFocus.current = null;
+				} else {
+					const selected = root.querySelector<HTMLIFrameElement>("iframe[data-workspace-active]");
+					// Wait for the active panel before moving focus out of a hidden document.
+					if (selected && !selected.parentElement?.hidden) {
+						pendingFocus.current = null;
+						selected.focus();
+					}
+				}
 			}
 		};
 		position();
@@ -287,6 +333,7 @@ function DocumentFrame({ view, active, initialDocument }: WorkspaceViewProps & {
 	const frame = useRef<HTMLIFrameElement>(null);
 	const [failed, setFailed] = useState(false);
 	const seeded = useRef(false);
+	const initialUrl = useRef(view.type);
 	useLayoutEffect(() => {
 		if (!initialDocument || seeded.current) return;
 		seeded.current = true;
@@ -323,7 +370,7 @@ function DocumentFrame({ view, active, initialDocument }: WorkspaceViewProps & {
 	}, [store, view.id]);
 	return (
 		<div data-document-frame-host={view.id} className="absolute overflow-hidden rounded-b-md bg-background" hidden>
-			<iframe ref={frame} data-workspace-view={view.id} data-workspace-active={active || undefined} src={initialDocument ? undefined : view.type} title={view.title} className="h-full w-full border-0"
+			<iframe ref={frame} data-workspace-view={view.id} data-workspace-active={active || undefined} src={initialDocument ? undefined : initialUrl.current} title={view.title} className="h-full w-full border-0"
 				onLoad={() => setFailed(!frame.current?.contentDocument?.querySelector("#main-content"))} />
 			{failed && <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background p-4 text-sm">
 				<p>Could not load {view.title}.</p>

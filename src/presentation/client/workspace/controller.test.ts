@@ -10,6 +10,11 @@ test("opening files keeps earlier tabs and selects an existing file without dupl
 	expect(workspace.open("/docs/one.html#example", "One")).toBe(first.id);
 	expect(Object.keys(workspace.store.getState().views)).toHaveLength(2);
 	expect(activeView(workspace.store.getState())?.id).toBe(first.id);
+	expect(activeView(workspace.store.getState())?.type).toBe("/docs/one.html#example");
+	expect(workspace.open("/docs/one.html#another", "One")).toBe(first.id);
+	expect(activeView(workspace.store.getState())?.type).toBe("/docs/one.html#another");
+	expect(workspace.open("/docs/one.html", "One")).toBe(first.id);
+	expect(activeView(workspace.store.getState())?.type).toBe("/docs/one.html");
 });
 
 test("splits create independent instances and subsequent file opens target the focused pane", () => {

@@ -386,8 +386,21 @@ test("data aliases honor the project asset scope", async () => {
 		".readrun/ignore": ".readrun/assets/data/private.txt\n",
 		".readrun/assets/data/public.txt": "public\n",
 		".readrun/assets/data/private.txt": "private\n",
+		".readrun/assets/data/nested/student.json": '{"name":"Ada"}',
+		".readrun/assets/files/results.csv": "score\n42\n",
+		".readrun/assets/files/workflow.json": '{"steps":[]}',
 	});
 	const server = await startTestServer({ root });
+	const html = await (await fetch(server.baseUrl)).text();
+	const manifest = html.match(/<script[^>]*id="readrun-files"[^>]*>([\s\S]*?)<\/script>/)?.[1];
+	expect(manifest).toBeDefined();
+	expect(JSON.parse(manifest!).files).toEqual([
+		{ name: "nested/student.json" },
+		{ name: "public.txt" },
+	]);
+	const nestedFile = await fetch(`${server.baseUrl}/_readrun/files/nested/student.json`);
+	expect(nestedFile.status).toBe(200);
+	expect(await nestedFile.json()).toEqual({ name: "Ada" });
 
 	const publicFile = await fetch(`${server.baseUrl}/_readrun/files/public.txt`);
 	expect(publicFile.status).toBe(200);

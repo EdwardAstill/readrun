@@ -1,6 +1,6 @@
 import type React from "react";
-import type { ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
+import { useId, type ReactNode } from "react";
+import { ChevronRight, File, Folder } from "lucide-react";
 
 import {
 	SidebarGroupLabel,
@@ -48,6 +48,7 @@ export interface TreeViewNode {
 	leading?: ReactNode;
 	trailing?: ReactNode;
 	children?: readonly TreeViewNode[];
+	isBranch?: boolean;
 	open?: boolean;
 	itemClassName?: string;
 	detailsClassName?: string;
@@ -68,14 +69,17 @@ export interface TreeProps {
 	nodes: readonly TreeViewNode[];
 }
 
+// Non-sortable edcn tree port: https://github.com/EdwardAstill/edcn/tree/main/registry/tree
+// Keep native details/links for server rendering, authored folder pages, and search.
 export function Tree(props: TreeProps): React.JSX.Element {
-	const list = <TreeNodeList nodes={props.nodes} depth={0} />;
+	const list = <TreeNodeList nodes={props.nodes} depth={0} ariaLabel={props.ariaLabel ?? "Contents"} />;
 
 	if (props.as === "nav") {
 		return (
 			<nav
 				id={props.id}
 				className={props.className}
+				data-edcn-tree=""
 				aria-label={props.ariaLabel}
 			>
 				{list}
@@ -84,7 +88,7 @@ export function Tree(props: TreeProps): React.JSX.Element {
 	}
 
 	return (
-		<div id={props.id} className={props.className} aria-label={props.ariaLabel}>
+		<div id={props.id} className={props.className} aria-label={props.ariaLabel} data-edcn-tree="">
 			{list}
 		</div>
 	);
@@ -93,12 +97,14 @@ export function Tree(props: TreeProps): React.JSX.Element {
 function TreeNodeList(props: {
 	nodes: readonly TreeViewNode[];
 	depth: number;
+	ariaLabel?: string;
+	id?: string;
 }): React.JSX.Element {
 	const List = props.depth === 0 ? SidebarMenu : SidebarMenuSub;
 	return (
-		<List>
-			{props.nodes.map((node) => (
-				<TreeNode key={node.id} node={node} depth={props.depth} />
+		<List id={props.id} role={props.depth === 0 ? "tree" : "group"} aria-label={props.ariaLabel}>
+			{props.nodes.map((node, index) => (
+				<TreeNode key={node.id} node={node} depth={props.depth} index={index} size={props.nodes.length} />
 			))}
 		</List>
 	);
@@ -107,16 +113,30 @@ function TreeNodeList(props: {
 function TreeNode(props: {
 	node: TreeViewNode;
 	depth: number;
+	index: number;
+	size: number;
 }): React.JSX.Element {
 	const { node } = props;
+	const groupId = useId();
 	const children = node.children ?? [];
 	const Item = props.depth === 0 ? SidebarMenuItem : SidebarMenuSubItem;
+	const rowProps = {
+		role: "treeitem",
+		className: "data-selected:bg-sidebar-accent",
+		"data-tree-item": node.id,
+		"aria-level": props.depth + 1,
+		"aria-posinset": props.index + 1,
+		"aria-setsize": props.size,
+		"aria-selected": Boolean(node.ariaCurrent),
+		"aria-owns": (children.length > 0 || node.isBranch) && node.open ? groupId : undefined,
+		tabIndex: node.ariaCurrent || (props.depth === 0 && props.index === 0) ? 0 : -1,
+	};
 
-	if (children.length === 0) {
+	if (children.length === 0 && !node.isBranch) {
 		const label = (
 			<>
-				{node.leading}
-				<span className={node.labelClassName} title={node.title}>
+				{node.leading ?? <File aria-hidden="true" />}
+				<span className={cn("min-w-0 flex-1 truncate", node.labelClassName)} title={node.title}>
 					{node.label}
 				</span>
 				{node.trailing}
@@ -124,19 +144,20 @@ function TreeNode(props: {
 		);
 
 		return (
-			<Item {...node.itemProps} className={node.itemClassName}>
+			<Item {...node.itemProps} className={node.itemClassName} role="none">
 				{props.depth === 0 ? (
 					<SidebarMenuButton
 						render={
 							node.href ? (
 								<a
 									{...node.linkProps}
+									{...rowProps}
 									href={node.href}
 									title={node.title}
 									aria-current={node.ariaCurrent}
 								/>
 							) : (
-								<span />
+								<span {...rowProps} />
 							)
 						}
 						isActive={Boolean(node.ariaCurrent)}
@@ -149,6 +170,7 @@ function TreeNode(props: {
 						render={
 							<a
 								{...node.linkProps}
+								{...rowProps}
 								href={node.href}
 								title={node.title}
 								aria-current={node.ariaCurrent}
@@ -165,41 +187,42 @@ function TreeNode(props: {
 	}
 
 	return (
-		<Item {...node.itemProps} className={node.itemClassName}>
+		<Item {...node.itemProps} className={node.itemClassName} role="none">
 			<details
 				{...node.detailsProps}
+				role="none"
 				className={cn("group/collapsible", node.detailsClassName)}
 				open={node.open}
 			>
 				{props.depth === 0 ? (
 					<SidebarGroupLabel
-						render={<summary {...node.summaryProps} />}
+						render={<summary {...node.summaryProps} {...rowProps} aria-expanded={Boolean(node.open)} />}
 						className={cn(
-							"group/label list-none gap-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground [&::-webkit-details-marker]:hidden",
+							"group/label list-none gap-2 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium [&::-webkit-details-marker]:hidden",
 							node.summaryClassName,
 						)}
 					>
-						{node.leading}
+						<ChevronRight aria-hidden="true" className="transition-transform group-open/collapsible:rotate-90" />
+						{node.leading ?? <Folder aria-hidden="true" />}
 						<TreeNodeLabel node={node} />
 						{node.trailing}
-						<ChevronRight className="ml-auto transition-transform group-open/collapsible:rotate-90" />
 					</SidebarGroupLabel>
 				) : (
 					<SidebarMenuButton
-						render={<summary {...node.summaryProps} />}
+						render={<summary {...node.summaryProps} {...rowProps} aria-expanded={Boolean(node.open)} />}
 						isActive={Boolean(node.ariaCurrent)}
 						className={cn(
 							"list-none [&::-webkit-details-marker]:hidden",
 							node.summaryClassName,
 						)}
 					>
-						{node.leading}
+						<ChevronRight aria-hidden="true" className="transition-transform group-open/collapsible:rotate-90" />
+						{node.leading ?? <Folder aria-hidden="true" />}
 						<TreeNodeLabel node={node} />
 						{node.trailing}
-						<ChevronRight className="ml-auto transition-transform group-open/collapsible:rotate-90" />
 					</SidebarMenuButton>
 				)}
-				<TreeNodeList nodes={children} depth={props.depth + 1} />
+				<TreeNodeList id={groupId} nodes={children} depth={props.depth + 1} />
 			</details>
 		</Item>
 	);
@@ -225,7 +248,7 @@ function TreeNodeLabel(props: { node: TreeViewNode }): React.JSX.Element {
 	}
 
 	return (
-		<span className={node.labelClassName} title={node.title}>
+		<span className={cn("min-w-0 flex-1 truncate", node.labelClassName)} title={node.title}>
 			{node.label}
 		</span>
 	);

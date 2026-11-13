@@ -16,7 +16,7 @@ export function clearPageSearchHighlights(root?: ParentNode): void {
 	scope.querySelectorAll("mark.page-search-highlight").forEach((mark) => {
 		const parent = mark.parentNode;
 		if (!parent) return;
-		parent.replaceChild(document.createTextNode(mark.textContent ?? ""), mark);
+		parent.replaceChild(mark.ownerDocument.createTextNode(mark.textContent ?? ""), mark);
 		parent.normalize();
 	});
 }
@@ -33,39 +33,42 @@ export function highlightPageMatches(
 	const scope = root ?? getContentRoot();
 	if (!scope) return state;
 
-	const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+	const owner = scope.ownerDocument ?? document;
+	const walker = owner.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
 	const textNodes: Text[] = [];
 	let node: Node | null;
 	while ((node = walker.nextNode())) {
+		const parent = node.parentElement;
+		if (!parent || parent.closest("script, style, noscript, template, textarea, input, select, button, [contenteditable]:not([contenteditable=false]), [hidden]")) continue;
 		textNodes.push(node as Text);
 	}
 
-	const lowerQuery = trimmed.toLowerCase();
+	const pattern = new RegExp(trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
 	for (const textNode of textNodes) {
 		const text = textNode.textContent ?? "";
-		const lower = text.toLowerCase();
-		let idx = lower.indexOf(lowerQuery);
-		if (idx === -1) continue;
+		let match = pattern.exec(text);
+		if (!match) continue;
 
-		const fragment = document.createDocumentFragment();
+		const fragment = owner.createDocumentFragment();
 		let lastIdx = 0;
-		while (idx !== -1) {
+		while (match) {
+			const idx = match.index;
 			if (idx > lastIdx) {
-				fragment.appendChild(document.createTextNode(text.slice(lastIdx, idx)));
+				fragment.appendChild(owner.createTextNode(text.slice(lastIdx, idx)));
 			}
 
-			const mark = document.createElement("mark");
+			const mark = owner.createElement("mark");
 			mark.className = "page-search-highlight";
-			mark.textContent = text.slice(idx, idx + trimmed.length);
+			mark.textContent = match[0];
 			fragment.appendChild(mark);
 			state.marks.push(mark);
 
-			lastIdx = idx + trimmed.length;
-			idx = lower.indexOf(lowerQuery, lastIdx);
+			lastIdx = idx + match[0].length;
+			match = pattern.exec(text);
 		}
 
 		if (lastIdx < text.length) {
-			fragment.appendChild(document.createTextNode(text.slice(lastIdx)));
+			fragment.appendChild(owner.createTextNode(text.slice(lastIdx)));
 		}
 		textNode.parentNode?.replaceChild(fragment, textNode);
 	}

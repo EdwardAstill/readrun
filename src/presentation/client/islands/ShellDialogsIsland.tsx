@@ -10,6 +10,7 @@ import {
 import {
 	getActiveOverlay,
 	isOverlayId,
+	openFiles,
 	openOverlay,
 	subscribeOverlays,
 } from "../overlay.ts";
@@ -112,6 +113,10 @@ export function ShellDialogsIsland(
 		const handleClick = (event: MouseEvent): void => {
 			const target = event.target;
 			if (!(target instanceof Element)) return;
+			if (target.closest("[data-open-files]")) {
+				openFiles();
+				return;
+			}
 			const action = target.closest<HTMLElement>("[data-open-overlay]");
 			const id = action?.dataset.openOverlay;
 			if (id && isOverlayId(id)) openOverlay(id);
@@ -119,8 +124,9 @@ export function ShellDialogsIsland(
 		const openPageSearch = (): void => openOverlay("page-search-overlay");
 		const openSiteSearch = (): void => openOverlay("site-search-overlay");
 		const handleKeyDown = (event: KeyboardEvent): void => {
+			if (event.defaultPrevented || event.isComposing || event.altKey || event.shiftKey) return;
 			if (
-				(event.ctrlKey || event.metaKey) &&
+				event.ctrlKey !== event.metaKey &&
 				event.key.toLowerCase() === "k"
 			) {
 				event.preventDefault();

@@ -148,15 +148,9 @@ export function ContextMenuIsland(): React.JSX.Element {
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
-							onClick={() =>
-								runAction(() => {
-									const settings = loadSettings();
-									settings.showSidebar = !settings.showSidebar;
-									commitSettings(settings);
-								})
-							}
+							onClick={() => runAction(() => openOverlay("files-overlay"))}
 						>
-							Toggle Sidebar
+							Files
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onClick={() =>

@@ -98,20 +98,23 @@ features once and page-scoped features through a single lifecycle. Internal
 page links open workspace tabs; live content updates use the document's
 existing remount lifecycle. The workspace does not use a framework router.
 In serve mode, one live-update connection is shared by all open documents.
+Quiet live-update streams stay connected between edits; ordinary HTTP requests
+keep their normal idle timeout.
 
 ## Python execution
 
-Python code runs in the browser through Pyodide. Packages are detected from
+Python runs through local `uv` when available and **Run Python locally** is
+enabled; otherwise it uses browser-side Pyodide. Packages are detected from
 imports in `[python]` blocks and loaded before execution when possible.
 
 ```text
 [python] block
   -> scan imports
-  -> if "use uv for python" is off:
+  -> if "Run Python locally" is off:
        load Pyodide on demand
        install needed packages
        run code in the browser
-  -> if "use uv for python" is on and the server allows it:
+  -> if "Run Python locally" is on and the server allows it:
        POST code to the local readrun server
        run uv in a temporary folder
   -> render stdout, stderr, figures, and generated files
@@ -122,9 +125,11 @@ the `/_readrun/files/` endpoint, so code can read local project data in
 browser mode. The local `uv` runner copies the same data files into its
 temporary working directory as `data/**`.
 
-The local uv switch is available automatically when `rr serve`, `rr docs`, or
+The local uv switch is enabled by default when `rr serve`, `rr docs`, or
 `rr docs-wiki` can find `uv` on the host system. If `uv` is missing,
 the settings switch is locked and Python blocks keep using Pyodide.
+Local runs use a fresh subprocess each time; Pyodide blocks share a session
+within one document frame, retained while switching workspace tabs.
 
 ## JSX and widgets
 

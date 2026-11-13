@@ -49,6 +49,23 @@ test("opens the command palette from Ctrl/Cmd+K, including editable fields", asy
 	expect(overlayModule.getActiveOverlay()).toBe("command-palette-overlay");
 });
 
+test("palette leaves modified browser shortcuts, composition and consumed events alone", async () => {
+	await renderShell([]);
+	for (const init of [
+		{ ctrlKey: true, shiftKey: true }, { metaKey: true, altKey: true },
+		{ ctrlKey: true, metaKey: true }, { ctrlKey: true, isComposing: true },
+	]) {
+		const event = new KeyboardEvent("keydown", { key: "k", ...init, bubbles: true, cancelable: true });
+		await act(async () => document.body.dispatchEvent(event));
+		expect(event.defaultPrevented).toBe(false);
+		expect(overlayModule.getActiveOverlay()).toBeNull();
+	}
+	const event = new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true, cancelable: true });
+	event.preventDefault();
+	await act(async () => document.body.dispatchEvent(event));
+	expect(overlayModule.getActiveOverlay()).toBeNull();
+});
+
 test("mounts site search only when search is enabled", async () => {
 	await renderShell([], false);
 	await act(async () => overlayModule.openOverlay("site-search-overlay"));
@@ -67,11 +84,32 @@ test("the Open a file action uses the system file picker", async () => {
 	let opened = 0;
 	window.readrunDesktop = { openFiles: () => { opened += 1; } };
 	const button = document.createElement("button");
-	button.dataset.openOverlay = "files-overlay";
+	button.dataset.openFiles = "";
 	document.body.append(button);
 	await act(async () => button.click());
 	expect(opened).toBe(1);
 	expect(overlayModule.getActiveOverlay()).toBeNull();
+});
+
+test("the Files action opens the drawer instead of the desktop picker", async () => {
+	await renderShell([]);
+	let opened = 0;
+	window.readrunDesktop = { openFiles: () => { opened += 1; } };
+	const button = document.createElement("button");
+	button.dataset.openOverlay = "files-overlay";
+	document.body.append(button);
+	await act(async () => button.click());
+	expect(opened).toBe(0);
+	expect(overlayModule.getActiveOverlay()).toBe("files-overlay");
+});
+
+test("the Open a file action falls back to the Files drawer in browsers", async () => {
+	await renderShell([]);
+	const button = document.createElement("button");
+	button.dataset.openFiles = "";
+	document.body.append(button);
+	await act(async () => button.click());
+	expect(overlayModule.getActiveOverlay()).toBe("files-overlay");
 });
 
 test("the default shell offers only search commands and no toolkit windows", async () => {

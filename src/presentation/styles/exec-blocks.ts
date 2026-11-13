@@ -5,6 +5,26 @@ export const execBlockStyles = `
   margin: 0;
 }
 
+.exec-output {
+  display: block;
+  min-width: 0;
+}
+
+.exec-output:empty { display: none; }
+.exec-output pre {
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.exec-output img { max-width: 100%; }
+.exec-output .stdout { color: var(--color-text); }
+.exec-output .stderr,
+.exec-output .error { color: var(--destructive, #cf222e); }
+.exec-output .loading {
+  padding: 0.75rem;
+  color: var(--color-text-muted);
+}
+
 .exec-block[data-language="jsx"] .exec-output {
   display: block;
   white-space: normal;
@@ -31,9 +51,6 @@ export const execBlockStyles = `
   box-sizing: border-box;
 }
 
-.exec-output .exec-stdout { color: var(--color-text); }
-.exec-output .exec-stderr { color: #cf222e; }
-.exec-loading { color: var(--color-text-muted); }
 .exec-block--collapsed [data-code-source],
 .exec-block--collapsed .exec-editable { display: none; }
 

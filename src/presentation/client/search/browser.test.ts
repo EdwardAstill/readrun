@@ -27,3 +27,10 @@ test("WikiLink search is a flat outgoing list even with folders, cycles, duplica
 	expect(wikiSearchItems(documents, documents[1]).map((item) => item.label)).toEqual(["Home"]);
 	expect(wikiSearchItems(documents, documents[2])).toEqual([]);
 });
+
+test("folder search finds page content inside collapsed folders", () => {
+	const entries = indexItems(folderSearchItems(documents));
+	const found = projectSearch(entries, "SWANS BY THE REEDS", new Set());
+	expect(found.visible.map((entry) => entry.item.label)).toEqual(["research", "ecology", "field.md"]);
+	expect([...found.matches]).toEqual(["/project/field/"]);
+});

@@ -8,10 +8,12 @@ import {
 	DialogTitle,
 } from "../../components/ui/Dialog.tsx";
 import { Modal } from "../../components/reusable/Modal.tsx";
+import { decodeSource } from "../execution/source.ts";
 
 export function CodeModalIsland(): React.JSX.Element {
 	const [block, setBlock] = useState<HTMLElement | null>(null);
-	const outputRef = useRef<HTMLDivElement>(null);
+	const [runState, setRunState] = useState({ disabled: false, label: "Run" });
+	const [outputElement, setOutputElement] = useState<HTMLDivElement | null>(null);
 	const returnFocusRef = useRef<HTMLElement | null>(null);
 	const close = useCallback(() => setBlock(null), []);
 
@@ -41,24 +43,38 @@ export function CodeModalIsland(): React.JSX.Element {
 		};
 
 		document.addEventListener("click", handleClick);
-		return () => document.removeEventListener("click", handleClick);
-	}, []);
+		document.addEventListener("readrun:remount", close);
+		return () => {
+			document.removeEventListener("click", handleClick);
+			document.removeEventListener("readrun:remount", close);
+		};
+	}, [close]);
 
 	useEffect(() => {
-		if (!block || !outputRef.current) return;
-		const output = outputRef.current;
-		syncOutput(block, output);
+		if (!block || !outputElement) return;
 		const source = findOutput(block);
-		if (!source) return;
+		const placeholder = document.createComment("code-modal-output");
+		if (source) {
+			source.before(placeholder);
+			outputElement.replaceChildren(source);
+		}
 
-		const observer = new MutationObserver(() => syncOutput(block, output));
-		observer.observe(source, {
-			childList: true,
-			subtree: true,
-			characterData: true,
+		const runButton = block.querySelector<HTMLButtonElement>(".exec-run-btn");
+		const syncRunState = () => setRunState({
+			disabled: runButton?.disabled ?? false,
+			label: runButton?.getAttribute("aria-label") ?? "Run",
 		});
-		return () => observer.disconnect();
-	}, [block]);
+		syncRunState();
+		const observer = new MutationObserver(syncRunState);
+		if (runButton) observer.observe(runButton, {
+			attributes: true,
+			attributeFilter: ["disabled", "aria-label"],
+		});
+		return () => {
+			observer.disconnect();
+			if (source) placeholder.replaceWith(source);
+		};
+	}, [block, outputElement]);
 
 	const language =
 		block?.dataset.language ?? block?.getAttribute("data-language") ?? "text";
@@ -69,7 +85,7 @@ export function CodeModalIsland(): React.JSX.Element {
 			id="code-modal"
 			open={block !== null}
 			onClose={close}
-			contentClassName="sm:max-w-2xl"
+			contentClassName="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl"
 			ariaLabelledBy="code-modal-title"
 			finalFocusRef={returnFocusRef}
 		>
@@ -83,11 +99,13 @@ export function CodeModalIsland(): React.JSX.Element {
 					className="justify-self-start"
 					id="code-modal-run"
 					size="sm"
+					disabled={runState.disabled}
+					aria-busy={runState.disabled}
 					onClick={() =>
 						block?.querySelector<HTMLElement>(".exec-run-btn")?.click()
 					}
 				>
-					Run
+					{runState.label}
 				</Button>
 			) : null}
 			<Card className="gap-0 overflow-hidden py-0">
@@ -97,9 +115,10 @@ export function CodeModalIsland(): React.JSX.Element {
 					</pre>
 				</CardContent>
 				<CardContent
-					className="p-0"
+					className="exec-block p-0"
+					data-language={language}
 					id="code-modal-output"
-					ref={outputRef}
+					ref={setOutputElement}
 				/>
 			</Card>
 		</Modal>
@@ -110,16 +129,6 @@ function findOutput(block: HTMLElement): HTMLElement | null {
 	return block.querySelector<HTMLElement>("output.exec-output, .exec-output");
 }
 
-/** Replace output contents with a safe clone of the source output element. */
-export function syncOutput(block: HTMLElement, target: HTMLElement): void {
-	const source = findOutput(block);
-	target.replaceChildren(
-		...(source
-			? Array.from(source.childNodes, (child) => child.cloneNode(true))
-			: []),
-	);
-}
-
 export function readCodeText(block: HTMLElement): string {
 	const editable = block.querySelector<HTMLTextAreaElement>(".exec-editable");
 	if (editable) return editable.value;
@@ -127,7 +136,7 @@ export function readCodeText(block: HTMLElement): string {
 	const source = block.querySelector<HTMLScriptElement>("script[data-source]");
 	if (source?.textContent) {
 		try {
-			return atob(source.textContent.trim());
+			return decodeSource(source.textContent);
 		} catch {
 			// Fall back to the visible code if the source payload is malformed.
 		}

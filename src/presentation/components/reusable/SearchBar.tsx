@@ -46,11 +46,14 @@ export function SearchBar(props: SearchBarProps): React.JSX.Element {
 
 	const handleKeyDown = useCallback(
 		(event: React.KeyboardEvent) => {
-			if (event.key === "Escape") {
-				props.onClose?.();
+			if (event.defaultPrevented || event.nativeEvent.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+			if (event.key === "Escape" && props.onClose) {
+				event.preventDefault();
+				event.stopPropagation();
+				props.onClose();
 				return;
 			}
-			if (event.key === "Enter") {
+			if (event.key === "Enter" && props.onNavigate) {
 				event.preventDefault();
 				props.onNavigate?.(event.shiftKey ? -1 : 1);
 			}

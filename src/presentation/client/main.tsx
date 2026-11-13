@@ -64,7 +64,7 @@ function clientFeatures(workspace: ReadingWorkspaceHandle | null): ClientFeature
 		applicationFeature("settings", () => {
 			applySettings(loadSettings());
 			const sync = (event: StorageEvent) => {
-				if (event.key === "readrun:settings") applySettings(loadSettings());
+				if (event.key === "readrun:settings" || event.key === null) applySettings(loadSettings());
 			};
 			window.addEventListener("storage", sync);
 			return () => window.removeEventListener("storage", sync);

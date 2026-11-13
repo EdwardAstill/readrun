@@ -135,6 +135,8 @@ export async function startServer(
 			hostname: options.host,
 			fetch: async (request, server) => {
 				const url = new URL(request.url);
+				// Quiet live-update streams must outlive Bun's ordinary request timeout.
+				if (url.pathname.endsWith("/_readrun/live/events")) server.timeout(request, 0);
 				if (url.pathname === "/_readrun/desktop/open-file" && options.desktopToken) {
 					const address = server.requestIP(request)?.address;
 					if (!address || !isLoopback(address) || request.headers.get("Authorization") !== `Bearer ${options.desktopToken}` ||

@@ -3,10 +3,11 @@ import { act } from "react";
 import { installHappyDom } from "../../../test/happy-dom.ts";
 import { activeView } from "./controller.ts";
 import type { ReadingWorkspaceHandle } from "./ReadingWorkspace.tsx";
-import { WORKSPACE_FOCUS, WORKSPACE_OVERLAY } from "./frame-bridge.ts";
+import { WORKSPACE_FOCUS, WORKSPACE_OVERLAY, WORKSPACE_LOCATION, WORKSPACE_OPEN, requestWorkspaceDocument } from "./frame-bridge.ts";
 import { closeAllOverlays, getActiveOverlay, openOverlay } from "../overlay.ts";
 import { createLiveClient } from "../live.ts";
 import { DEFAULT_RUNTIME_CONFIG } from "../../../shared/runtime-config.ts";
+import { createShellNavigation } from "../navigation.ts";
 
 let restore: () => void;
 let workspace: ReadingWorkspaceHandle | null = null;
@@ -14,10 +15,12 @@ let module: typeof import("./ReadingWorkspace.tsx");
 const originalCustomEvent = globalThis.CustomEvent;
 const originalDOMParser = globalThis.DOMParser;
 
+const originalAnchor = globalThis.HTMLAnchorElement;
 beforeAll(async () => {
 	restore = installHappyDom();
 	globalThis.CustomEvent = window.CustomEvent;
 	globalThis.DOMParser = window.DOMParser;
+	globalThis.HTMLAnchorElement = window.HTMLAnchorElement;
 	module = await import("./ReadingWorkspace.tsx");
 });
 afterEach(async () => {
@@ -28,7 +31,7 @@ afterEach(async () => {
 	document.body.replaceChildren();
 	window.history.replaceState({}, "", "/");
 });
-afterAll(() => { globalThis.CustomEvent = originalCustomEvent; globalThis.DOMParser = originalDOMParser; restore(); });
+afterAll(() => { globalThis.CustomEvent = originalCustomEvent; globalThis.DOMParser = originalDOMParser; globalThis.HTMLAnchorElement = originalAnchor; restore(); });
 
 async function mount() {
 	document.body.innerHTML = '<div class="readrun-content"><main id="main-content"><h1>First file</h1></main></div>';
@@ -59,6 +62,34 @@ test("the initial document is reused without a second URL request and survives t
 	expect(host(first).querySelector("iframe")).toBe(frame);
 });
 
+test("switching away from a focused document transfers focus but preserves shell input focus", async () => {
+	const { controller } = await mount();
+	const first = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-view]")!;
+	first.focus();
+	expect(document.activeElement).toBe(first);
+	await act(async () => { controller.open("/second", "Second file"); });
+	const second = document.querySelector<HTMLIFrameElement>('iframe[src="/second"]')!;
+	expect(host(first.dataset.workspaceView!).hidden).toBe(true);
+	expect(host(second.dataset.workspaceView!).hidden).toBe(false);
+	expect(document.activeElement).toBe(second);
+	await act(async () => { controller.open("/", "First file"); });
+	expect(document.activeElement).toBe(first);
+	const input = document.createElement("input");
+	document.body.append(input);
+	input.focus();
+	await act(async () => { controller.open("/second", "Second file"); });
+	expect(document.activeElement).toBe(input);
+});
+
+test("a focused document that remains visible in a split keeps its focus", async () => {
+	const { controller } = await mount();
+	const first = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-view]")!;
+	first.focus();
+	await act(async () => { controller.split("horizontal"); });
+	expect(host(first.dataset.workspaceView!).hidden).toBe(false);
+	expect(document.activeElement).toBe(first);
+});
+
 test("split, drag, float, and dock never reparent an existing document frame", async () => {
 	const { controller } = await mount();
 	const id = activeView(controller.store.getState())!.id;
@@ -77,11 +108,10 @@ test("split, drag, float, and dock never reparent an existing document frame", a
 	expect(host(id).hidden).toBe(false);
 });
 
-test("closing the final tab releases its iframe and shows a way to open another file", async () => {
+test("closing the final tab releases its iframe", async () => {
 	const { controller } = await mount();
 	await act(async () => controller.store.applyCommand("view/close"));
 	expect(document.querySelector("iframe")).toBeNull();
-	expect(document.querySelector('[data-open-overlay="files-overlay"]')?.textContent).toBe("Open a file");
 });
 
 test("outline and links actions target the selected document frame", async () => {
@@ -134,6 +164,82 @@ test("back navigation selects an existing tab without adding another history ent
 	expect(activeView(handle.controller.store.getState())?.type).toBe("/");
 	expect(window.history.length).toBe(length);
 	expect(document.querySelectorAll("iframe")).toHaveLength(2);
+});
+
+test("Ctrl and Cmd links from the root and frame bridge select one usable app tab", async () => {
+	const handle = await mount();
+	const first = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-view]")!;
+	const originalFetch = globalThis.fetch;
+	const originalFrame = Object.getOwnPropertyDescriptor(window, "frameElement");
+	globalThis.fetch = Object.assign(async () => new Response('<main id="main-content"><h1>Second file</h1></main>'), { preconnect: originalFetch.preconnect });
+	let navigation = createShellNavigation({ onNavigate: handle.navigate });
+	try {
+		const link = document.createElement("a");
+		link.href = "/second";
+		document.body.append(link);
+		await act(async () => {
+			const click = new MouseEvent("click", { ctrlKey: true, bubbles: true, cancelable: true });
+			link.dispatchEvent(click);
+			expect(click.defaultPrevented).toBe(true);
+		});
+		const second = activeView(handle.controller.store.getState())!;
+		expect(second.type).toBe("/second");
+		expect(host(second.id).hidden).toBe(false);
+		expect(host(second.id).querySelector("iframe")?.getAttribute("src")).toBe("/second");
+		expect(window.location.pathname).toBe("/second");
+		navigation.teardown();
+		// Exercise the same callback a document iframe installs in main.tsx.
+		Object.defineProperty(window, "frameElement", { configurable: true, value: first });
+		navigation = createShellNavigation({ onNavigate: requestWorkspaceDocument });
+		await act(async () => {
+			const click = new MouseEvent("click", { metaKey: true, bubbles: true, cancelable: true });
+			link.dispatchEvent(click);
+			expect(click.defaultPrevented).toBe(true);
+		});
+		expect(activeView(handle.controller.store.getState())?.id).toBe(second.id);
+		expect(document.querySelectorAll("iframe")).toHaveLength(2);
+	} finally {
+		navigation.teardown();
+		if (originalFrame) Object.defineProperty(window, "frameElement", originalFrame);
+		else Reflect.deleteProperty(window, "frameElement");
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test("tab fragments survive switching and fragment history reuses the document frame", async () => {
+	const handle = await mount();
+	const first = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-view]")!;
+	await act(async () => { await handle.navigate("/#example", "navigation"); });
+	expect(activeView(handle.controller.store.getState())?.type).toBe("/#example");
+	expect(window.location.hash).toBe("#example");
+	await act(async () => { handle.controller.open("/second", "Second file"); });
+	await act(async () => { handle.controller.store.dispatch({ type: "view/activate", viewId: first.dataset.workspaceView! }); });
+	expect(window.location.pathname + window.location.hash).toBe("/#example");
+	const length = window.history.length;
+	window.history.replaceState({}, "", "/");
+	await act(async () => { await handle.navigate("/", "popstate"); });
+	expect(activeView(handle.controller.store.getState())?.type).toBe("/");
+	expect(window.location.hash).toBe("");
+	expect(window.history.length).toBe(length);
+	expect(document.querySelector(`iframe[data-workspace-view="${first.dataset.workspaceView}"]`)).toBe(first);
+});
+
+test("native frame anchors synchronize the selected URL without adding a second history entry", async () => {
+	const handle = await mount();
+	const frame = document.querySelector<HTMLIFrameElement>("iframe[data-workspace-view]")!;
+	const length = window.history.length;
+	await act(async () => { frame.dispatchEvent(new CustomEvent(WORKSPACE_LOCATION, { detail: "/#native-anchor" })); });
+	expect(activeView(handle.controller.store.getState())?.type).toBe("/#native-anchor");
+	expect(window.location.hash).toBe("#native-anchor");
+	expect(window.history.length).toBe(length);
+	await act(async () => {
+		frame.dispatchEvent(new CustomEvent(WORKSPACE_OPEN, { detail: { url: "/", reason: "popstate" }, cancelable: true }));
+		frame.dispatchEvent(new CustomEvent(WORKSPACE_LOCATION, { detail: "/" }));
+	});
+	expect(activeView(handle.controller.store.getState())?.type).toBe("/");
+	expect(window.location.hash).toBe("");
+	expect(window.history.length).toBe(length);
+	expect(document.querySelector("iframe")).toBe(frame);
 });
 
 test("a failed request leaves open documents intact and displays an error", async () => {

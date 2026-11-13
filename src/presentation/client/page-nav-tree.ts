@@ -6,6 +6,7 @@ import {
 	toggleTreeBranches,
 	visibleTreeBranches,
 } from "./filterable-tree.ts";
+import { bindTreeKeyboard } from "./tree-keyboard.ts";
 
 const OPEN_STORAGE_KEY = "readrun:nav-open";
 const SEARCH_OPENED_ATTR = "data-rr-page-nav-search-opened";
@@ -18,6 +19,7 @@ export function initPageNavTreeChrome(): () => void {
 	) as HTMLInputElement | null;
 	const foldButton = document.getElementById("page-nav-fold-all-btn");
 	const tree = findPageNavTree();
+	const teardownTrees = Array.from(document.querySelectorAll<HTMLElement>("[data-edcn-tree]"), bindTreeKeyboard);
 	const syncFoldButton = (): void => {
 		syncTreeFoldButton(foldButton, visibleFolders(), {
 			empty: "No folders to expand",
@@ -43,6 +45,7 @@ export function initPageNavTreeChrome(): () => void {
 	document.addEventListener("readrun:nav-focus-change", syncFoldButton);
 	return () => {
 		document.removeEventListener("readrun:nav-focus-change", syncFoldButton);
+		for (const teardown of teardownTrees) teardown();
 		teardownChrome();
 	};
 }

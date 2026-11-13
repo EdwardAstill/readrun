@@ -32,6 +32,7 @@ export function ResourceBrowserTree(
 		<Tree
 			id="resource-browser-tree"
 			className="resource-browser__tree nav-tree"
+			ariaLabel="Resources"
 			nodes={props.groups.map((group) =>
 				toResourceBrowserTreeNode(group, props.groupsOpen),
 			)}

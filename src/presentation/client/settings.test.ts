@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
 import {
+	applySettings,
 	commitSettings,
 	DEFAULT_SETTINGS,
 	normaliseSettings,
@@ -58,6 +59,31 @@ describe("settings state", () => {
 		expect(JSON.parse(values.get("readrun:settings") ?? "{}").theme).toBe(
 			"dark",
 		);
+	});
+
+	test("settings received from another document update controls without persisting again", () => {
+		const doc = createDocumentStub();
+		let writes = 0;
+		Object.assign(globalThis, {
+			window: {
+				localStorage: { setItem: () => writes++ },
+			},
+			document: doc,
+		});
+		let displayed = DEFAULT_SETTINGS;
+		const unsubscribe = subscribeSettings((settings) => {
+			displayed = settings;
+		});
+		try {
+			applySettings({ ...DEFAULT_SETTINGS, theme: "nord", fontSize: 20 });
+			expect(displayed.theme).toBe("nord");
+			expect(displayed.fontSize).toBe(20);
+			expect(doc.documentElement!.dataset.theme).toBe("nord");
+			expect(doc.body!.style.fontSize).toBe("20px");
+			expect(writes).toBe(0);
+		} finally {
+			unsubscribe();
+		}
 	});
 });
 

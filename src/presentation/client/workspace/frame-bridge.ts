@@ -3,6 +3,7 @@ export const WORKSPACE_FOCUS = "readrun:workspace-focus";
 export const WORKSPACE_KEY = "readrun:workspace-key";
 export const WORKSPACE_OVERLAY = "readrun:workspace-overlay";
 export const WORKSPACE_REMOUNT = "readrun:workspace-remount";
+export const WORKSPACE_LOCATION = "readrun:workspace-location";
 
 export function workspaceFrame(): Element | null {
 	try {
@@ -12,8 +13,8 @@ export function workspaceFrame(): Element | null {
 	}
 }
 
-export function requestWorkspaceDocument(url: string): Promise<boolean> {
-	const event = new CustomEvent(WORKSPACE_OPEN, { detail: { url }, cancelable: true });
+export function requestWorkspaceDocument(url: string, reason: "navigation" | "popstate" = "navigation"): Promise<boolean> {
+	const event = new CustomEvent(WORKSPACE_OPEN, { detail: { url, reason }, cancelable: true });
 	workspaceFrame()?.dispatchEvent(event);
 	return Promise.resolve(event.defaultPrevented);
 }
@@ -45,11 +46,15 @@ export function mountWorkspaceFrameBridge(): () => void {
 	const remount = (event: Event) => frame.dispatchEvent(new CustomEvent(WORKSPACE_REMOUNT, {
 		detail: (event as CustomEvent<{ contentVersion?: number }>).detail?.contentVersion,
 	}));
+	const location = () => frame.dispatchEvent(new CustomEvent(WORKSPACE_LOCATION, {
+		detail: window.location.pathname + window.location.search + window.location.hash,
+	}));
 	document.addEventListener("pointerdown", focus, true);
 	document.addEventListener("focusin", focus, true);
 	document.addEventListener("keydown", key, true);
 	document.addEventListener(WORKSPACE_OVERLAY, overlay);
 	document.addEventListener("readrun:remount", remount);
+	window.addEventListener("hashchange", location);
 	return () => {
 		document.documentElement.removeAttribute("data-workspace-frame");
 		document.removeEventListener("pointerdown", focus, true);
@@ -57,6 +62,7 @@ export function mountWorkspaceFrameBridge(): () => void {
 		document.removeEventListener("keydown", key, true);
 		document.removeEventListener(WORKSPACE_OVERLAY, overlay);
 		document.removeEventListener("readrun:remount", remount);
+		window.removeEventListener("hashchange", location);
 	};
 }
 import { isOverlayId, openOverlay } from "../overlay.ts";

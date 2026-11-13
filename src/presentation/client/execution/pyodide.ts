@@ -1,5 +1,7 @@
-// Optional browser-side Python execution via Pyodide (WebAssembly).
-// Only loaded when enableBrowserPython is true in runtime config.
+// Browser-side Python execution via Pyodide (WebAssembly).
+// The CDN runtime loads only when Python execution is requested.
+
+import { readRuntimeConfig } from "../runtime-config.ts";
 
 // --- Types ---
 
@@ -10,6 +12,8 @@ interface PyodideInterface {
 		writeFile(path: string, data: Uint8Array): void;
 		readFile(path: string): Uint8Array;
 		readdir(path: string): string[];
+		mkdirTree(path: string): void;
+		cwd(): string;
 	};
 	pyimport(name: string): {
 		install(pkg: string): Promise<void>;
@@ -134,7 +138,6 @@ const STDLIB = new Set([
 
 let pyodide: PyodideInterface | null = null;
 let pyodideLoading: Promise<PyodideInterface> | null = null;
-let packagesReady: Promise<void> | null = null;
 let matplotlibPatched = false;
 
 // --- Package parsing ---
@@ -166,13 +169,14 @@ export async function loadPyodideRuntime(): Promise<PyodideInterface> {
 		// Load Pyodide script
 		const script = document.createElement("script");
 		script.src = PYODIDE_URL;
+		const { promise, resolve, reject } = Promise.withResolvers<void>();
+		script.onload = () => resolve();
+		script.onerror = () => reject(new Error("Failed to load Pyodide"));
 		document.head.appendChild(script);
-		await new Promise<void>((resolve, reject) => {
-			script.onload = () => resolve();
-			script.onerror = () => reject(new Error("Failed to load Pyodide"));
-		});
+		await promise;
 
-		pyodide = await loadPyodide();
+		const loaded = await loadPyodide();
+		const dataDirectory = `${loaded.FS.cwd().replace(/\/$/, "")}/data`;
 
 		// Load page data files into Pyodide FS
 		const filesEl = document.getElementById("readrun-files");
@@ -191,14 +195,22 @@ export async function loadPyodideRuntime(): Promise<PyodideInterface> {
 				await Promise.all(
 					files.map(async (file) => {
 						try {
+							if (typeof file?.name !== "string" || file.name.includes("\\") || file.name.includes("\0")) return;
+							const segments = file.name.split("/");
+							if (segments.some((part) => !part || part === "." || part === "..")) return;
 							const response = await fetch(
-								`/_readrun/files/${encodeURIComponent(file.name)}`,
+								new URL(
+									`files/${segments.map(encodeURIComponent).join("/")}`,
+									new URL(readRuntimeConfig()?.clientScriptUrl ?? "/_readrun/client.js", document.baseURI),
+								).href,
 							);
 							if (!response.ok) {
 								return;
 							}
 							const bytes = new Uint8Array(await response.arrayBuffer());
-							pyodide!.FS.writeFile(file.name, bytes);
+							// mkdirTree roots relative paths; use the interpreter's absolute cwd for both calls.
+							loaded.FS.mkdirTree(`${dataDirectory}/${segments.slice(0, -1).join("/")}`);
+							loaded.FS.writeFile(`${dataDirectory}/${file.name}`, bytes);
 						} catch {
 							// Best-effort file loading
 						}
@@ -209,7 +221,8 @@ export async function loadPyodideRuntime(): Promise<PyodideInterface> {
 			}
 		}
 
-		return pyodide!;
+		pyodide = loaded;
+		return loaded;
 	})();
 	pyodideLoading = loading;
 	try {
@@ -261,32 +274,6 @@ _plt.show = _readrun_show
 `);
 		matplotlibPatched = true;
 	}
-}
-
-// --- Scanning page for imports ---
-
-function scanPageImports(): string[] {
-	const allPackages = new Set<string>();
-	const scripts = document.querySelectorAll<HTMLScriptElement>(
-		"script[data-source]",
-	);
-	for (const script of scripts) {
-		try {
-			const code = atob(script.textContent ?? "");
-			for (const pkg of parseImports(code)) {
-				allPackages.add(pkg);
-			}
-		} catch {
-			// Best-effort
-		}
-	}
-	return [...allPackages];
-}
-
-// Pre-scan page imports on module load
-const pagePackages = scanPageImports();
-if (pagePackages.length > 0) {
-	packagesReady = installPackages(pagePackages);
 }
 
 // --- FS helpers ---
@@ -351,45 +338,19 @@ function renderFileDownloads(
 	}
 }
 
-function renderFigures(py: PyodideInterface, outputEl: HTMLElement): void {
-	try {
-		const figList = py.runPython(
-			"_readrun_figures if '_readrun_figures' in dir() else []",
-		) as string[];
-
-		if (!figList || !Array.isArray(figList) || figList.length === 0) {
-			return;
-		}
-
-		for (const b64 of figList) {
-			const img = document.createElement("img");
-			img.src = `data:image/png;base64,${b64}`;
-			img.style.maxWidth = "100%";
-			img.style.marginTop = "8px";
-			outputEl.appendChild(img);
-		}
-
-		py.runPython("_readrun_figures.clear()");
-	} catch {
-		// Best-effort
-	}
-}
-
 // --- Execution ---
 
 export interface PyodideExecResult {
 	stdout: string;
 	stderr: string;
 	images: string[];
+	error?: string;
 }
 
 export async function runPyodidePython(
 	code: string,
 ): Promise<PyodideExecResult> {
-	if (packagesReady) {
-		await packagesReady;
-	}
-
+	// Install dependencies for the code actually run, including edited/new pages.
 	const py = await loadPyodideRuntime();
 
 	// Install any new packages needed for this code
@@ -398,10 +359,10 @@ export async function runPyodidePython(
 		await installPackages(pkgs);
 	}
 
-	// Capture stdout/stderr
-	const stdoutParts: string[] = [];
-	const stderrParts: string[] = [];
-	let imageCount = 0;
+	let stdout = "";
+	let stderr = "";
+	let images: string[] = [];
+	let error: string | undefined;
 
 	try {
 		py.runPython(`
@@ -413,60 +374,28 @@ sys.stdout = _readrun_stdout
 sys.stderr = _readrun_stderr
 `);
 		py.runPython(code);
+	} catch (cause) {
+		error = cause instanceof Error ? cause.message : String(cause);
 	} finally {
 		try {
-			const captured = py.runPython(
-				"_readrun_stdout.getvalue() if '_readrun_stdout' in dir() else ''",
-			) as string;
-			if (captured) {
-				stdoutParts.push(captured);
-			}
-		} catch {
-			// Best-effort
-		}
-
-		try {
-			const captured = py.runPython(
-				"_readrun_stderr.getvalue() if '_readrun_stderr' in dir() else ''",
-			) as string;
-			if (captured) {
-				stderrParts.push(captured);
-			}
-		} catch {
-			// Best-effort
+			stdout = String(py.runPython("_readrun_stdout.getvalue()") ?? "");
+			stderr = String(py.runPython("_readrun_stderr.getvalue()") ?? "");
+		} finally {
+			py.runPython("sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__");
 		}
 	}
 
-	// Collect matplotlib figures
-	const figList = (() => {
-		try {
-			return py.runPython(
-				"_readrun_figures if '_readrun_figures' in dir() else []",
-			) as string[];
-		} catch {
-			return [];
-		}
-	})();
-
-	if (figList && figList.length > 0) {
-		imageCount = figList.length;
-		for (const _b64 of figList) {
-			stdoutParts.push(`[Image: figure ${imageCount}]`);
-		}
-		py.runPython("_readrun_figures.clear()");
+	// JSON avoids leaking a PyProxy and works for real Python lists, not just JS mocks.
+	const figures: unknown = JSON.parse(String(py.runPython(`
+import json as _rr_json
+_rr_json.dumps(_readrun_figures if '_readrun_figures' in globals() else [])
+`)));
+	if (Array.isArray(figures)) {
+		images = figures.filter((figure): figure is string => typeof figure === "string");
 	}
+	py.runPython("if '_readrun_figures' in globals(): _readrun_figures.clear()");
 
-	try {
-		py.runPython("sys.stdout = sys.__stdout__; sys.stderr = sys.__stderr__");
-	} catch {
-		// Best-effort
-	}
-
-	return {
-		stdout: stdoutParts.join("\n"),
-		stderr: stderrParts.join("\n"),
-		images: [],
-	};
+	return { stdout, stderr, images, ...(error ? { error } : {}) };
 }
 
 export async function runPyodideBlock(
@@ -490,24 +419,15 @@ export async function runPyodideBlock(
 		pyodide ? "Running..." : "Loading Python...",
 	);
 
-	// Clear output
-	while (outputEl.firstChild) {
-		outputEl.firstChild.remove();
-	}
+	outputEl.replaceChildren();
+	const status = document.createElement("div");
+	status.className = "loading";
+	status.textContent = pyodide ? "Running..." : "Loading Python...";
+	outputEl.appendChild(status);
 
 	try {
-		if (packagesReady) {
-			setRunButtonState(runBtn, true, "Installing packages...");
-			await packagesReady;
-		}
-
 		const py = await loadPyodideRuntime();
-		const pkgs = parseImports(code);
-
-		if (pkgs.length > 0 && !packagesReady) {
-			setRunButtonState(runBtn, true, "Installing packages...");
-			await installPackages(pkgs);
-		}
+		if (!outputEl.isConnected) return;
 
 		setRunButtonState(runBtn, true, "Running...");
 		const beforeFS = snapshotFS(py);
@@ -532,7 +452,18 @@ export async function runPyodideBlock(
 			outputEl.appendChild(pre);
 		}
 
-		renderFigures(py, outputEl);
+		for (const image of result.images) {
+			const img = document.createElement("img");
+			img.src = `data:image/png;base64,${image}`;
+			img.alt = "Python figure";
+			outputEl.appendChild(img);
+		}
+		if (result.error) {
+			const pre = document.createElement("pre");
+			pre.className = "error";
+			pre.textContent = result.error;
+			outputEl.appendChild(pre);
+		}
 
 		const newFiles = detectNewFiles(py, beforeFS);
 		renderFileDownloads(py, newFiles, outputEl);
@@ -556,6 +487,7 @@ function setRunButtonState(
 	label: string,
 ): void {
 	button.disabled = disabled;
+	button.setAttribute("aria-busy", String(disabled));
 	button.setAttribute("aria-label", label);
 	button.title = label;
 }

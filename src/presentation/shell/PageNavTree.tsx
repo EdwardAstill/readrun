@@ -25,7 +25,8 @@ function containsCurrent(
 ): boolean {
 	if (!currentUrl) return false;
 	if (node.kind === "leaf") return urlsMatch(node.page.url, currentUrl);
-	return node.children.some((child) => containsCurrent(child, currentUrl));
+	return Boolean(node.page && urlsMatch(node.page.url, currentUrl)) ||
+		node.children.some((child) => containsCurrent(child, currentUrl));
 }
 
 export function PageNavTree(props: PageNavTreeProps): React.JSX.Element {
@@ -61,6 +62,7 @@ function toPageNavTreeNode(
 	return {
 		id: node.id,
 		label: node.label,
+		isBranch: true,
 		href: node.page?.url,
 		ariaCurrent:
 			node.page && urlsMatch(node.page.url, currentUrl) ? "page" : undefined,

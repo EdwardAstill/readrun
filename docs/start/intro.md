@@ -37,10 +37,11 @@ rr intro.md               # open a single file
 rr notes/lecture-1.md     # open a single file by path
 ```
 
-When given a folder, readrun serves the whole directory. When given a `.md`
-file, it serves that file's folder and opens the native window directly on that
-page. `rr docs` uses the built-in documentation folder. Closing the window also
-stops the local server.
+When given a folder, readrun serves the whole directory, with workspace file
+navigation and links between documents. When given a `.md` or `.pdf` file,
+it indexes only that document and opens it directly; sibling documents are
+not included. `rr docs` uses the built-in documentation folder. Closing the
+desktop window also stops the local server.
 
 For a server-only session, run `rr . --no-open` and open the printed loopback
 URL yourself.
@@ -119,7 +120,10 @@ The code is loaded from `.readrun/assets/scripts/variables.py`, displayed on the
 
 ### JSX blocks
 
-JSX blocks render directly in the page — no iframe, no run button. React and Tailwind are loaded automatically. Use the built-in `render()` helper to mount your component:
+JSX blocks render automatically in the document. **Run** rerenders the component
+and resets its state; **Enlarge** keeps the live widget interactive in a larger
+view. React is provided by readrun; Babel and Tailwind's browser runtime load
+from jsDelivr. Use the built-in `render()` helper to mount your component:
 
 ```
 [jsx]
@@ -172,6 +176,20 @@ Standard markdown code blocks (triple backticks) are displayed but not runnable 
 ## Links between pages
 
 Standard Markdown links work as navigation. For example, [Code](../authoring/code.md) links to the authoring page for runnable Python. readrun rewrites `.md` links automatically so they work in the rendered site.
+
+Local document links open workspace tabs. Ctrl-click / Cmd-click opens and
+selects an app tab rather than a browser tab, reusing the document if it is
+already open. External links, downloads, and same-page anchors retain their
+normal behavior.
+
+## Reading controls
+
+Open **Files** for the workspace's left-side file tree. Use **Ctrl+K / Cmd+K**
+for the command palette, with workspace file search and in-page search.
+Press **?** for keyboard shortcuts.
+
+**Settings** offers eight color themes, four typefaces, text size, and content
+width. Preferences are saved locally and synchronized across open documents.
 
 ## Next steps
 

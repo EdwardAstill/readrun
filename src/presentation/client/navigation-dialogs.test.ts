@@ -62,3 +62,15 @@ test("selecting navigation and resource links dismisses the dialog", () => {
 	expect(getActiveOverlay()).toBeNull();
 	expect(document.querySelector("dialog[open]")).toBeNull();
 });
+
+test("navigation openers expose the controlled drawer and expanded state", () => {
+	setup();
+	const trigger = document.createElement("button");
+	trigger.dataset.openOverlay = "files-overlay";
+	document.body.append(trigger);
+	openOverlay("files-overlay");
+	expect(trigger.getAttribute("aria-controls")).toBe("files-overlay");
+	expect(trigger.getAttribute("aria-expanded")).toBe("true");
+	document.querySelector<HTMLDialogElement>("#files-overlay")!.dispatchEvent(new Event("cancel", { cancelable: true }));
+	expect(trigger.getAttribute("aria-expanded")).toBe("false");
+});

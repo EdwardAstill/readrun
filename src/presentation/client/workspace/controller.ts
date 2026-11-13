@@ -30,6 +30,9 @@ export function createReadingWorkspace(url: string, title: string) {
 			const preferredStack = state.stacks[stackId ?? state.activeStackId ?? ""];
 			const existing = matches.find((view) => preferredStack?.viewIds.includes(view.id)) ?? matches[0];
 			if (existing) {
+				if (existing.type !== url) {
+					store.hydrate({ ...state, views: { ...state.views, [existing.id]: { ...existing, type: url } } });
+				}
 				store.dispatch({ type: "view/activate", viewId: existing.id });
 				return existing.id;
 			}

@@ -1,6 +1,8 @@
 import { runJsxBlock } from "./jsx.ts";
 import { readRuntimeConfig } from "../runtime-config.ts";
 import { loadSettings } from "../settings.ts";
+import { decodeSource } from "./source.ts";
+import { runPyodideBlock } from "./pyodide.ts";
 
 // --- Types ---
 
@@ -26,32 +28,35 @@ export async function runPythonBlock(
 	blockId: string,
 	code: string,
 ): Promise<void> {
-	const runtime = readRuntimeConfig();
-	const settings = loadSettings();
-	const useLocalPython =
-		settings.useLocalPython && (runtime?.enableLocalPython ?? true);
-
-	if (useLocalPython) {
-		await runLocalPythonBlock(blockId, code);
-		return;
-	}
-
-	if (runtime?.enableBrowserPython === true) {
-		const { runPyodideBlock } = await import("./pyodide.ts");
-		await runPyodideBlock(blockId, code);
-		return;
-	}
-
 	const elements = findExecElements(blockId);
-	if (!elements) {
-		return;
+	if (!elements || elements.runBtn.disabled) return;
+	const { outputEl, runBtn } = elements;
+	setRunButtonState(runBtn, true, "Loading Python...");
+
+	try {
+		const runtime = readRuntimeConfig();
+		const settings = loadSettings();
+		const useLocalPython =
+			settings.useLocalPython && (runtime?.enableLocalPython ?? true);
+
+		if (useLocalPython) {
+			await runLocalPythonBlock(blockId, code);
+		} else if (runtime?.enableBrowserPython === true) {
+			if (outputEl.isConnected) await runPyodideBlock(blockId, code);
+		} else {
+			clearElement(outputEl);
+			appendText(
+				outputEl,
+				"Python execution is unavailable. Enable local Python with uv or browser Python in the runtime config.",
+				"error",
+			);
+		}
+	} catch (error) {
+		clearElement(outputEl);
+		appendText(outputEl, error instanceof Error ? error.message : String(error), "error");
+	} finally {
+		setRunButtonState(runBtn, false, "Run");
 	}
-	clearElement(elements.outputEl);
-	appendText(
-		elements.outputEl,
-		"Python execution is unavailable. Enable local Python with uv or browser Python in the runtime config.",
-		"error",
-	);
 }
 
 async function runLocalPythonBlock(
@@ -94,8 +99,6 @@ async function runLocalPythonBlock(
 		clearElement(outputEl);
 		const message = err instanceof Error ? err.message : String(err);
 		appendText(outputEl, `Connection error: ${message}`, "error");
-	} finally {
-		setRunButtonState(runBtn, false, "Run");
 	}
 }
 
@@ -105,6 +108,7 @@ function setRunButtonState(
 	label: string,
 ): void {
 	button.disabled = disabled;
+	button.setAttribute("aria-busy", String(disabled));
 	button.setAttribute("aria-label", label);
 	button.title = label;
 }
@@ -199,21 +203,18 @@ export function initExecBlocks(root?: ParentNode): () => void {
 
 	const handler = (event: Event): void => {
 		const target = event.target;
-		if (!(target instanceof HTMLButtonElement)) {
-			return;
-		}
-		if (!target.classList.contains("exec-run-btn")) {
-			return;
-		}
+		if (!(target instanceof Element)) return;
+		const button = target.closest<HTMLButtonElement>(".exec-run-btn");
+		if (!button || button.disabled) return;
 
 		event.preventDefault();
 
-		const blockId = target.dataset.blockId;
+		const blockId = button.dataset.blockId;
 		if (!blockId) {
 			return;
 		}
 
-		const block = target.closest<HTMLElement>(".block-exec, .exec-block");
+		const block = button.closest<HTMLElement>(".block-exec, .exec-block");
 		const language = block?.dataset.language ?? "python";
 
 		const editableEl = scope.querySelector<HTMLTextAreaElement>(
@@ -238,7 +239,7 @@ export function initExecBlocks(root?: ParentNode): () => void {
 			code = editableEl.value;
 		} else {
 			try {
-				code = atob(sourceEl!.textContent!.trim());
+				code = decodeSource(sourceEl!.textContent!);
 			} catch {
 				const outputEl = scope.querySelector<HTMLElement>(
 					`.exec-output[data-output="${CSS.escape(blockId)}"]`,

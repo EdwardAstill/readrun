@@ -6,6 +6,12 @@ export function mountNavigationDialogs(root: ParentNode = document): () => void 
 	let opener: HTMLElement | null = null;
 	const sync = (): void => {
 		const active = getActiveOverlay();
+		for (const trigger of document.querySelectorAll<HTMLElement>("[data-open-overlay]")) {
+			const id = trigger.dataset.openOverlay;
+			if (!id || !dialogs.some((dialog) => dialog.id === id)) continue;
+			if (!trigger.hasAttribute("aria-controls")) trigger.setAttribute("aria-controls", id);
+			trigger.setAttribute("aria-expanded", String(id === active));
+		}
 		for (const dialog of dialogs) {
 			if (dialog.id !== active && dialog.open) {
 				dialog.close();

@@ -3,7 +3,7 @@ import { resolvePageWikilinks } from "../../domain/pages/wikilinks.ts";
 import { findRouteByUrl } from "../../domain/routes/generate.ts";
 import type { SiteRoute, TagRoute } from "../../domain/routes/model.ts";
 import { escapeHtml } from "../../shared/html.ts";
-import { encodeUrlPath } from "../../shared/paths.ts";
+import { encodeUrlPath, READRUN_ASSETS_DIR, relPathSegments } from "../../shared/paths.ts";
 import { renderMarkdown } from "../../presentation/markdown/renderMarkdown.ts";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PdfViewer } from "../../presentation/viewers/PdfViewer.tsx";
@@ -45,11 +45,13 @@ function buildResourceEntries(
 function buildDataFileEntries(
 	snapshot: ContentProjectSnapshot,
 ): Array<{ name: string }> {
+	const dataPrefix = `${READRUN_ASSETS_DIR}/data/`;
 	return snapshot.assetIndex.assets
-		.filter((asset) => asset.kind === "data")
-		.map((asset) => ({
-			name: asset.relPath.replace(/^\.readrun\/assets\/data\//, ""),
-		}));
+		.filter((asset) => asset.relPath.startsWith(dataPrefix))
+		.map((asset) => ({ name: asset.relPath.slice(dataPrefix.length) }))
+		.filter(({ name }) => relPathSegments(name).every(
+			(segment) => !segment.startsWith(".") && segment !== "__pycache__",
+		));
 }
 
 export async function renderPage(
